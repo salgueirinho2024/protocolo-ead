@@ -84,6 +84,23 @@ CREATE TABLE IF NOT EXISTS treinamento_modulos (
     UNIQUE (treinamento_id, ordem)
 );
 
+-- Perguntas da prova final do treinamento (múltipla escolha).
+-- opcoes é um array JSON de strings; resposta_correta é o índice
+-- (0-based) da opção certa dentro de opcoes. O índice nunca é
+-- devolvido ao funcionário pelo endpoint do player — só ao admin.
+CREATE TABLE IF NOT EXISTS treinamento_perguntas (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    treinamento_id      UUID NOT NULL REFERENCES treinamentos(id) ON DELETE CASCADE,
+    pergunta            TEXT NOT NULL,
+    opcoes              JSONB NOT NULL,
+    resposta_correta    SMALLINT NOT NULL CHECK (resposta_correta >= 0),
+    ordem               SMALLINT NOT NULL,
+    criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (treinamento_id, ordem),
+    CHECK (jsonb_array_length(opcoes) >= 2),
+    CHECK (resposta_correta < jsonb_array_length(opcoes))
+);
+
 -- =========================================================
 -- 4. CONTRATOS (a "compra de vagas" que uma empresa faz)
 -- =========================================================

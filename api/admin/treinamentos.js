@@ -7,6 +7,10 @@
 //   POST   /api/admin/treinamentos/:id/modulos             — cria módulo
 //   PUT    /api/admin/treinamentos/:id/modulos/:moduloId   — edita módulo
 //   DELETE /api/admin/treinamentos/:id/modulos/:moduloId   — exclui módulo (bloqueado se já houver progresso assistido)
+//   GET    /api/admin/treinamentos/:id/perguntas                — lista perguntas da prova final
+//   POST   /api/admin/treinamentos/:id/perguntas                — cria pergunta
+//   PUT    /api/admin/treinamentos/:id/perguntas/:perguntaId     — edita pergunta
+//   DELETE /api/admin/treinamentos/:id/perguntas/:perguntaId     — exclui pergunta
 //
 // Arquivo plano (sem subpasta catch-all) para caber no limite de 12
 // Serverless Functions do plano Hobby da Vercel. O roteamento de
@@ -198,6 +202,88 @@ async function handleModulos(req, res, treinamentoId, moduloId) {
   }
 }
 
+async function handlePerguntas(req, res, treinamentoId, perguntaId) {
+  if (perguntaId) {
+    if (!metodoPermitido(req, res, 'PUT', 'DELETE')) return;
+
+    if (req.method === 'DELETE') {
+      try {
+        const { rows } = await db.query(
+          `DELETE FROM treinamento_perguntas WHERE id = $1 AND treinamento_id = $2 RETURNING id`,
+          [perguntaId, treinamentoId]
+        );
+        if (!rows[0]) return res.status(404).json({ erro: 'Pergunta não encontrada.' });
+        return res.json({ mensagem: 'Pergunta excluída.' });
+      } catch (err) {
+        console.error(err);
+        return res.status(500).json({ erro: 'Erro ao excluir pergunta.' });
+      }
+    }
+
+    // PUT
+    const { pergunta, opcoes, resposta_correta, ordem } = req.body || {};
+    if (!pergunta || !Array.isArray(opcoes) || opcoes.length < 2 ||
+        resposta_correta === undefined || resposta_correta === null || !ordem) {
+      return res.status(400).json({ erro: 'pergunta, opcoes (mín. 2), resposta_correta e ordem são obrigatórios.' });
+    }
+    if (resposta_correta < 0 || resposta_correta >= opcoes.length) {
+      return res.status(400).json({ erro: 'resposta_correta deve ser um índice válido dentro de opcoes.' });
+    }
+    try {
+      const { rows } = await db.query(
+        `UPDATE treinamento_perguntas
+            SET pergunta = $1, opcoes = $2::jsonb, resposta_correta = $3, ordem = $4
+          WHERE id = $5 AND treinamento_id = $6
+          RETURNING *`,
+        [pergunta, JSON.stringify(opcoes), resposta_correta, ordem, perguntaId, treinamentoId]
+      );
+      if (!rows[0]) return res.status(404).json({ erro: 'Pergunta não encontrada.' });
+      return res.json(rows[0]);
+    } catch (err) {
+      if (err.code === '23505') return res.status(409).json({ erro: 'Já existe uma pergunta com essa ordem neste treinamento.' });
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao atualizar pergunta.' });
+    }
+  }
+
+  if (!metodoPermitido(req, res, 'GET', 'POST')) return;
+
+  if (req.method === 'GET') {
+    try {
+      const { rows } = await db.query(
+        `SELECT * FROM treinamento_perguntas WHERE treinamento_id = $1 ORDER BY ordem ASC`,
+        [treinamentoId]
+      );
+      return res.json(rows);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao listar perguntas.' });
+    }
+  }
+
+  // POST
+  const { pergunta, opcoes, resposta_correta, ordem } = req.body || {};
+  if (!pergunta || !Array.isArray(opcoes) || opcoes.length < 2 ||
+      resposta_correta === undefined || resposta_correta === null || !ordem) {
+    return res.status(400).json({ erro: 'pergunta, opcoes (mín. 2), resposta_correta e ordem são obrigatórios.' });
+  }
+  if (resposta_correta < 0 || resposta_correta >= opcoes.length) {
+    return res.status(400).json({ erro: 'resposta_correta deve ser um índice válido dentro de opcoes.' });
+  }
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO treinamento_perguntas (treinamento_id, pergunta, opcoes, resposta_correta, ordem)
+       VALUES ($1,$2,$3::jsonb,$4,$5) RETURNING *`,
+      [treinamentoId, pergunta, JSON.stringify(opcoes), resposta_correta, ordem]
+    );
+    return res.status(201).json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ erro: 'Já existe uma pergunta com essa ordem neste treinamento.' });
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao criar pergunta.' });
+  }
+}
+
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
@@ -213,6 +299,10 @@ module.exports = async (req, res) => {
 
   if (sub === 'modulos') {
     return handleModulos(req, res, id, moduloId);
+  }
+
+  if (sub === 'perguntas') {
+    return handlePerguntas(req, res, id, req.query.perguntaId);
   }
 
   return handleTreinamentoPorId(req, res, id);

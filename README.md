@@ -32,7 +32,7 @@ protocolo-ead/
 │   ├── player/
 │   │   ├── matricula.js          ← GET /api/player/matricula
 │   │   ├── checkpoint.js         ← POST /api/player/checkpoint
-│   │   ├── prova.js              ← POST /api/player/prova (gera certificado)
+│   │   ├── prova.js              ← GET (perguntas) e POST (respostas, gera certificado) /api/player/prova
 │   │   ├── sessao/
 │   │   │   └── index.js          ← POST /api/player/sessao/iniciar e /encerrar
 │   │   └── certificado/
@@ -241,7 +241,7 @@ de redirecionar internamente cada URL antiga para o arquivo certo:
 |---|---|
 | `api/auth/login.js` | `/api/auth/login` e `/api/auth/login-funcionario` |
 | `api/admin/index.js` | `/api/admin/empresas`, `/api/admin/contratos`, `/api/admin/suspeitos` |
-| `api/admin/treinamentos/[[...id]].js` | `/api/admin/treinamentos` e `/api/admin/treinamentos/:id/modulos` |
+| `api/admin/treinamentos/[[...id]].js` | `/api/admin/treinamentos`, `/api/admin/treinamentos/:id/modulos` e `/api/admin/treinamentos/:id/perguntas` |
 | `api/empresa/contratos/[id]/funcionarios/[[...fId]].js` | `/api/empresa/contratos/:id/funcionarios` e `.../funcionarios/:fId` |
 | `api/player/sessao/index.js` | `/api/player/sessao/iniciar` e `/api/player/sessao/encerrar` |
 | `api/player/certificado/index.js` | `/api/player/certificado` e `/api/player/certificado/pdf` |
@@ -252,14 +252,9 @@ perfeitamente assim também.
 
 ## O que ainda falta construir
 
-- **Conectar o protótipo HTML à API real** — hoje ele só mostra dados de
-  exemplo (mockados), nenhuma tela fala com o backend ainda.
 - **Player de vídeo real**, integrado a um provedor como Mux, Cloudflare
   Stream ou Bunny (o campo `video_provider_id` no banco já está pronto pra
   isso).
-- **Tela da prova final** com perguntas configuráveis por treinamento (hoje
-  a rota `POST /api/player/prova` já existe e calcula aprovação/reprovação,
-  falta a interface).
 - **Envio de e-mail** com a senha de acesso do funcionário e o certificado
   pronto (hoje fica só disponível por download via `/api/player/certificado/pdf`).
 
@@ -272,6 +267,8 @@ perfeitamente assim também.
 | `POST /api/auth/login-funcionario` | funcionário | login por CPF + senha |
 | `GET/POST /api/admin/treinamentos` | super admin | catálogo de treinamentos |
 | `GET/POST /api/admin/treinamentos/:id/modulos` | super admin | vídeos/módulos do treinamento |
+| `GET/POST /api/admin/treinamentos/:id/perguntas` | super admin | perguntas da prova final (gabarito) |
+| `PUT/DELETE /api/admin/treinamentos/:id/perguntas/:perguntaId` | super admin | edita/exclui pergunta |
 | `GET/POST /api/admin/empresas` | super admin | cadastro de empresas clientes |
 | `GET/POST /api/admin/contratos` | super admin | venda de vagas (contratos) |
 | `GET /api/admin/suspeitos` | super admin | matrículas com sinais de fraude |
@@ -282,9 +279,11 @@ perfeitamente assim também.
 | `POST /api/player/sessao/iniciar` | funcionário | abre sessão de visualização |
 | `POST /api/player/sessao/encerrar` | funcionário | fecha sessão, soma tempo assistido |
 | `POST /api/player/checkpoint` | funcionário | registra evento anti-fraude |
-| `POST /api/player/prova` | funcionário | envia nota final, gera certificado se aprovado |
-| `GET /api/player/certificado` | funcionário | metadados do certificado emitido |
+| `GET /api/player/prova?matricula_id=...` | funcionário | perguntas da prova (sem gabarito) |
+| `POST /api/player/prova` | funcionário | envia respostas; nota é calculada no servidor; gera certificado se aprovado |
+| `GET /api/player/certificado` | funcionário | lista (array) dos certificados emitidos |
 | `GET /api/player/certificado/pdf?codigo=...` | público* | devolve o PDF binário do certificado |
+| `GET /api/player/certificado/pdf?id=...` | funcionário | devolve o PDF de um certificado próprio, por id |
 | `GET /api/validar/:codigo` | público | valida autenticidade de um certificado |
 
 \* É público porque é o link que vai no QR code do certificado físico/impresso,

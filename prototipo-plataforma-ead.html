@@ -332,6 +332,23 @@
       </div>
     </div>
 
+    <!-- Prova Final (admin) -->
+    <div id="page-admin-perguntas" class="page">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="navTo('admin-treinamentos')" style="margin-bottom:8px">← Voltar</button>
+          <h2 id="pergunta-titulo">Prova Final</h2>
+          <p>Perguntas de múltipla escolha. O funcionário precisa atingir a nota mínima do treinamento para ser aprovado.</p>
+        </div>
+        <button class="btn btn-navy" onclick="abrirModalPergunta()">+ Nova Pergunta</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Ordem</th><th>Pergunta</th><th>Opções</th><th></th></tr></thead>
+        <tbody id="lista-perguntas"><tr class="loading-row"><td colspan="4">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+
     <!-- Anti-Fraude -->
     <div id="page-admin-fraude" class="page">
       <div class="page-header">
@@ -568,6 +585,22 @@
   </div>
 </div>
 
+<!-- Modal Pergunta (prova final) -->
+<div class="modal-overlay" id="modal-pergunta">
+  <div class="modal">
+    <h3 id="modal-pergunta-titulo">Nova Pergunta</h3>
+    <div class="field"><label>Ordem</label><input type="number" id="perg-ordem" value="1" min="1" style="max-width:120px"></div>
+    <div class="field"><label>Pergunta</label><textarea id="perg-texto" placeholder="Enunciado da questão"></textarea></div>
+    <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin:12px 0 6px">Opções (marque a correta)</label>
+    <div id="perg-opcoes-container"></div>
+    <button type="button" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="adicionarOpcaoPergunta()">+ Adicionar opção</button>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-pergunta')">Cancelar</button>
+      <button class="btn btn-navy" id="btn-salvar-pergunta" onclick="salvarPergunta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Funcionário -->
 <div class="modal-overlay" id="modal-funcionario">
   <div class="modal">
@@ -602,6 +635,7 @@ let editingEmpresaId = null;
 let editingTreinId = null;
 let currentAdminTreinId = null;
 let editingModuloId = null;
+let editingPerguntaId = null;
 let editingFuncionarioId = null;
 
 // ══════════════════════════════════════════════
@@ -1000,6 +1034,7 @@ async function carregarTreinamentos() {
         <td><span class="badge ${t.ativo!==false?'badge-green':'badge-gray'}">${t.ativo!==false?'ativo':'inativo'}</span></td>
         <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
           <button class="btn btn-outline btn-sm" onclick="verModulos('${t.id}','${escHtml(t.titulo)}')">Módulos</button>
+          <button class="btn btn-outline btn-sm" onclick="verPerguntas('${t.id}','${escHtml(t.titulo)}')">Prova</button>
           <button class="btn btn-outline btn-sm" onclick="editarTreinamento('${t.id}')">Editar</button>
           <button class="btn btn-red btn-sm" onclick="excluirTreinamento('${t.id}')">Excluir</button>
         </td>
@@ -1145,6 +1180,106 @@ async function excluirModulo(moduloId) {
     await api('DELETE', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos/' + moduloId);
     toast('Módulo excluído.', 'success');
     carregarModulos();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Perguntas (prova final)
+async function verPerguntas(treinId, titulo) {
+  currentAdminTreinId = treinId;
+  document.getElementById('pergunta-titulo').textContent = 'Prova Final: ' + titulo;
+  navTo('admin-perguntas');
+  await carregarPerguntas();
+}
+
+async function carregarPerguntas() {
+  const tbody = document.getElementById('lista-perguntas');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/admin/treinamentos/' + currentAdminTreinId + '/perguntas');
+    const lista = data.perguntas || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Nenhuma pergunta cadastrada</td></tr>'; return; }
+    tbody.innerHTML = lista.map(p => `
+      <tr>
+        <td>${p.ordem}</td>
+        <td><strong>${escHtml(p.pergunta)}</strong></td>
+        <td style="font-size:13px;color:var(--text-muted)">${(p.opcoes||[]).map((op,i) => (i === p.resposta_correta ? `✓ ${escHtml(op)}` : escHtml(op))).join(' · ')}</td>
+        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick='editarPergunta(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Editar</button>
+          <button class="btn btn-red btn-sm" onclick="excluirPergunta('${p.id}')">Excluir</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="4">${e.message}</td></tr>`; }
+}
+
+function linhaOpcaoPergunta(valor, marcada) {
+  const idx = document.querySelectorAll('#perg-opcoes-container .opcao-row').length;
+  return `<div class="opcao-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <input type="radio" name="perg-correta" value="${idx}" ${marcada ? 'checked' : ''}>
+    <input type="text" class="opcao-texto" placeholder="Texto da opção" value="${escHtml(valor||'')}" style="flex:1;padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none">
+    <button type="button" class="btn btn-red btn-sm" onclick="this.closest('.opcao-row').remove()">✕</button>
+  </div>`;
+}
+
+function adicionarOpcaoPergunta(valor, marcada) {
+  document.getElementById('perg-opcoes-container').insertAdjacentHTML('beforeend', linhaOpcaoPergunta(valor, marcada));
+}
+
+function abrirModalPergunta() {
+  editingPerguntaId = null;
+  document.getElementById('modal-pergunta-titulo').textContent = 'Nova Pergunta';
+  document.getElementById('perg-ordem').value = 1;
+  document.getElementById('perg-texto').value = '';
+  document.getElementById('perg-opcoes-container').innerHTML = '';
+  adicionarOpcaoPergunta('', true);
+  adicionarOpcaoPergunta('', false);
+  document.getElementById('modal-pergunta').classList.add('open');
+}
+
+function editarPergunta(p) {
+  editingPerguntaId = p.id;
+  document.getElementById('modal-pergunta-titulo').textContent = 'Editar Pergunta';
+  document.getElementById('perg-ordem').value = p.ordem || 1;
+  document.getElementById('perg-texto').value = p.pergunta || '';
+  document.getElementById('perg-opcoes-container').innerHTML = '';
+  (p.opcoes || []).forEach((op, i) => adicionarOpcaoPergunta(op, i === p.resposta_correta));
+  document.getElementById('modal-pergunta').classList.add('open');
+}
+
+async function salvarPergunta() {
+  const linhas = [...document.querySelectorAll('#perg-opcoes-container .opcao-row')];
+  const opcoes = linhas.map(l => l.querySelector('.opcao-texto').value.trim());
+  const correta = document.querySelector('input[name="perg-correta"]:checked');
+
+  if (opcoes.some(o => !o) || opcoes.length < 2) { toast('Preencha pelo menos 2 opções.', 'error'); return; }
+  if (!correta) { toast('Marque qual opção é a correta.', 'error'); return; }
+
+  const body = {
+    pergunta: document.getElementById('perg-texto').value,
+    ordem: +document.getElementById('perg-ordem').value,
+    opcoes,
+    resposta_correta: +correta.value,
+  };
+  if (!body.pergunta) { toast('Escreva o enunciado da pergunta.', 'error'); return; }
+
+  try {
+    if (editingPerguntaId) {
+      await api('PUT', '/api/admin/treinamentos/' + currentAdminTreinId + '/perguntas/' + editingPerguntaId, body);
+      toast('Pergunta atualizada!', 'success');
+    } else {
+      await api('POST', '/api/admin/treinamentos/' + currentAdminTreinId + '/perguntas', body);
+      toast('Pergunta criada!', 'success');
+    }
+    fecharModal('modal-pergunta');
+    carregarPerguntas();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function excluirPergunta(perguntaId) {
+  if (!confirm('Excluir esta pergunta?')) return;
+  try {
+    await api('DELETE', '/api/admin/treinamentos/' + currentAdminTreinId + '/perguntas/' + perguntaId);
+    toast('Pergunta excluída.', 'success');
+    carregarPerguntas();
   } catch(e) { toast(e.message, 'error'); }
 }
 
@@ -1553,11 +1688,12 @@ async function enviarProva(perguntas) {
     const res = document.getElementById('prova-resultado');
     res.style.display = 'block';
     const aprovado = data.aprovado || data.resultado === 'aprovado';
+    const detalheAcertos = (data.acertos !== undefined && data.total) ? ` (${data.acertos} de ${data.total} questões)` : '';
     res.innerHTML = `<div class="cert-result">
       <div class="cert-icon">${aprovado ? '🏆' : '😕'}</div>
       <h2 style="color:${aprovado?'var(--green)':'var(--red)'}">${aprovado ? 'Aprovado!' : 'Reprovado'}</h2>
-      <p>Você acertou <strong>${data.nota || data.acertos || '—'}%</strong> das questões.<br>
-      ${aprovado ? 'Seu certificado está disponível!' : 'Você pode refazer a prova. Revise os módulos e tente novamente.'}</p>
+      <p>Você acertou <strong>${data.nota ?? '—'}%</strong> das questões${detalheAcertos}.<br>
+      ${aprovado ? 'Seu certificado está disponível!' : `Nota mínima exigida: ${data.nota_minima ?? '—'}%. Você pode refazer a prova. Revise os módulos e tente novamente.`}</p>
       ${aprovado ? '<button class="btn btn-green" onclick="navTo(\'func-certificado\')">Ver Certificado 🎓</button>' :
         '<button class="btn btn-navy" onclick="navTo(\'func-player\')">Rever os módulos</button>'}
     </div>`;
