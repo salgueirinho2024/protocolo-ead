@@ -488,9 +488,10 @@
     <div class="field"><label>Título</label><input type="text" id="trein-titulo" placeholder="Nome do curso"></div>
     <div class="field"><label>Descrição</label><textarea id="trein-descricao"></textarea></div>
     <div class="fields-row">
-      <div class="field"><label>Nota mínima (%)</label><input type="number" id="trein-nota" value="70" min="0" max="100"></div>
-      <div class="field"><label>Validade certificado (dias)</label><input type="number" id="trein-validade" value="365"></div>
+      <div class="field"><label>Carga horária (min)</label><input type="number" id="trein-carga" value="60" min="1"></div>
+      <div class="field"><label>Nota mínima na prova (%)</label><input type="number" id="trein-nota" value="70" min="0" max="100"></div>
     </div>
+    <div class="field"><label>Validade do certificado (meses)</label><input type="number" id="trein-validade" value="12" min="1"></div>
     <div class="field">
       <label>Status</label>
       <select id="trein-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select>
@@ -510,7 +511,7 @@
     <div class="field"><label>Descrição</label><textarea id="mod-descricao"></textarea></div>
     <div class="fields-row">
       <div class="field"><label>Ordem</label><input type="number" id="mod-ordem" value="1" min="1"></div>
-      <div class="field"><label>Duração (min)</label><input type="number" id="mod-duracao" value="30" min="1"></div>
+      <div class="field"><label>Duração (segundos)</label><input type="number" id="mod-duracao" value="1800" min="1"></div>
     </div>
     <div class="field"><label>URL ou ID do Vídeo</label><input type="text" id="mod-video" placeholder="YouTube ID, Mux, Vimeo…"></div>
     <div class="fields-row">
@@ -955,9 +956,9 @@ async function salvarTreinamento() {
   const body = {
     titulo: document.getElementById('trein-titulo').value,
     descricao: document.getElementById('trein-descricao').value,
-    nota_minima: +document.getElementById('trein-nota').value,
-    validade_certificado: +document.getElementById('trein-validade').value,
-    status: document.getElementById('trein-status').value,
+    carga_horaria_min: +document.getElementById('trein-carga').value,
+    nota_minima_prova: +document.getElementById('trein-nota').value,
+    validade_certificado_meses: +document.getElementById('trein-validade').value,
   };
   try {
     if (editingTreinId) {
@@ -1008,12 +1009,9 @@ function abrirModalModulo() {
 async function salvarModulo() {
   const body = {
     titulo: document.getElementById('mod-titulo').value,
-    descricao: document.getElementById('mod-descricao').value,
     ordem: +document.getElementById('mod-ordem').value,
-    duracao_minutos: +document.getElementById('mod-duracao').value,
     video_provider_id: document.getElementById('mod-video').value,
-    video_provider: document.getElementById('mod-provider').value,
-    checkpoints_obrigatorios: +document.getElementById('mod-checkpoints').value,
+    duracao_segundos: +document.getElementById('mod-duracao').value,
   };
   try {
     await api('POST', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos', body);
