@@ -891,7 +891,7 @@ async function abrirModalContrato() {
     ]);
     const empresas = emps.empresas || emps || [];
     const treinamentos = treins.treinamentos || treins || [];
-    document.getElementById('contrato-empresa-id').innerHTML = empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+    document.getElementById('contrato-empresa-id').innerHTML = empresas.map(e => `<option value="${e.id}">${e.razao_social}</option>`).join('');
     document.getElementById('contrato-treinamento-id').innerHTML = treinamentos.map(t => `<option value="${t.id}">${t.titulo}</option>`).join('');
     document.getElementById('modal-contrato').classList.add('open');
   } catch(e) { toast(e.message, 'error'); }
@@ -899,10 +899,10 @@ async function abrirModalContrato() {
 
 async function salvarContrato() {
   const body = {
-    empresa_id: +document.getElementById('contrato-empresa-id').value,
-    treinamento_id: +document.getElementById('contrato-treinamento-id').value,
+    empresa_id: document.getElementById('contrato-empresa-id').value,
+    treinamento_id: document.getElementById('contrato-treinamento-id').value,
     vagas_contratadas: +document.getElementById('contrato-vagas').value,
-    data_validade: document.getElementById('contrato-validade').value,
+    data_limite: document.getElementById('contrato-validade').value || null,
     status: document.getElementById('contrato-status').value,
   };
   try {
