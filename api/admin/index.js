@@ -123,12 +123,12 @@ async function handleEmpresas(req, res) {
 }
 
 async function handleContratos(req, res, user) {
-  if (!metodoPermitido(req, res, 'GET', 'POST')) return;
+  if (!metodoPermitido(req, res, 'GET', 'POST', 'PUT')) return;
 
   if (req.method === 'GET') {
     try {
       const { rows } = await db.query(
-        `SELECT c.id, c.vagas_contratadas, c.status, c.data_inicio,
+        `SELECT c.id, c.vagas_contratadas, c.status, c.data_inicio, c.data_limite,
                 e.razao_social AS empresa_nome, t.titulo AS treinamento_titulo,
                 COUNT(fc.id) AS vagas_usadas
            FROM contratos c
@@ -145,16 +145,58 @@ async function handleContratos(req, res, user) {
     }
   }
 
+  if (req.method === 'PUT') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ erro: 'ID do contrato não informado.' });
+
+    const { vagas_contratadas, data_limite, status } = req.body || {};
+    const statusValidos = ['ativo', 'encerrado', 'cancelado'];
+    if (status && !statusValidos.includes(status)) {
+      return res.status(400).json({ erro: 'Status inválido.' });
+    }
+
+    try {
+      if (vagas_contratadas) {
+        const { rows: usoRows } = await db.query(
+          `SELECT COUNT(*) AS usadas FROM funcionarios_contrato WHERE contrato_id = $1`,
+          [id]
+        );
+        if (parseInt(usoRows[0].usadas) > parseInt(vagas_contratadas)) {
+          return res.status(422).json({ erro: `Não é possível reduzir para ${vagas_contratadas} vagas: já existem ${usoRows[0].usadas} funcionários cadastrados.` });
+        }
+      }
+
+      const { rows } = await db.query(
+        `UPDATE contratos
+            SET vagas_contratadas = COALESCE($1, vagas_contratadas),
+                data_limite = $2,
+                status = COALESCE($3, status)
+          WHERE id = $4
+          RETURNING *`,
+        [vagas_contratadas || null, data_limite || null, status || null, id]
+      );
+      if (!rows[0]) return res.status(404).json({ erro: 'Contrato não encontrado.' });
+      return res.json(rows[0]);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao editar contrato.' });
+    }
+  }
+
   // POST
-  const { empresa_id, treinamento_id, vagas_contratadas, data_limite } = req.body || {};
+  const { empresa_id, treinamento_id, vagas_contratadas, data_limite, status } = req.body || {};
   if (!empresa_id || !treinamento_id || !vagas_contratadas) {
     return res.status(400).json({ erro: 'Campos obrigatórios faltando.' });
   }
+  const statusValidos = ['ativo', 'encerrado', 'cancelado'];
+  if (status && !statusValidos.includes(status)) {
+    return res.status(400).json({ erro: 'Status inválido.' });
+  }
   try {
     const { rows } = await db.query(
-      `INSERT INTO contratos (empresa_id, treinamento_id, vagas_contratadas, data_limite, criado_por)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [empresa_id, treinamento_id, vagas_contratadas, data_limite || null, user.id]
+      `INSERT INTO contratos (empresa_id, treinamento_id, vagas_contratadas, data_limite, status, criado_por)
+       VALUES ($1,$2,$3,$4,COALESCE($5,'ativo'),$6) RETURNING *`,
+      [empresa_id, treinamento_id, vagas_contratadas, data_limite || null, status || null, user.id]
     );
     return res.status(201).json(rows[0]);
   } catch (err) {
@@ -175,6 +217,45 @@ async function handleSuspeitos(req, res) {
   }
 }
 
+async function handleConfiguracao(req, res) {
+  if (!metodoPermitido(req, res, 'GET', 'PUT')) return;
+
+  if (req.method === 'GET') {
+    try {
+      const { rows } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
+      return res.json(rows[0] || {});
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao buscar configuração.' });
+    }
+  }
+
+  // PUT
+  const {
+    empresa_razao_social, empresa_cnpj, empresa_endereco, empresa_email, empresa_telefone,
+    responsavel_tecnico_nome, responsavel_tecnico_documento, instrutor_nome, instrutor_documento,
+  } = req.body || {};
+  try {
+    const { rows } = await db.query(
+      `UPDATE configuracao_emissora
+          SET empresa_razao_social = $1, empresa_cnpj = $2, empresa_endereco = $3,
+              empresa_email = $4, empresa_telefone = $5,
+              responsavel_tecnico_nome = $6, responsavel_tecnico_documento = $7,
+              instrutor_nome = $8, instrutor_documento = $9
+        WHERE id = 1
+        RETURNING *`,
+      [empresa_razao_social || null, empresa_cnpj || null, empresa_endereco || null,
+       empresa_email || null, empresa_telefone || null,
+       responsavel_tecnico_nome || null, responsavel_tecnico_documento || null,
+       instrutor_nome || null, instrutor_documento || null]
+    );
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao salvar configuração.' });
+  }
+}
+
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
@@ -189,6 +270,8 @@ module.exports = async (req, res) => {
       return handleSuspeitos(req, res);
     case 'empresas':
       return handleEmpresas(req, res);
+    case 'configuracao':
+      return handleConfiguracao(req, res);
     default:
       return res.status(404).json({ erro: 'Recurso não encontrado.' });
   }

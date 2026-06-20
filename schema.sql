@@ -287,6 +287,42 @@ ALTER TABLE certificados ADD COLUMN IF NOT EXISTS arquivo_pdf_base64 TEXT;
 CREATE INDEX IF NOT EXISTS idx_certificados_codigo ON certificados(codigo_validacao);
 
 -- =========================================================
+-- 11. CONFIGURAÇÃO DA EMPRESA EMISSORA (singleton)
+-- =========================================================
+-- Dados da empresa palestrante/aplicadora, responsável técnico e instrutor
+-- — usados no rodapé dos certificados. Como o sistema é usado por uma única
+-- empresa emissora, esta tabela tem uma única linha (id sempre = 1).
+
+CREATE TABLE IF NOT EXISTS configuracao_emissora (
+    id                              SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    empresa_razao_social            VARCHAR(200),
+    empresa_cnpj                    VARCHAR(20),
+    empresa_endereco                TEXT,
+    empresa_email                   VARCHAR(150),
+    empresa_telefone                VARCHAR(20),
+    responsavel_tecnico_nome        VARCHAR(150),
+    responsavel_tecnico_documento   VARCHAR(50),
+    instrutor_nome                  VARCHAR(150),
+    instrutor_documento             VARCHAR(50),
+    atualizado_em                   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Garante a linha inicial (idempotente — não falha se já existir)
+INSERT INTO configuracao_emissora (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- =========================================================
+-- 12. CAMPOS NOVOS NO TREINAMENTO
+-- =========================================================
+-- Conteúdo programático e período de vigência do treinamento. Os dados da
+-- empresa palestrante/responsável técnico/instrutor NÃO ficam aqui — vêm
+-- da configuração global (seção 11), pois o sistema atende uma única
+-- empresa aplicadora.
+
+ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS conteudo_programatico TEXT;
+ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS data_inicio DATE;
+ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS data_fim DATE;
+
+-- =========================================================
 -- TRIGGER GENÉRICO: atualizado_em automático
 -- =========================================================
 

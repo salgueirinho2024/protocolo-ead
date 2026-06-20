@@ -327,8 +327,8 @@
         <button class="btn btn-navy" onclick="abrirModalModulo()">+ Novo Módulo</button>
       </div>
       <div class="card">
-        <table><thead><tr><th>Ordem</th><th>Título</th><th>Duração</th><th>Checkpoints</th><th></th></tr></thead>
-        <tbody id="lista-modulos"><tr class="loading-row"><td colspan="5">Carregando…</td></tr></tbody></table>
+        <table><thead><tr><th>Ordem</th><th>Título</th><th>Duração</th><th></th></tr></thead>
+        <tbody id="lista-modulos"><tr class="loading-row"><td colspan="4">Carregando…</td></tr></tbody></table>
       </div>
     </div>
 
@@ -341,6 +341,40 @@
       <div class="card">
         <table><thead><tr><th>Funcionário</th><th>Empresa</th><th>Treinamento</th><th>Nível suspeita</th><th>Checkpoints falhados</th><th>Última sessão</th></tr></thead>
         <tbody id="lista-suspeitos"><tr class="loading-row"><td colspan="6">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Configuração da Empresa Emissora -->
+    <div id="page-admin-configuracao" class="page">
+      <div class="page-header">
+        <h2>Empresa Emissora</h2>
+        <p>Dados únicos, reaproveitados em todos os treinamentos e certificados</p>
+      </div>
+      <div class="card" style="padding:20px">
+        <h3 style="margin-bottom:12px;font-size:14px">Dados da empresa</h3>
+        <div class="field"><label>Razão social</label><input type="text" id="cfg-empresa-razao-social"></div>
+        <div class="fields-row">
+          <div class="field"><label>CNPJ</label><input type="text" id="cfg-empresa-cnpj"></div>
+          <div class="field"><label>Telefone</label><input type="text" id="cfg-empresa-telefone"></div>
+        </div>
+        <div class="field"><label>E-mail</label><input type="email" id="cfg-empresa-email"></div>
+        <div class="field"><label>Endereço</label><textarea id="cfg-empresa-endereco"></textarea></div>
+
+        <h3 style="margin:20px 0 12px;font-size:14px">Responsável técnico</h3>
+        <div class="fields-row">
+          <div class="field"><label>Nome</label><input type="text" id="cfg-resp-nome"></div>
+          <div class="field"><label>Registro/Documento</label><input type="text" id="cfg-resp-doc"></div>
+        </div>
+
+        <h3 style="margin:20px 0 12px;font-size:14px">Instrutor</h3>
+        <div class="fields-row">
+          <div class="field"><label>Nome</label><input type="text" id="cfg-instrutor-nome"></div>
+          <div class="field"><label>Registro/Documento</label><input type="text" id="cfg-instrutor-doc"></div>
+        </div>
+
+        <div class="modal-footer" style="justify-content:flex-start;margin-top:20px">
+          <button class="btn btn-navy" onclick="salvarConfiguracao()">Salvar configuração</button>
+        </div>
       </div>
     </div>
 
@@ -375,7 +409,7 @@
         <select id="contrato-select-func" onchange="carregarFuncionarios()" style="padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;min-width:260px"></select>
       </div>
       <div class="card">
-        <table><thead><tr><th>Nome</th><th>CPF</th><th>Matrícula</th><th>Status</th><th></th></tr></thead>
+        <table><thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Status</th><th></th></tr></thead>
         <tbody id="lista-funcionarios"><tr class="loading-row"><td colspan="5">Selecione um contrato</td></tr></tbody></table>
       </div>
     </div>
@@ -463,7 +497,7 @@
 <!-- Modal Contrato -->
 <div class="modal-overlay" id="modal-contrato">
   <div class="modal">
-    <h3>Novo Contrato</h3>
+    <h3 id="modal-contrato-titulo">Novo Contrato</h3>
     <div class="field"><label>Empresa</label><select id="contrato-empresa-id"></select></div>
     <div class="field"><label>Treinamento</label><select id="contrato-treinamento-id"></select></div>
     <div class="fields-row">
@@ -472,11 +506,11 @@
     </div>
     <div class="field">
       <label>Status</label>
-      <select id="contrato-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select>
+      <select id="contrato-status"><option value="ativo">Ativo</option><option value="encerrado">Encerrado</option><option value="cancelado">Cancelado</option></select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="fecharModal('modal-contrato')">Cancelar</button>
-      <button class="btn btn-navy" onclick="salvarContrato()">Salvar</button>
+      <button class="btn btn-navy" id="btn-salvar-contrato" onclick="salvarContrato()">Salvar</button>
     </div>
   </div>
 </div>
@@ -487,9 +521,14 @@
     <h3 id="modal-trein-titulo">Novo Treinamento</h3>
     <div class="field"><label>Título</label><input type="text" id="trein-titulo" placeholder="Nome do curso"></div>
     <div class="field"><label>Descrição</label><textarea id="trein-descricao"></textarea></div>
+    <div class="field"><label>Conteúdo programático</label><textarea id="trein-conteudo-programatico" placeholder="Tópicos abordados no treinamento"></textarea></div>
     <div class="fields-row">
       <div class="field"><label>Carga horária (min)</label><input type="number" id="trein-carga" value="60" min="1"></div>
       <div class="field"><label>Nota mínima na prova (%)</label><input type="number" id="trein-nota" value="70" min="0" max="100"></div>
+    </div>
+    <div class="fields-row">
+      <div class="field"><label>Data de início</label><input type="date" id="trein-data-inicio"></div>
+      <div class="field"><label>Data final</label><input type="date" id="trein-data-fim"></div>
     </div>
     <div class="field"><label>Validade do certificado (meses)</label><input type="number" id="trein-validade" value="12" min="1"></div>
     <div class="field">
@@ -506,7 +545,7 @@
 <!-- Modal Módulo -->
 <div class="modal-overlay" id="modal-modulo">
   <div class="modal">
-    <h3>Novo Módulo</h3>
+    <h3 id="modal-modulo-titulo">Novo Módulo</h3>
     <div class="field"><label>Título</label><input type="text" id="mod-titulo"></div>
     <div class="field"><label>Descrição</label><textarea id="mod-descricao"></textarea></div>
     <div class="fields-row">
@@ -514,20 +553,17 @@
       <div class="field"><label>Duração (segundos)</label><input type="number" id="mod-duracao" value="1800" min="1"></div>
     </div>
     <div class="field"><label>URL ou ID do Vídeo</label><input type="text" id="mod-video" placeholder="YouTube ID, Mux, Vimeo…"></div>
-    <div class="fields-row">
-      <div class="field"><label>Provedor</label>
-        <select id="mod-provider">
-          <option value="youtube">YouTube</option>
-          <option value="mux">Mux</option>
-          <option value="vimeo">Vimeo</option>
-          <option value="cloudflare">Cloudflare Stream</option>
-        </select>
-      </div>
-      <div class="field"><label>Checkpoints (quantidade)</label><input type="number" id="mod-checkpoints" value="2" min="0"></div>
+    <div class="field"><label>Provedor</label>
+      <select id="mod-provider">
+        <option value="youtube">YouTube</option>
+        <option value="mux">Mux</option>
+        <option value="vimeo">Vimeo</option>
+        <option value="cloudflare">Cloudflare Stream</option>
+      </select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="fecharModal('modal-modulo')">Cancelar</button>
-      <button class="btn btn-navy" onclick="salvarModulo()">Salvar</button>
+      <button class="btn btn-navy" id="btn-salvar-modulo" onclick="salvarModulo()">Salvar</button>
     </div>
   </div>
 </div>
@@ -535,17 +571,14 @@
 <!-- Modal Funcionário -->
 <div class="modal-overlay" id="modal-funcionario">
   <div class="modal">
-    <h3>Novo Funcionário</h3>
+    <h3 id="modal-funcionario-titulo">Novo Funcionário</h3>
     <div class="field"><label>Nome completo</label><input type="text" id="func-nome"></div>
-    <div class="fields-row">
-      <div class="field"><label>CPF</label><input type="text" id="func-cpf" placeholder="000.000.000-00"></div>
-      <div class="field"><label>Matrícula</label><input type="text" id="func-matricula"></div>
-    </div>
+    <div class="field"><label>CPF</label><input type="text" id="func-cpf" placeholder="000.000.000-00"></div>
     <div class="field"><label>E-mail</label><input type="email" id="func-email"></div>
-    <div class="field"><label>Senha de acesso</label><input type="password" id="func-senha"></div>
+    <div class="field"><label id="func-senha-label">Senha de acesso</label><input type="password" id="func-senha"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="fecharModal('modal-funcionario')">Cancelar</button>
-      <button class="btn btn-navy" onclick="salvarFuncionario()">Cadastrar</button>
+      <button class="btn btn-navy" id="btn-salvar-funcionario" onclick="salvarFuncionario()">Cadastrar</button>
     </div>
   </div>
 </div>
@@ -568,6 +601,8 @@ let checkpointTimer = null;
 let editingEmpresaId = null;
 let editingTreinId = null;
 let currentAdminTreinId = null;
+let editingModuloId = null;
+let editingFuncionarioId = null;
 
 // ══════════════════════════════════════════════
 // HTTP
@@ -688,6 +723,8 @@ const navConfigs = {
     { id: 'admin-treinamentos', label: 'Treinamentos', icon: iconBook(), onEnter: carregarTreinamentos },
     { section: 'Segurança' },
     { id: 'admin-fraude', label: 'Anti-Fraude', icon: iconShield(), onEnter: carregarSuspeitos },
+    { section: 'Configurações' },
+    { id: 'admin-configuracao', label: 'Empresa Emissora', icon: iconBuilding(), onEnter: carregarConfiguracao },
   ],
   empresa: [
     { section: 'Painel' },
@@ -856,6 +893,8 @@ async function salvarEmpresa() {
 }
 
 // Contratos Admin
+let editingContratoId = null;
+
 async function carregarContratosAdmin() {
   const tbody = document.getElementById('lista-contratos-admin');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Carregando…</td></tr>';
@@ -875,15 +914,24 @@ async function carregarContratosAdmin() {
             <span style="font-size:11px;color:var(--text-muted)">${c.vagas_usadas||0} / ${c.vagas_contratadas} vagas</span>
           </div>
         </td>
-        <td>${c.data_validade ? new Date(c.data_validade).toLocaleDateString('pt-BR') : '—'}</td>
+        <td>${c.data_limite ? new Date(c.data_limite).toLocaleDateString('pt-BR') : '—'}</td>
         <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-gray'}">${c.status}</span></td>
-        <td></td>
+        <td style="text-align:right">
+          <button class="btn btn-outline btn-sm" onclick='editarContrato(${JSON.stringify(c)})'>Editar</button>
+        </td>
       </tr>`;
     }).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">${e.message}</td></tr>`; }
 }
 
 async function abrirModalContrato() {
+  editingContratoId = null;
+  document.getElementById('modal-contrato-titulo').textContent = 'Novo Contrato';
+  document.getElementById('contrato-vagas').value = 10;
+  document.getElementById('contrato-validade').value = '';
+  document.getElementById('contrato-status').value = 'ativo';
+  document.getElementById('contrato-empresa-id').disabled = false;
+  document.getElementById('contrato-treinamento-id').disabled = false;
   try {
     const [emps, treins] = await Promise.all([
       api('GET', '/api/admin/empresas'),
@@ -897,18 +945,41 @@ async function abrirModalContrato() {
   } catch(e) { toast(e.message, 'error'); }
 }
 
+function editarContrato(c) {
+  editingContratoId = c.id;
+  document.getElementById('modal-contrato-titulo').textContent = 'Editar Contrato';
+  document.getElementById('contrato-empresa-id').innerHTML = `<option>${c.empresa_nome}</option>`;
+  document.getElementById('contrato-treinamento-id').innerHTML = `<option>${c.treinamento_titulo}</option>`;
+  document.getElementById('contrato-empresa-id').disabled = true;
+  document.getElementById('contrato-treinamento-id').disabled = true;
+  document.getElementById('contrato-vagas').value = c.vagas_contratadas;
+  document.getElementById('contrato-validade').value = c.data_limite ? c.data_limite.slice(0,10) : '';
+  document.getElementById('contrato-status').value = c.status;
+  document.getElementById('modal-contrato').classList.add('open');
+}
+
 async function salvarContrato() {
-  const body = {
-    empresa_id: document.getElementById('contrato-empresa-id').value,
-    treinamento_id: document.getElementById('contrato-treinamento-id').value,
-    vagas_contratadas: +document.getElementById('contrato-vagas').value,
-    data_limite: document.getElementById('contrato-validade').value || null,
-    status: document.getElementById('contrato-status').value,
-  };
   try {
-    await api('POST', '/api/admin/contratos', body);
+    if (editingContratoId) {
+      const body = {
+        vagas_contratadas: +document.getElementById('contrato-vagas').value,
+        data_limite: document.getElementById('contrato-validade').value || null,
+        status: document.getElementById('contrato-status').value,
+      };
+      await api('PUT', '/api/admin/contratos/' + editingContratoId, body);
+      toast('Contrato atualizado!', 'success');
+    } else {
+      const body = {
+        empresa_id: document.getElementById('contrato-empresa-id').value,
+        treinamento_id: document.getElementById('contrato-treinamento-id').value,
+        vagas_contratadas: +document.getElementById('contrato-vagas').value,
+        data_limite: document.getElementById('contrato-validade').value || null,
+        status: document.getElementById('contrato-status').value,
+      };
+      await api('POST', '/api/admin/contratos', body);
+      toast('Contrato criado!', 'success');
+    }
     fecharModal('modal-contrato');
-    toast('Contrato criado!', 'success');
     carregarContratosAdmin();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -925,11 +996,12 @@ async function carregarTreinamentos() {
       <tr>
         <td><strong>${t.titulo}</strong><div style="font-size:12px;color:var(--text-muted)">${t.descricao||''}</div></td>
         <td>${t.total_modulos || 0}</td>
-        <td>${t.nota_minima || 70}%</td>
-        <td><span class="badge ${t.status==='ativo'?'badge-green':'badge-gray'}">${t.status}</span></td>
+        <td>${t.nota_minima_prova || 70}%</td>
+        <td><span class="badge ${t.ativo!==false?'badge-green':'badge-gray'}">${t.ativo!==false?'ativo':'inativo'}</span></td>
         <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
           <button class="btn btn-outline btn-sm" onclick="verModulos('${t.id}','${escHtml(t.titulo)}')">Módulos</button>
           <button class="btn btn-outline btn-sm" onclick="editarTreinamento('${t.id}')">Editar</button>
+          <button class="btn btn-red btn-sm" onclick="excluirTreinamento('${t.id}')">Excluir</button>
         </td>
       </tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
@@ -938,7 +1010,8 @@ async function carregarTreinamentos() {
 function abrirModalTreinamento() {
   editingTreinId = null;
   document.getElementById('modal-trein-titulo').textContent = 'Novo Treinamento';
-  ['trein-titulo','trein-descricao'].forEach(id => document.getElementById(id).value = '');
+  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-data-inicio','trein-data-fim'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('trein-carga').value = 60;
   document.getElementById('trein-nota').value = 70;
   document.getElementById('trein-validade').value = 365;
   document.getElementById('trein-status').value = 'ativo';
@@ -954,9 +1027,13 @@ async function editarTreinamento(id) {
     document.getElementById('modal-trein-titulo').textContent = 'Editar Treinamento';
     document.getElementById('trein-titulo').value = t.titulo || '';
     document.getElementById('trein-descricao').value = t.descricao || '';
-    document.getElementById('trein-nota').value = t.nota_minima || 70;
-    document.getElementById('trein-validade').value = t.validade_certificado || 365;
-    document.getElementById('trein-status').value = t.status || 'ativo';
+    document.getElementById('trein-conteudo-programatico').value = t.conteudo_programatico || '';
+    document.getElementById('trein-carga').value = t.carga_horaria_min || 60;
+    document.getElementById('trein-nota').value = t.nota_minima_prova || 70;
+    document.getElementById('trein-validade').value = t.validade_certificado_meses || 365;
+    document.getElementById('trein-data-inicio').value = t.data_inicio ? t.data_inicio.slice(0,10) : '';
+    document.getElementById('trein-data-fim').value = t.data_fim ? t.data_fim.slice(0,10) : '';
+    document.getElementById('trein-status').value = t.ativo === false ? 'inativo' : 'ativo';
     document.getElementById('modal-treinamento').classList.add('open');
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -965,9 +1042,13 @@ async function salvarTreinamento() {
   const body = {
     titulo: document.getElementById('trein-titulo').value,
     descricao: document.getElementById('trein-descricao').value,
+    conteudo_programatico: document.getElementById('trein-conteudo-programatico').value,
     carga_horaria_min: +document.getElementById('trein-carga').value,
     nota_minima_prova: +document.getElementById('trein-nota').value,
     validade_certificado_meses: +document.getElementById('trein-validade').value,
+    data_inicio: document.getElementById('trein-data-inicio').value || null,
+    data_fim: document.getElementById('trein-data-fim').value || null,
+    ativo: document.getElementById('trein-status').value === 'ativo',
   };
   try {
     if (editingTreinId) {
@@ -977,6 +1058,15 @@ async function salvarTreinamento() {
     }
     fecharModal('modal-treinamento');
     toast('Treinamento salvo!', 'success');
+    carregarTreinamentos();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function excluirTreinamento(id) {
+  if (!confirm('Excluir este treinamento? Essa ação não pode ser desfeita.')) return;
+  try {
+    await api('DELETE', '/api/admin/treinamentos/' + id);
+    toast('Treinamento excluído.', 'success');
     carregarTreinamentos();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -991,27 +1081,41 @@ async function verModulos(treinId, titulo) {
 
 async function carregarModulos() {
   const tbody = document.getElementById('lista-modulos');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Carregando…</td></tr>';
   try {
     const data = await api('GET', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos');
     const lista = data.modulos || data || [];
-    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum módulo</td></tr>'; return; }
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Nenhum módulo</td></tr>'; return; }
     tbody.innerHTML = lista.map(m => `
       <tr>
         <td>${m.ordem}</td>
         <td><strong>${m.titulo}</strong></td>
-        <td>${m.duracao_minutos || '—'} min</td>
-        <td>${m.checkpoints_obrigatorios || 0}</td>
-        <td></td>
+        <td>${m.duracao_segundos ? Math.round(m.duracao_segundos/60) : '—'} min</td>
+        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick='editarModulo(${JSON.stringify(m)})'>Editar</button>
+          <button class="btn btn-red btn-sm" onclick="excluirModulo('${m.id}')">Excluir</button>
+        </td>
       </tr>`).join('');
-  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="4">${e.message}</td></tr>`; }
 }
 
 function abrirModalModulo() {
+  editingModuloId = null;
+  document.getElementById('modal-modulo-titulo').textContent = 'Novo Módulo';
   ['mod-titulo','mod-descricao','mod-video'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('mod-ordem').value = 1;
-  document.getElementById('mod-duracao').value = 30;
-  document.getElementById('mod-checkpoints').value = 2;
+  document.getElementById('mod-duracao').value = 1800;
+  document.getElementById('mod-provider').value = 'youtube';
+  document.getElementById('modal-modulo').classList.add('open');
+}
+
+function editarModulo(m) {
+  editingModuloId = m.id;
+  document.getElementById('modal-modulo-titulo').textContent = 'Editar Módulo';
+  document.getElementById('mod-titulo').value = m.titulo || '';
+  document.getElementById('mod-ordem').value = m.ordem || 1;
+  document.getElementById('mod-duracao').value = m.duracao_segundos || 1800;
+  document.getElementById('mod-video').value = m.video_provider_id || '';
   document.getElementById('modal-modulo').classList.add('open');
 }
 
@@ -1023,10 +1127,58 @@ async function salvarModulo() {
     duracao_segundos: +document.getElementById('mod-duracao').value,
   };
   try {
-    await api('POST', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos', body);
+    if (editingModuloId) {
+      await api('PUT', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos/' + editingModuloId, body);
+      toast('Módulo atualizado!', 'success');
+    } else {
+      await api('POST', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos', body);
+      toast('Módulo criado!', 'success');
+    }
     fecharModal('modal-modulo');
-    toast('Módulo criado!', 'success');
     carregarModulos();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function excluirModulo(moduloId) {
+  if (!confirm('Excluir este módulo?')) return;
+  try {
+    await api('DELETE', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos/' + moduloId);
+    toast('Módulo excluído.', 'success');
+    carregarModulos();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Configuração Empresa Emissora
+async function carregarConfiguracao() {
+  try {
+    const cfg = await api('GET', '/api/admin/configuracao');
+    document.getElementById('cfg-empresa-razao-social').value = cfg.empresa_razao_social || '';
+    document.getElementById('cfg-empresa-cnpj').value = cfg.empresa_cnpj || '';
+    document.getElementById('cfg-empresa-telefone').value = cfg.empresa_telefone || '';
+    document.getElementById('cfg-empresa-email').value = cfg.empresa_email || '';
+    document.getElementById('cfg-empresa-endereco').value = cfg.empresa_endereco || '';
+    document.getElementById('cfg-resp-nome').value = cfg.responsavel_tecnico_nome || '';
+    document.getElementById('cfg-resp-doc').value = cfg.responsavel_tecnico_documento || '';
+    document.getElementById('cfg-instrutor-nome').value = cfg.instrutor_nome || '';
+    document.getElementById('cfg-instrutor-doc').value = cfg.instrutor_documento || '';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function salvarConfiguracao() {
+  const body = {
+    empresa_razao_social: document.getElementById('cfg-empresa-razao-social').value,
+    empresa_cnpj: document.getElementById('cfg-empresa-cnpj').value,
+    empresa_telefone: document.getElementById('cfg-empresa-telefone').value,
+    empresa_email: document.getElementById('cfg-empresa-email').value,
+    empresa_endereco: document.getElementById('cfg-empresa-endereco').value,
+    responsavel_tecnico_nome: document.getElementById('cfg-resp-nome').value,
+    responsavel_tecnico_documento: document.getElementById('cfg-resp-doc').value,
+    instrutor_nome: document.getElementById('cfg-instrutor-nome').value,
+    instrutor_documento: document.getElementById('cfg-instrutor-doc').value,
+  };
+  try {
+    await api('PUT', '/api/admin/configuracao', body);
+    toast('Configuração salva!', 'success');
   } catch(e) { toast(e.message, 'error'); }
 }
 
@@ -1108,6 +1260,17 @@ async function carregarSelectContratos() {
   } catch(e) { toast(e.message, 'error'); }
 }
 
+function statusMatriculaLabel(s) {
+  const map = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído', reprovado: 'Reprovado' };
+  return map[s] || 'Não iniciado';
+}
+function statusMatriculaBadgeClass(s) {
+  if (s === 'concluido') return 'badge-green';
+  if (s === 'reprovado') return 'badge-red';
+  if (s === 'em_andamento') return 'badge-amber';
+  return 'badge-gray';
+}
+
 async function carregarFuncionarios() {
   const contratoId = document.getElementById('contrato-select-func').value;
   if (!contratoId) return;
@@ -1121,9 +1284,10 @@ async function carregarFuncionarios() {
       <tr>
         <td><strong>${f.nome}</strong></td>
         <td class="mono">${f.cpf || '—'}</td>
-        <td>${f.matricula || '—'}</td>
-        <td><span class="badge ${f.status==='ativo'?'badge-green':'badge-gray'}">${f.status||'ativo'}</span></td>
-        <td style="text-align:right">
+        <td>${f.email || '—'}</td>
+        <td><span class="badge ${statusMatriculaBadgeClass(f.status_matricula)}">${statusMatriculaLabel(f.status_matricula)}</span></td>
+        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick='editarFuncionario(${JSON.stringify(f)})'>Editar</button>
           <button class="btn btn-red btn-sm" onclick="removerFuncionario('${contratoId}','${f.id}')">Remover</button>
         </td>
       </tr>`).join('');
@@ -1131,23 +1295,50 @@ async function carregarFuncionarios() {
 }
 
 function abrirModalFuncionario() {
-  ['func-nome','func-cpf','func-matricula','func-email','func-senha'].forEach(id => document.getElementById(id).value = '');
+  editingFuncionarioId = null;
+  document.getElementById('modal-funcionario-titulo').textContent = 'Novo Funcionário';
+  document.getElementById('btn-salvar-funcionario').textContent = 'Cadastrar';
+  document.getElementById('func-senha-label').textContent = 'Senha de acesso';
+  ['func-nome','func-cpf','func-email','func-senha'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-funcionario').classList.add('open');
+}
+
+function editarFuncionario(f) {
+  editingFuncionarioId = f.id;
+  document.getElementById('modal-funcionario-titulo').textContent = 'Editar Funcionário';
+  document.getElementById('btn-salvar-funcionario').textContent = 'Salvar';
+  document.getElementById('func-nome').value = f.nome || '';
+  document.getElementById('func-cpf').value = f.cpf || '';
+  document.getElementById('func-email').value = f.email || '';
+  document.getElementById('func-senha').value = '';
+  document.getElementById('func-senha-label').textContent = 'Nova senha (deixe em branco para manter)';
   document.getElementById('modal-funcionario').classList.add('open');
 }
 
 async function salvarFuncionario() {
   const contratoId = document.getElementById('contrato-select-func').value;
-  const body = {
-    nome: document.getElementById('func-nome').value,
-    cpf: document.getElementById('func-cpf').value,
-    matricula: document.getElementById('func-matricula').value,
-    email: document.getElementById('func-email').value,
-    senha: document.getElementById('func-senha').value,
-  };
+  const senha = document.getElementById('func-senha').value;
   try {
-    await api('POST', '/api/empresa/contratos/' + contratoId + '/funcionarios', body);
+    if (editingFuncionarioId) {
+      const body = {
+        nome: document.getElementById('func-nome').value,
+        cpf: document.getElementById('func-cpf').value,
+        email: document.getElementById('func-email').value,
+      };
+      if (senha) body.senha = senha;
+      await api('PUT', '/api/empresa/contratos/' + contratoId + '/funcionarios/' + editingFuncionarioId, body);
+      toast('Funcionário atualizado!', 'success');
+    } else {
+      const body = {
+        nome: document.getElementById('func-nome').value,
+        cpf: document.getElementById('func-cpf').value,
+        email: document.getElementById('func-email').value,
+        senha,
+      };
+      await api('POST', '/api/empresa/contratos/' + contratoId + '/funcionarios', body);
+      toast('Funcionário cadastrado!', 'success');
+    }
     fecharModal('modal-funcionario');
-    toast('Funcionário cadastrado!', 'success');
     carregarFuncionarios();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -1231,7 +1422,7 @@ function renderModulosPlayer(modulos) {
       <div onclick="selecionarModulo(${i})" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:6px;cursor:pointer;border:1.5px solid var(--surface2);margin-bottom:6px;transition:all .15s" 
            onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--surface2)'">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${m.ordem||i+1}</div>
-        <div style="flex:1"><div style="font-size:13px;font-weight:600">${m.titulo}</div><div style="font-size:11px;color:var(--text-muted)">${m.duracao_minutos||'—'} min • ${m.checkpoints_obrigatorios||0} checkpoints</div></div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600">${m.titulo}</div><div style="font-size:11px;color:var(--text-muted)">${m.duracao_segundos ? Math.round(m.duracao_segundos/60) : '—'} min</div></div>
       </div>`).join('');
 
   // Seleciona primeiro automaticamente
@@ -1278,8 +1469,10 @@ async function iniciarSessao() {
 }
 
 function agendarCheckpoints() {
-  const intervalo = (moduloAtual?.checkpoints_obrigatorios > 0) ? 60000 : null; // 1 min p/ teste
-  if (!intervalo) return;
+  // Checkpoint anti-fraude por intervalo fixo (não é configurável por módulo
+  // no backend — checkpoints_antifraude registra qualquer evento disparado
+  // pelo frontend, independente de config por módulo).
+  const intervalo = 60000; // 1 min — ajustar depois para o intervalo real desejado em produção
   if (checkpointTimer) clearInterval(checkpointTimer);
   checkpointTimer = setInterval(() => {
     document.getElementById('player-checkpoint-overlay').style.display = 'flex';
