@@ -619,14 +619,17 @@ async function fazerLogin() {
       const senha = document.getElementById('login-senha').value;
       data = await api('POST', '/api/auth/login-funcionario', { cpf, senha });
       perfil = 'funcionario';
+      usuarioLogado = data.funcionario || data.usuario || data.user || data;
     } else {
       const email = document.getElementById('login-email').value.trim();
       const senha = document.getElementById('login-senha').value;
       data = await api('POST', '/api/auth/login', { email, senha });
-      perfil = data.perfil || (data.user?.perfil) || 'empresa';
+      usuarioLogado = data.usuario || data.user || data;
+      const role = usuarioLogado.role || usuarioLogado.perfil || '';
+      if (role === 'super_admin' || role === 'admin') perfil = 'admin';
+      else perfil = 'empresa';
     }
     token = data.token;
-    usuarioLogado = data.user || data.funcionario || data;
     iniciarApp();
   } catch(e) {
     err.textContent = e.message;
