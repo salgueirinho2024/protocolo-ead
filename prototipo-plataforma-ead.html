@@ -1397,21 +1397,16 @@ function statusLabel(s) {
   return m[s] || s || '—';
 }
 
-async function abrirPlayer(matricula) {
+function abrirPlayer(matricula) {
   matriculaAtual = matricula;
   treinamentoAtual = null;
   moduloAtual = null;
   navTo('func-player');
 
-  try {
-    const data = await api('GET', '/api/admin/treinamentos/' + matricula.treinamento_id + '/modulos');
-    const modulos = data.modulos || data || [];
-    treinamentoAtual = { ...matricula, modulos };
-    renderModulosPlayer(modulos);
-  } catch(e) {
-    // Tenta busca alternativa
-    document.getElementById('modulos-lista').innerHTML = `<div style="color:var(--red);font-size:13px">${e.message}</div>`;
-  }
+  // Os módulos já vêm dentro do objeto matrícula retornado por /api/player/matricula
+  const modulos = Array.isArray(matricula.modulos) ? matricula.modulos : [];
+  treinamentoAtual = { ...matricula, modulos };
+  renderModulosPlayer(modulos);
 }
 
 function renderModulosPlayer(modulos) {
