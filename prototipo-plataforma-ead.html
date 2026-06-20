@@ -1115,7 +1115,7 @@ async function carregarFuncionarios() {
         <td>${f.matricula || '—'}</td>
         <td><span class="badge ${f.status==='ativo'?'badge-green':'badge-gray'}">${f.status||'ativo'}</span></td>
         <td style="text-align:right">
-          <button class="btn btn-red btn-sm" onclick="removerFuncionario(${contratoId},${f.id})">Remover</button>
+          <button class="btn btn-red btn-sm" onclick="removerFuncionario('${contratoId}','${f.id}')">Remover</button>
         </td>
       </tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
