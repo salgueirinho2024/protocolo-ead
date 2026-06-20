@@ -1486,7 +1486,17 @@ async function responderCheckpoint() {
 async function encerrarSessao() {
   if (!sessaoAtual) return;
   try {
-    await api('POST', '/api/player/sessao/encerrar', { sessao_id: sessaoAtual.id });
+    const agora = Math.floor(Date.now() / 1000);
+    const segundos = sessaoAtual.inicio_em
+      ? Math.max(0, agora - Math.floor(new Date(sessaoAtual.inicio_em).getTime() / 1000))
+      : 0;
+    await api('POST', '/api/player/sessao/encerrar', {
+      sessao_id: sessaoAtual.id,
+      matricula_id: matriculaAtual.id,
+      modulo_id: moduloAtual.id,
+      segundos_efetivos: segundos,
+      ultima_posicao_seg: segundos
+    });
     if (checkpointTimer) clearInterval(checkpointTimer);
     sessaoAtual = null;
     toast('Módulo concluído!', 'success');
