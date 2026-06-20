@@ -128,6 +128,10 @@ module.exports = async (req, res) => {
     return await handlePost(req, res, user);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ erro: 'Erro ao processar a prova.' });
+    // DEBUG_ERRORS=1 nas env vars da Vercel: devolve a causa real do erro na
+    // resposta, só pra diagnosticar. Tirar essa variável depois de resolver
+    // (não deixar ligada em produção — pode vazar detalhe interno).
+    const detalhe = process.env.DEBUG_ERRORS ? `: ${err.message}` : '';
+    res.status(500).json({ erro: `Erro ao processar a prova${detalhe}.` });
   }
 };
