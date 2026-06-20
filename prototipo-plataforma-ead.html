@@ -3,608 +3,1445 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Protocolo — Plataforma de Treinamento EAD</title>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Protocolo EAD</title>
 <style>
-  :root{
-    --ink:#15231f;
-    --paper:#f6f4ee;
-    --paper-2:#eeebe1;
-    --line:#d8d3c4;
-    --petrol:#1f3d37;
-    --petrol-2:#2c5048;
-    --amber:#c5731f;
-    --amber-soft:#f3e3cf;
-    --red:#9a3324;
-    --green:#3c6b4a;
-    --muted:#6b6759;
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy: #0F1F3D;
+    --navy-light: #1A2F52;
+    --navy-border: #243558;
+    --white: #FFFFFF;
+    --surface: #F1F5F9;
+    --surface2: #E2E8F0;
+    --text: #1E293B;
+    --text-muted: #64748B;
+    --green: #22C55E;
+    --green-dim: #16A34A;
+    --amber: #F59E0B;
+    --red: #EF4444;
+    --blue-accent: #3B82F6;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Inter',sans-serif;
-    -webkit-font-smoothing:antialiased;
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, #162B50 60%, #1E3A6E 100%);
   }
-  .serif{ font-family:'Fraunces', serif; }
-  .mono{ font-family:'JetBrains Mono', monospace; }
-
-  .app{ min-height:100vh; display:flex; flex-direction:column; }
-
-  /* ---------- top bar ---------- */
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:18px 32px; border-bottom:1px solid var(--line);
-    background:var(--paper);
+  .login-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
   }
-  .brand{ display:flex; align-items:center; gap:10px; }
-  .brand-mark{
-    width:30px; height:30px; border-radius:6px;
-    background:var(--petrol); color:var(--paper);
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Fraunces',serif; font-weight:600; font-size:15px;
+  .login-logo {
+    text-align: center;
+    margin-bottom: 32px;
   }
-  .brand-name{ font-family:'Fraunces',serif; font-weight:600; font-size:18px; letter-spacing:-0.01em;}
-  .brand-sub{ font-size:11px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-top:1px;}
+  .login-logo .brand { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+  .login-logo h1 { font-size: 26px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+  .login-logo .dot { color: var(--blue-accent); }
+  .tab-group { display: flex; background: var(--surface); border-radius: var(--radius); padding: 4px; margin-bottom: 28px; gap: 4px; }
+  .tab-btn { flex: 1; padding: 8px; border: none; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all .15s; }
+  .tab-btn.active { background: var(--white); color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+  .form-group input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--surface2); border-radius: var(--radius); font-size: 14px; font-family: inherit; outline: none; transition: border-color .15s; }
+  .form-group input:focus { border-color: var(--navy); }
+  .btn-primary { width: 100%; padding: 13px; background: var(--navy); color: var(--white); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; font-family: inherit; }
+  .btn-primary:hover { background: var(--navy-light); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+  .error-msg { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; display: none; }
 
-  .role-switch{ display:flex; gap:6px; background:var(--paper-2); padding:4px; border-radius:10px; border:1px solid var(--line);}
-  .role-btn{
-    border:none; background:transparent; padding:8px 14px; border-radius:7px;
-    font-family:'Inter',sans-serif; font-size:13px; font-weight:500; color:var(--muted);
-    cursor:pointer; transition:all .15s ease;
+  /* ── APP SHELL ── */
+  #app { display: none; min-height: 100vh; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+    background: var(--navy);
+    display: flex; flex-direction: column;
+    z-index: 100;
   }
-  .role-btn.active{ background:var(--petrol); color:var(--paper); }
-  .role-btn:not(.active):hover{ color:var(--ink); }
+  .sidebar-header { padding: 24px 20px 20px; border-bottom: 1px solid var(--navy-border); }
+  .sidebar-brand { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #6B87B0; }
+  .sidebar-title { font-size: 17px; font-weight: 700; color: var(--white); margin-top: 2px; }
+  .sidebar-user { padding: 14px 20px; border-bottom: 1px solid var(--navy-border); }
+  .sidebar-user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+  .sidebar-user-role { font-size: 11px; color: #6B87B0; margin-top: 1px; }
+  .role-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-top: 4px; }
+  .role-admin { background: #1E3A6E; color: #93C5FD; }
+  .role-empresa { background: #1A3A2F; color: #86EFAC; }
+  .role-funcionario { background: #3B2F1A; color: #FCD34D; }
+  .sidebar-nav { flex: 1; padding: 12px 12px; overflow-y: auto; }
+  .nav-section { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #4A6280; padding: 8px 8px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px; cursor: pointer; color: #A0B4CC; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 1px; }
+  .nav-item:hover { background: var(--navy-light); color: var(--white); }
+  .nav-item.active { background: var(--blue-accent); color: var(--white); }
+  .nav-item svg { flex-shrink: 0; }
+  .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--navy-border); }
+  .btn-logout { width: 100%; padding: 9px; background: transparent; border: 1px solid var(--navy-border); border-radius: 6px; color: #6B87B0; font-size: 13px; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .btn-logout:hover { background: var(--navy-light); color: var(--white); }
 
-  main{ flex:1; padding:36px 32px 64px; max-width:1080px; width:100%; margin:0 auto; }
+  /* ── MAIN ── */
+  .main { margin-left: 240px; padding: 32px; min-height: 100vh; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 28px; }
+  .page-header h2 { font-size: 22px; font-weight: 700; color: var(--text); }
+  .page-header p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
 
-  .eyebrow{
-    font-size:11px; text-transform:uppercase; letter-spacing:.08em;
-    color:var(--amber); font-weight:600; margin-bottom:6px;
-  }
-  h1.page-title{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; margin:0 0 6px; letter-spacing:-0.01em;}
-  .page-desc{ color:var(--muted); font-size:14.5px; max-width:560px; line-height:1.55; margin-bottom:28px;}
+  /* ── CARDS & STATS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .stat-value { font-size: 30px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-  /* ---------- cards ---------- */
-  .card{
-    background:#fffdf9; border:1px solid var(--line); border-radius:12px;
-    padding:22px 24px;
-  }
-  .card + .card{ margin-top:16px; }
-  .card-title{ font-weight:600; font-size:15px; margin:0 0 4px; }
-  .card-sub{ font-size:12.5px; color:var(--muted); margin:0 0 16px; }
+  /* ── TABLE ── */
+  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--surface2); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .card-body { padding: 20px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--surface2); }
+  td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid var(--surface); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface); }
 
-  .grid-2{ display:grid; grid-template-columns:1.1fr .9fr; gap:20px; align-items:start; }
-  @media (max-width:860px){ .grid-2{ grid-template-columns:1fr; } }
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all .15s; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-navy { background: var(--navy); color: var(--white); }
+  .btn-navy:hover { background: var(--navy-light); }
+  .btn-green { background: var(--green); color: var(--white); }
+  .btn-green:hover { background: var(--green-dim); }
+  .btn-red { background: var(--red); color: var(--white); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--surface2); color: var(--text); }
+  .btn-outline:hover { border-color: var(--navy); color: var(--navy); }
 
-  /* ---------- vagas meter ---------- */
-  .meter-wrap{ margin:14px 0 4px; }
-  .meter-track{
-    height:10px; background:var(--paper-2); border-radius:6px; overflow:hidden;
-    border:1px solid var(--line);
-  }
-  .meter-fill{ height:100%; background:var(--petrol); transition:width .3s ease; }
-  .meter-fill.full{ background:var(--amber); }
-  .meter-label{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; }
-  .meter-label .count{ font-family:'JetBrains Mono',monospace; font-weight:500; color:var(--ink); }
+  /* ── BADGE ── */
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #DCFCE7; color: #15803D; }
+  .badge-amber { background: #FEF3C7; color: #B45309; }
+  .badge-red { background: #FEE2E2; color: #B91C1C; }
+  .badge-blue { background: #DBEAFE; color: #1D4ED8; }
+  .badge-gray { background: var(--surface2); color: var(--text-muted); }
 
-  /* ---------- forms ---------- */
-  label.field-label{ display:block; font-size:12px; font-weight:600; color:var(--ink); margin-bottom:5px; }
-  input[type=text]{
-    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
-    font-family:'Inter',sans-serif; font-size:14px; background:#fff; color:var(--ink);
-  }
-  input[type=text]:focus{ outline:none; border-color:var(--petrol); box-shadow:0 0 0 3px rgba(31,61,55,.1); }
-  input[type=text]:disabled{ background:var(--paper-2); color:var(--muted); cursor:not-allowed; }
-  .field-row{ display:grid; grid-template-columns:1.3fr 1fr auto; gap:10px; align-items:end; margin-bottom:6px; }
-  @media (max-width:640px){ .field-row{ grid-template-columns:1fr; } }
-  .field-err{ font-size:11.5px; color:var(--red); margin-top:4px; min-height:14px; }
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 20px; color: var(--navy); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
-  button{ font-family:'Inter',sans-serif; cursor:pointer; }
-  .btn{
-    padding:10px 16px; border-radius:8px; border:1px solid transparent;
-    font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;
-    transition:all .15s ease;
-  }
-  .btn-primary{ background:var(--petrol); color:var(--paper); }
-  .btn-primary:hover{ background:var(--petrol-2); }
-  .btn-primary:disabled{ background:var(--line); color:var(--muted); cursor:not-allowed; }
-  .btn-ghost{ background:transparent; border-color:var(--line); color:var(--ink); }
-  .btn-ghost:hover{ border-color:var(--petrol); }
-  .btn-danger-text{ background:transparent; border:none; color:var(--red); font-size:12px; font-weight:500; padding:4px 8px;}
-  .btn-danger-text:hover{ text-decoration:underline; }
-  .btn-amber{ background:var(--amber); color:#fff; }
-  .btn-amber:hover{ background:#a85f17; }
+  /* ── FORM ── */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--surface2); border-radius: var(--radius); font-size: 14px; font-family: inherit; outline: none; transition: border-color .15s; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--navy); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-  .banner{
-    border-radius:9px; padding:12px 14px; font-size:13px; display:flex; gap:10px; align-items:flex-start;
-    border:1px solid; margin-bottom:14px; line-height:1.5;
-  }
-  .banner-amber{ background:var(--amber-soft); border-color:#e3c294; color:#6b4314; }
-  .banner-green{ background:#e6efe5; border-color:#b9d2b8; color:var(--green); }
-  .banner-red{ background:#f6e6e1; border-color:#e2bcae; color:var(--red); }
+  /* ── VAGAS PROGRESS ── */
+  .vagas-bar { background: var(--surface2); border-radius: 20px; height: 8px; overflow: hidden; }
+  .vagas-fill { height: 100%; border-radius: 20px; background: var(--green); transition: width .3s; }
+  .vagas-fill.warning { background: var(--amber); }
+  .vagas-fill.danger { background: var(--red); }
 
-  /* ---------- table ---------- */
-  table{ width:100%; border-collapse:collapse; margin-top:14px; }
-  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; padding:0 10px 8px; border-bottom:1px solid var(--line); }
-  td{ padding:10px; font-size:13.5px; border-bottom:1px solid #eee9dc; }
-  tr:last-child td{ border-bottom:none; }
-  td.cpf{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--muted); }
-  .status-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; }
-  .pill-pendente{ background:#ece8da; color:var(--muted); }
-  .pill-andamento{ background:var(--amber-soft); color:#8a5618; }
-  .pill-concluido{ background:#e0ecdf; color:var(--green); }
-  .pill-suspeito{ background:#f6e1db; color:var(--red); }
+  /* ── PLAYER ── */
+  .player-card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .player-video { position: relative; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+  .player-video iframe { width: 100%; height: 100%; border: none; }
+  .player-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .checkpoint-alert { background: var(--amber); color: #000; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; }
+  .player-meta { padding: 16px 20px; }
+  .player-meta h3 { font-size: 16px; font-weight: 700; }
+  .progress-steps { display: flex; gap: 6px; margin-top: 12px; }
+  .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; }
+  .step-dot.done { background: var(--green); }
+  .step-dot.current { background: var(--blue-accent); }
 
-  /* ---------- empty state ---------- */
-  .empty{ text-align:center; padding:36px 20px; color:var(--muted); }
-  .empty i{ font-size:13px; }
+  /* ── PROVA ── */
+  .question-card { background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .question-num { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .question-text { font-size: 15px; font-weight: 600; margin: 8px 0 14px; }
+  .option-label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--surface2); border-radius: 6px; cursor: pointer; margin-bottom: 8px; font-size: 14px; transition: all .15s; }
+  .option-label:hover { border-color: var(--navy); }
+  .option-label input { margin-top: 2px; accent-color: var(--navy); }
+  .option-label.selected { border-color: var(--navy); background: #EFF6FF; }
 
-  /* ---------- video player mock ---------- */
-  .player-shell{ background:#0f1a17; border-radius:14px; overflow:hidden; position:relative; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; }
-  .player-content{ color:#cfd8d4; text-align:center; }
-  .player-progress-track{ position:absolute; bottom:0; left:0; right:0; height:5px; background:rgba(255,255,255,.15); }
-  .player-progress-fill{ height:100%; background:var(--amber); transition:width .2s linear; }
-  .checkpoint-overlay{
-    position:absolute; inset:0; background:rgba(15,26,23,.93);
-    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
-    padding:24px; text-align:center;
-  }
-  .checkpoint-icon{ width:48px; height:48px; border-radius:50%; background:var(--amber); display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; font-weight:700; font-family:'Fraunces',serif; }
-  .session-log{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); background:var(--paper-2); border-radius:8px; padding:10px 12px; max-height:120px; overflow-y:auto; }
-  .session-log div{ padding:2px 0; }
+  /* ── CERTIFICADO ── */
+  .cert-result { text-align: center; padding: 40px 20px; }
+  .cert-icon { font-size: 64px; }
+  .cert-result h2 { font-size: 24px; font-weight: 700; margin: 16px 0 8px; }
+  .cert-result p { color: var(--text-muted); margin-bottom: 24px; }
 
-  /* ---------- certificate ---------- */
-  .cert{
-    border:2px solid var(--petrol); border-radius:10px; padding:30px;
-    background:repeating-linear-gradient(135deg, #fffdf9, #fffdf9 18px, #fbf8f0 18px, #fbf8f0 19px);
-    text-align:center; position:relative;
-  }
-  .cert-seal{ width:56px; height:56px; border-radius:50%; border:2px solid var(--amber); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; font-family:'Fraunces',serif; font-weight:600; color:var(--amber); font-size:20px; }
-  .cert-code{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:.05em; margin-top:18px; }
+  /* ── LOADING ── */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-row td { text-align: center; color: var(--text-muted); font-size: 13px; padding: 32px; }
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+  .empty-state svg { opacity: .3; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
 
-  .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
-  .toggle{ position:relative; width:38px; height:21px; background:var(--line); border-radius:11px; cursor:pointer; transition:background .15s; }
-  .toggle.on{ background:var(--petrol); }
-  .toggle-knob{ position:absolute; top:2px; left:2px; width:17px; height:17px; background:#fff; border-radius:50%; transition:transform .15s; }
-  .toggle.on .toggle-knob{ transform:translateX(17px); }
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: var(--white); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all .25s; max-width: 320px; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { background: #15803D; }
+  #toast.error { background: #B91C1C; }
 
-  .stat-row{ display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
-  .stat{ flex:1; min-width:140px; background:var(--paper-2); border-radius:9px; padding:14px 16px; border:1px solid var(--line); }
-  .stat-num{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; }
-  .stat-label{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  /* ── ANTI-FRAUDE ── */
+  .fraud-row td { background: #FEF2F2 !important; }
+  .score-bar { display: flex; align-items: center; gap: 8px; }
+  .score-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 20px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 20px; }
 
-  .company-card{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--line); border-radius:10px; background:#fffdf9; cursor:pointer; transition:border-color .15s; }
-  .company-card:hover{ border-color:var(--petrol); }
-  .company-card + .company-card{ margin-top:10px; }
-  .company-name{ font-weight:600; font-size:14.5px; }
-  .company-meta{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" data-presets="react">
-const {useState, useMemo, useEffect, useRef} = React;
 
-// ---------------- seed data ----------------
-const TREINAMENTO = {
-  titulo: "Integração corporativa — segurança do trabalho",
-  cargaHorasTotal: 24,
-  modulos: [
-    {id:'m1', titulo:'Módulo 1 — Normas e EPIs', minutos:480},
-    {id:'m2', titulo:'Módulo 2 — Procedimentos de emergência', minutos:480},
-    {id:'m3', titulo:'Módulo 3 — Ergonomia e prevenção', minutos:480},
+<!-- ══════════════════ LOGIN ══════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand">Plataforma</div>
+      <h1>Protocolo<span class="dot">.</span>EAD</h1>
+    </div>
+    <div class="tab-group">
+      <button class="tab-btn active" onclick="setLoginType('admin')">Admin / Empresa</button>
+      <button class="tab-btn" onclick="setLoginType('funcionario')">Funcionário</button>
+    </div>
+    <div id="error-login" class="error-msg"></div>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="form-group" id="grupo-cpf" style="display:none">
+      <label>CPF</label>
+      <input type="text" id="login-cpf" placeholder="000.000.000-00">
+    </div>
+    <button class="btn-primary" id="btn-login" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- ══════════════════ APP SHELL ══════════════════ -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">Plataforma</div>
+      <div class="sidebar-title">Protocolo<span style="color:var(--blue-accent)">.</span>EAD</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-name" id="sb-nome"></div>
+      <div class="sidebar-user-role" id="sb-role"></div>
+      <span class="role-badge" id="sb-badge"></span>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">↩ Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ══ ADMIN PAGES ══ -->
+
+    <!-- Dashboard Admin -->
+    <div id="page-admin-dashboard" class="page">
+      <div class="page-header">
+        <h2>Visão Geral</h2>
+        <p>Resumo da plataforma</p>
+      </div>
+      <div class="stats-grid" id="admin-stats"></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Alertas Anti-Fraude</span>
+          <a href="#" onclick="navTo('admin-fraude');return false" style="font-size:13px;color:var(--blue-accent)">Ver todos →</a>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table><thead><tr><th>Funcionário</th><th>Treinamento</th><th>Nível</th><th>Detalhes</th></tr></thead>
+          <tbody id="admin-fraude-preview"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empresas -->
+    <div id="page-admin-empresas" class="page">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h2>Empresas</h2><p>Clientes cadastrados na plataforma</p></div>
+        <button class="btn btn-navy" onclick="abrirModalEmpresa()">+ Nova Empresa</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Nome</th><th>CNPJ</th><th>Status</th><th>Contratos</th><th></th></tr></thead>
+        <tbody id="lista-empresas"><tr class="loading-row"><td colspan="5">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Contratos Admin -->
+    <div id="page-admin-contratos" class="page">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h2>Contratos</h2><p>Vínculos empresa ↔ treinamento com limite de vagas</p></div>
+        <button class="btn btn-navy" onclick="abrirModalContrato()">+ Novo Contrato</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Empresa</th><th>Treinamento</th><th>Vagas</th><th>Válido até</th><th>Status</th><th></th></tr></thead>
+        <tbody id="lista-contratos-admin"><tr class="loading-row"><td colspan="6">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Treinamentos -->
+    <div id="page-admin-treinamentos" class="page">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h2>Treinamentos</h2><p>Catálogo de cursos disponíveis</p></div>
+        <button class="btn btn-navy" onclick="abrirModalTreinamento()">+ Novo Treinamento</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Título</th><th>Módulos</th><th>Nota mínima</th><th>Status</th><th></th></tr></thead>
+        <tbody id="lista-treinamentos"><tr class="loading-row"><td colspan="5">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Módulos de um Treinamento -->
+    <div id="page-admin-modulos" class="page">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="navTo('admin-treinamentos')" style="margin-bottom:8px">← Voltar</button>
+          <h2 id="modulo-titulo">Módulos</h2>
+        </div>
+        <button class="btn btn-navy" onclick="abrirModalModulo()">+ Novo Módulo</button>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Ordem</th><th>Título</th><th>Duração</th><th>Checkpoints</th><th></th></tr></thead>
+        <tbody id="lista-modulos"><tr class="loading-row"><td colspan="5">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Anti-Fraude -->
+    <div id="page-admin-fraude" class="page">
+      <div class="page-header">
+        <h2>Painel Anti-Fraude</h2>
+        <p>Matrículas com comportamento suspeito detectado</p>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Funcionário</th><th>Empresa</th><th>Treinamento</th><th>Nível suspeita</th><th>Checkpoints falhados</th><th>Última sessão</th></tr></thead>
+        <tbody id="lista-suspeitos"><tr class="loading-row"><td colspan="6">Carregando…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ EMPRESA PAGES ══ -->
+
+    <!-- Dashboard Empresa -->
+    <div id="page-empresa-dashboard" class="page">
+      <div class="page-header">
+        <h2>Minha Empresa</h2>
+        <p>Resumo dos contratos ativos</p>
+      </div>
+      <div class="stats-grid" id="empresa-stats"></div>
+    </div>
+
+    <!-- Contratos Empresa -->
+    <div id="page-empresa-contratos" class="page">
+      <div class="page-header">
+        <h2>Contratos Ativos</h2>
+        <p>Treinamentos contratados e uso de vagas</p>
+      </div>
+      <div id="lista-contratos-empresa"></div>
+    </div>
+
+    <!-- Funcionários -->
+    <div id="page-empresa-funcionarios" class="page">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h2>Funcionários</h2><p>Gerencie os colaboradores cadastrados</p></div>
+        <button class="btn btn-navy" onclick="abrirModalFuncionario()">+ Novo Funcionário</button>
+      </div>
+      <div id="select-contrato-func" style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin-bottom:6px">Filtrar por contrato</label>
+        <select id="contrato-select-func" onchange="carregarFuncionarios()" style="padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;min-width:260px"></select>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>Nome</th><th>CPF</th><th>Matrícula</th><th>Status</th><th></th></tr></thead>
+        <tbody id="lista-funcionarios"><tr class="loading-row"><td colspan="5">Selecione um contrato</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ FUNCIONÁRIO PAGES ══ -->
+
+    <!-- Meus Treinamentos -->
+    <div id="page-func-treinamentos" class="page">
+      <div class="page-header">
+        <h2>Meus Treinamentos</h2>
+        <p>Cursos disponíveis para você</p>
+      </div>
+      <div id="lista-meus-treinamentos"></div>
+    </div>
+
+    <!-- Player -->
+    <div id="page-func-player" class="page">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="navTo('func-treinamentos')">← Voltar</button>
+      <div class="player-card">
+        <div class="player-video">
+          <div id="player-placeholder" style="color:#fff;text-align:center">
+            <div style="font-size:48px;margin-bottom:8px">▶</div>
+            <div style="font-size:14px;opacity:.7">Selecione um módulo</div>
+          </div>
+          <div class="player-overlay" id="player-checkpoint-overlay" style="display:none">
+            <div class="checkpoint-alert">⚠️ Checkpoint de Presença</div>
+            <div style="color:#fff;font-size:14px">Confirme que você ainda está assistindo</div>
+            <button class="btn btn-green" onclick="responderCheckpoint()">✓ Estou aqui!</button>
+          </div>
+        </div>
+        <div class="player-meta">
+          <h3 id="player-modulo-titulo">—</h3>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
+          <div id="modulos-lista" style="margin-top:16px"></div>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;align-items:center" id="player-actions">
+        <button class="btn btn-navy" id="btn-iniciar-sessao" onclick="iniciarSessao()">▶ Iniciar / Retomar</button>
+        <button class="btn btn-green" id="btn-concluir-modulo" onclick="encerrarSessao()" style="display:none">✓ Concluir módulo</button>
+        <button class="btn btn-outline" onclick="navTo('func-prova')" id="btn-ir-prova" style="display:none">Fazer Prova Final →</button>
+      </div>
+    </div>
+
+    <!-- Prova Final -->
+    <div id="page-func-prova" class="page">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="navTo('func-player')">← Voltar</button>
+      <div class="page-header"><h2>Prova Final</h2></div>
+      <div id="prova-container"></div>
+      <div id="prova-resultado" style="display:none"></div>
+    </div>
+
+    <!-- Certificado -->
+    <div id="page-func-certificado" class="page">
+      <div class="page-header"><h2>Meu Certificado</h2></div>
+      <div id="cert-container"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════ MODAIS ══════════════════ -->
+
+<!-- Modal Empresa -->
+<div class="modal-overlay" id="modal-empresa">
+  <div class="modal">
+    <h3 id="modal-empresa-titulo">Nova Empresa</h3>
+    <div class="field"><label>Nome</label><input type="text" id="emp-nome" placeholder="Razão social"></div>
+    <div class="field"><label>CNPJ</label><input type="text" id="emp-cnpj" placeholder="00.000.000/0000-00"></div>
+    <div class="fields-row">
+      <div class="field"><label>E-mail</label><input type="email" id="emp-email"></div>
+      <div class="field"><label>Telefone</label><input type="text" id="emp-telefone"></div>
+    </div>
+    <div class="field"><label>Senha do gestor</label><input type="password" id="emp-senha" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field">
+      <label>Status</label>
+      <select id="emp-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-empresa')">Cancelar</button>
+      <button class="btn btn-navy" onclick="salvarEmpresa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Contrato -->
+<div class="modal-overlay" id="modal-contrato">
+  <div class="modal">
+    <h3>Novo Contrato</h3>
+    <div class="field"><label>Empresa</label><select id="contrato-empresa-id"></select></div>
+    <div class="field"><label>Treinamento</label><select id="contrato-treinamento-id"></select></div>
+    <div class="fields-row">
+      <div class="field"><label>Vagas</label><input type="number" id="contrato-vagas" min="1" value="10"></div>
+      <div class="field"><label>Válido até</label><input type="date" id="contrato-validade"></div>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="contrato-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-contrato')">Cancelar</button>
+      <button class="btn btn-navy" onclick="salvarContrato()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Treinamento -->
+<div class="modal-overlay" id="modal-treinamento">
+  <div class="modal">
+    <h3 id="modal-trein-titulo">Novo Treinamento</h3>
+    <div class="field"><label>Título</label><input type="text" id="trein-titulo" placeholder="Nome do curso"></div>
+    <div class="field"><label>Descrição</label><textarea id="trein-descricao"></textarea></div>
+    <div class="fields-row">
+      <div class="field"><label>Nota mínima (%)</label><input type="number" id="trein-nota" value="70" min="0" max="100"></div>
+      <div class="field"><label>Validade certificado (dias)</label><input type="number" id="trein-validade" value="365"></div>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="trein-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-treinamento')">Cancelar</button>
+      <button class="btn btn-navy" id="btn-salvar-trein" onclick="salvarTreinamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Módulo -->
+<div class="modal-overlay" id="modal-modulo">
+  <div class="modal">
+    <h3>Novo Módulo</h3>
+    <div class="field"><label>Título</label><input type="text" id="mod-titulo"></div>
+    <div class="field"><label>Descrição</label><textarea id="mod-descricao"></textarea></div>
+    <div class="fields-row">
+      <div class="field"><label>Ordem</label><input type="number" id="mod-ordem" value="1" min="1"></div>
+      <div class="field"><label>Duração (min)</label><input type="number" id="mod-duracao" value="30" min="1"></div>
+    </div>
+    <div class="field"><label>URL ou ID do Vídeo</label><input type="text" id="mod-video" placeholder="YouTube ID, Mux, Vimeo…"></div>
+    <div class="fields-row">
+      <div class="field"><label>Provedor</label>
+        <select id="mod-provider">
+          <option value="youtube">YouTube</option>
+          <option value="mux">Mux</option>
+          <option value="vimeo">Vimeo</option>
+          <option value="cloudflare">Cloudflare Stream</option>
+        </select>
+      </div>
+      <div class="field"><label>Checkpoints (quantidade)</label><input type="number" id="mod-checkpoints" value="2" min="0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-modulo')">Cancelar</button>
+      <button class="btn btn-navy" onclick="salvarModulo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Funcionário -->
+<div class="modal-overlay" id="modal-funcionario">
+  <div class="modal">
+    <h3>Novo Funcionário</h3>
+    <div class="field"><label>Nome completo</label><input type="text" id="func-nome"></div>
+    <div class="fields-row">
+      <div class="field"><label>CPF</label><input type="text" id="func-cpf" placeholder="000.000.000-00"></div>
+      <div class="field"><label>Matrícula</label><input type="text" id="func-matricula"></div>
+    </div>
+    <div class="field"><label>E-mail</label><input type="email" id="func-email"></div>
+    <div class="field"><label>Senha de acesso</label><input type="password" id="func-senha"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-funcionario')">Cancelar</button>
+      <button class="btn btn-navy" onclick="salvarFuncionario()">Cadastrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+const API = 'https://protocolo-ead.vercel.app';
+let token = null;
+let perfil = null; // 'admin' | 'empresa' | 'funcionario'
+let usuarioLogado = null;
+let treinamentoAtual = null; // { id, titulo, modulos }
+let moduloAtual = null;
+let sessaoAtual = null;
+let matriculaAtual = null;
+let checkpointTimer = null;
+let editingEmpresaId = null;
+let editingTreinId = null;
+let currentAdminTreinId = null;
+
+// ══════════════════════════════════════════════
+// HTTP
+// ══════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || data.message || 'Erro ' + r.status);
+  return data;
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+function toast(msg, tipo = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + tipo;
+  setTimeout(() => el.className = '', 3000);
+}
+
+// ══════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════
+let loginType = 'admin';
+function setLoginType(t) {
+  loginType = t;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0 && t==='admin') || (i===1 && t==='funcionario')));
+  document.getElementById('grupo-cpf').style.display = t === 'funcionario' ? 'block' : 'none';
+  document.getElementById('login-email').parentElement.style.display = t === 'funcionario' ? 'none' : 'block';
+}
+
+async function fazerLogin() {
+  const btn = document.getElementById('btn-login');
+  const err = document.getElementById('error-login');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    let data;
+    if (loginType === 'funcionario') {
+      const cpf = document.getElementById('login-cpf').value.trim();
+      const senha = document.getElementById('login-senha').value;
+      data = await api('POST', '/api/auth/login-funcionario', { cpf, senha });
+      perfil = 'funcionario';
+    } else {
+      const email = document.getElementById('login-email').value.trim();
+      const senha = document.getElementById('login-senha').value;
+      data = await api('POST', '/api/auth/login', { email, senha });
+      perfil = data.perfil || (data.user?.perfil) || 'empresa';
+    }
+    token = data.token;
+    usuarioLogado = data.user || data.funcionario || data;
+    iniciarApp();
+  } catch(e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+
+// ══════════════════════════════════════════════
+// APP INIT
+// ══════════════════════════════════════════════
+function iniciarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // Sidebar info
+  const nome = usuarioLogado?.nome || usuarioLogado?.email || '—';
+  document.getElementById('sb-nome').textContent = nome;
+
+  const roleLabels = { admin: 'Super Administrador', empresa: 'Empresa Cliente', funcionario: 'Funcionário' };
+  const badgeClass = { admin: 'role-admin', empresa: 'role-empresa', funcionario: 'role-funcionario' };
+  document.getElementById('sb-role').textContent = roleLabels[perfil] || perfil;
+  const badge = document.getElementById('sb-badge');
+  badge.textContent = perfil.toUpperCase();
+  badge.className = 'role-badge ' + (badgeClass[perfil] || '');
+
+  montarNav();
+
+  if (perfil === 'admin') { navTo('admin-dashboard'); carregarDashboardAdmin(); }
+  else if (perfil === 'empresa') { navTo('empresa-dashboard'); carregarDashboardEmpresa(); }
+  else { navTo('func-treinamentos'); carregarMeusTrienamentos(); }
+}
+
+function logout() {
+  token = null; perfil = null; usuarioLogado = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  if (checkpointTimer) clearInterval(checkpointTimer);
+}
+
+// ══════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════
+const navConfigs = {
+  admin: [
+    { section: 'Painel' },
+    { id: 'admin-dashboard', label: 'Visão Geral', icon: iconGrid() },
+    { section: 'Gestão' },
+    { id: 'admin-empresas', label: 'Empresas', icon: iconBuilding(), onEnter: carregarEmpresas },
+    { id: 'admin-contratos', label: 'Contratos', icon: iconDoc(), onEnter: carregarContratosAdmin },
+    { id: 'admin-treinamentos', label: 'Treinamentos', icon: iconBook(), onEnter: carregarTreinamentos },
+    { section: 'Segurança' },
+    { id: 'admin-fraude', label: 'Anti-Fraude', icon: iconShield(), onEnter: carregarSuspeitos },
+  ],
+  empresa: [
+    { section: 'Painel' },
+    { id: 'empresa-dashboard', label: 'Visão Geral', icon: iconGrid() },
+    { section: 'Gestão' },
+    { id: 'empresa-contratos', label: 'Contratos', icon: iconDoc(), onEnter: carregarContratosEmpresa },
+    { id: 'empresa-funcionarios', label: 'Funcionários', icon: iconUsers(), onEnter: carregarSelectContratos },
+  ],
+  funcionario: [
+    { section: 'EAD' },
+    { id: 'func-treinamentos', label: 'Meus Treinamentos', icon: iconBook(), onEnter: carregarMeusTrienamentos },
+    { id: 'func-certificado', label: 'Certificado', icon: iconCert(), onEnter: carregarCertificado },
   ]
 };
 
-function onlyDigits(s){ return s.replace(/\D/g,''); }
-function formatCPF(v){
-  const d = onlyDigits(v).slice(0,11);
-  let out = d;
-  if(d.length>3) out = d.slice(0,3)+'.'+d.slice(3);
-  if(d.length>6) out = out.slice(0,7)+'.'+d.slice(6);
-  if(d.length>9) out = out.slice(0,11)+'-'+d.slice(11);
-  return out;
-}
-function validaCPF(cpfRaw){
-  const cpf = onlyDigits(cpfRaw);
-  if(cpf.length !== 11) return false;
-  if(/^(\d)\1{10}$/.test(cpf)) return false;
-  let soma=0;
-  for(let i=0;i<9;i++) soma += parseInt(cpf[i])*(10-i);
-  let resto = (soma*10)%11; if(resto===10) resto=0;
-  if(resto !== parseInt(cpf[9])) return false;
-  soma=0;
-  for(let i=0;i<10;i++) soma += parseInt(cpf[i])*(11-i);
-  resto = (soma*10)%11; if(resto===10) resto=0;
-  if(resto !== parseInt(cpf[10])) return false;
-  return true;
+function montarNav() {
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  const items = navConfigs[perfil] || [];
+  items.forEach(item => {
+    if (item.section) {
+      const s = document.createElement('div');
+      s.className = 'nav-section';
+      s.textContent = item.section;
+      nav.appendChild(s);
+    } else {
+      const el = document.createElement('div');
+      el.className = 'nav-item';
+      el.id = 'nav-' + item.id;
+      el.innerHTML = item.icon + '<span>' + item.label + '</span>';
+      el.onclick = () => navTo(item.id);
+      nav.appendChild(el);
+    }
+  });
 }
 
-function genCode(){
-  return 'CERT-' + Math.random().toString(36).slice(2,6).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+function navTo(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+
+  // Trigger on-enter
+  const items = navConfigs[perfil] || [];
+  const item = items.find(i => i.id === id);
+  if (item?.onEnter) item.onEnter();
 }
 
-// ---------------- Top bar ----------------
-function TopBar({role, setRole}){
-  return (
-    <div className="topbar">
-      <div className="brand">
-        <div className="brand-mark">P</div>
-        <div>
-          <div className="brand-name">Protocolo</div>
-          <div className="brand-sub">Treinamento &amp; certificação</div>
-        </div>
-      </div>
-      <div className="role-switch">
-        <button className={"role-btn "+(role==='admin'?'active':'')} onClick={()=>setRole('admin')}>Super admin</button>
-        <button className={"role-btn "+(role==='empresa'?'active':'')} onClick={()=>setRole('empresa')}>Empresa cliente</button>
-        <button className={"role-btn "+(role==='funcionario'?'active':'')} onClick={()=>setRole('funcionario')}>Funcionário</button>
-      </div>
-    </div>
-  );
+// ══════════════════════════════════════════════
+// ── ADMIN ──
+// ══════════════════════════════════════════════
+
+async function carregarDashboardAdmin() {
+  try {
+    const [emps, contratos, treins, suspeitos] = await Promise.all([
+      api('GET', '/api/admin/empresas').catch(() => []),
+      api('GET', '/api/admin/contratos').catch(() => []),
+      api('GET', '/api/admin/treinamentos').catch(() => []),
+      api('GET', '/api/admin/suspeitos').catch(() => []),
+    ]);
+    const empresas = emps.empresas || emps || [];
+    const contratosList = contratos.contratos || contratos || [];
+    const treinsList = treins.treinamentos || treins || [];
+    const susps = suspeitos.suspeitos || suspeitos || [];
+
+    document.getElementById('admin-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Empresas</div><div class="stat-value">${empresas.length}</div><div class="stat-sub">clientes ativos</div></div>
+      <div class="stat-card"><div class="stat-label">Contratos</div><div class="stat-value">${contratosList.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Treinamentos</div><div class="stat-value">${treinsList.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Alertas Fraude</div><div class="stat-value" style="color:var(--red)">${susps.length}</div></div>
+    `;
+
+    const tbody = document.getElementById('admin-fraude-preview');
+    if (!susps.length) {
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Nenhum alerta de fraude 🎉</td></tr>';
+    } else {
+      tbody.innerHTML = susps.slice(0,5).map(s => `
+        <tr class="fraud-row">
+          <td>${s.funcionario_nome || '—'}</td>
+          <td>${s.treinamento_titulo || '—'}</td>
+          <td><span class="badge ${s.nivel_suspeita === 'alto' ? 'badge-red' : 'badge-amber'}">${s.nivel_suspeita || '?'}</span></td>
+          <td style="font-size:12px;color:var(--text-muted)">${s.detalhes || '—'}</td>
+        </tr>`).join('');
+    }
+  } catch(e) { toast(e.message, 'error'); }
 }
 
-// ---------------- Super Admin view ----------------
-function AdminView({empresas, criarContrato}){
-  const [empresaNome, setEmpresaNome] = useState('');
-  const [vagas, setVagas] = useState(20);
-
-  return (
-    <main>
-      <div className="eyebrow">Painel do super admin</div>
-      <h1 className="page-title">Liberar acesso para uma empresa</h1>
-      <p className="page-desc">Você cria o contrato com o número exato de vagas vendidas. A empresa recebe um login e só consegue cadastrar até esse limite — nem um a mais.</p>
-
-      <div className="grid-2">
-        <div className="card">
-          <p className="card-title">Novo contrato</p>
-          <p className="card-sub">{TREINAMENTO.titulo} · {TREINAMENTO.cargaHorasTotal}h de carga horária</p>
-
-          <label className="field-label">Empresa</label>
-          <input type="text" placeholder="Ex: Indústria Vale Forte Ltda" value={empresaNome} onChange={e=>setEmpresaNome(e.target.value)} style={{marginBottom:14}}/>
-
-          <label className="field-label">Vagas contratadas</label>
-          <input type="text" value={vagas} onChange={e=>setVagas(onlyDigits(e.target.value))} style={{marginBottom:18}}/>
-
-          <button className="btn btn-primary" disabled={!empresaNome || !vagas}
-            onClick={()=>{ criarContrato(empresaNome, parseInt(vagas)||0); setEmpresaNome(''); setVagas(20); }}>
-            Liberar acesso à empresa
-          </button>
-        </div>
-
-        <div className="card">
-          <p className="card-title">Empresas com acesso liberado</p>
-          <p className="card-sub">{empresas.length} contrato(s) ativo(s)</p>
-          {empresas.length===0 && <div className="empty">Nenhuma empresa cadastrada ainda</div>}
-          {empresas.map(emp=>{
-            const ocupadas = emp.funcionarios.length;
-            return (
-              <div className="company-card" key={emp.id}>
-                <div>
-                  <div className="company-name">{emp.nome}</div>
-                  <div className="company-meta">{ocupadas} de {emp.vagas} vagas usadas</div>
-                </div>
-                <span className={"status-pill " + (ocupadas>=emp.vagas?'pill-concluido':'pill-andamento')}>
-                  {ocupadas>=emp.vagas?'completo':'em uso'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </main>
-  );
+// Empresas
+async function carregarEmpresas() {
+  const tbody = document.getElementById('lista-empresas');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/admin/empresas');
+    const lista = data.empresas || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhuma empresa cadastrada</td></tr>'; return; }
+    tbody.innerHTML = lista.map(e => `
+      <tr>
+        <td><strong>${e.nome}</strong></td>
+        <td class="mono">${e.cnpj || '—'}</td>
+        <td><span class="badge ${e.status==='ativo'?'badge-green':'badge-gray'}">${e.status || 'ativo'}</span></td>
+        <td>${e.total_contratos || 0}</td>
+        <td style="text-align:right">
+          <button class="btn btn-outline btn-sm" onclick="editarEmpresa(${e.id})">Editar</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
 }
 
-// ---------------- Empresa view ----------------
-function EmpresaView({empresa, addFuncionario, removeFuncionario}){
-  const [nome, setNome] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [erro, setErro] = useState('');
-
-  if(!empresa){
-    return (
-      <main>
-        <div className="empty card">Nenhum contrato ativo. Peça ao super admin para liberar o acesso da sua empresa.</div>
-      </main>
-    );
-  }
-
-  const ocupadas = empresa.funcionarios.length;
-  const restantes = empresa.vagas - ocupadas;
-  const cheio = restantes <= 0;
-  const pct = Math.min(100, Math.round((ocupadas/empresa.vagas)*100));
-
-  function handleAdd(){
-    setErro('');
-    if(cheio){ setErro('Limite de vagas atingido — fale com o administrador para contratar mais.'); return; }
-    if(!nome.trim() || nome.trim().length<3){ setErro('Informe o nome completo do funcionário.'); return; }
-    if(!validaCPF(cpf)){ setErro('CPF inválido. Confira os números digitados.'); return; }
-    const cpfLimpo = onlyDigits(cpf);
-    if(empresa.funcionarios.some(f=>f.cpf===cpfLimpo)){ setErro('Este CPF já foi cadastrado neste contrato.'); return; }
-    addFuncionario(empresa.id, {id:'f_'+Date.now(), nome:nome.trim(), cpf:cpfLimpo, status:'pendente'});
-    setNome(''); setCpf('');
-  }
-
-  return (
-    <main>
-      <div className="eyebrow">Painel da empresa</div>
-      <h1 className="page-title">{empresa.nome}</h1>
-      <p className="page-desc">{TREINAMENTO.titulo} — cadastre exatamente os funcionários que vão fazer o treinamento. O limite de vagas contratadas é travado pelo sistema.</p>
-
-      <div className="card">
-        <div className="meter-wrap">
-          <div className="meter-track">
-            <div className={"meter-fill "+(cheio?'full':'')} style={{width:pct+'%'}}></div>
-          </div>
-          <div className="meter-label">
-            <span>Vagas utilizadas</span>
-            <span className="count">{ocupadas} / {empresa.vagas}</span>
-          </div>
-        </div>
-
-        {cheio && (
-          <div className="banner banner-amber" style={{marginTop:14}}>
-            <span>Todas as {empresa.vagas} vagas contratadas já foram preenchidas. Para adicionar mais funcionários, contrate vagas adicionais com o administrador.</span>
-          </div>
-        )}
-
-        <div style={{marginTop:cheio?0:14, opacity:cheio?0.45:1, pointerEvents:cheio?'none':'auto'}}>
-          <div className="field-row">
-            <div>
-              <label className="field-label">Nome completo</label>
-              <input type="text" placeholder="Ex: Maria da Silva Santos" value={nome} disabled={cheio} onChange={e=>setNome(e.target.value)} />
-            </div>
-            <div>
-              <label className="field-label">CPF</label>
-              <input type="text" placeholder="000.000.000-00" value={formatCPF(cpf)} disabled={cheio} onChange={e=>setCpf(e.target.value)} maxLength={14}/>
-            </div>
-            <button className="btn btn-primary" disabled={cheio} onClick={handleAdd}>Adicionar</button>
-          </div>
-          <div className="field-err">{erro}</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <p className="card-title">Funcionários cadastrados</p>
-        <p className="card-sub">Cada um recebe um acesso individual vinculado ao CPF</p>
-        {empresa.funcionarios.length===0 ? (
-          <div className="empty">Nenhum funcionário cadastrado ainda</div>
-        ) : (
-          <table>
-            <thead><tr><th>Nome</th><th>CPF</th><th>Progresso</th><th></th></tr></thead>
-            <tbody>
-              {empresa.funcionarios.map(f=>(
-                <tr key={f.id}>
-                  <td>{f.nome}</td>
-                  <td className="cpf">{formatCPF(f.cpf)}</td>
-                  <td><StatusPill status={f.status} /></td>
-                  <td style={{textAlign:'right'}}>
-                    {f.status==='pendente' && <button className="btn-danger-text" onClick={()=>removeFuncionario(empresa.id, f.id)}>remover</button>}
-                    {f.status==='concluido' && <a href="#" style={{fontSize:12, color:'#1f3d37', fontWeight:600}} onClick={(e)=>e.preventDefault()}>baixar certificado ↓</a>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </main>
-  );
+function abrirModalEmpresa() {
+  editingEmpresaId = null;
+  document.getElementById('modal-empresa-titulo').textContent = 'Nova Empresa';
+  ['emp-nome','emp-cnpj','emp-email','emp-telefone','emp-senha'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('emp-status').value = 'ativo';
+  document.getElementById('modal-empresa').classList.add('open');
 }
 
-function StatusPill({status}){
-  const map = {
-    pendente: ['pill-pendente','não iniciado'],
-    andamento: ['pill-andamento','em andamento'],
-    concluido: ['pill-concluido','concluído'],
-    suspeito: ['pill-suspeito','revisar — checkpoints falhos'],
+async function editarEmpresa(id) {
+  try {
+    const data = await api('GET', '/api/admin/empresas');
+    const e = (data.empresas || data || []).find(x => x.id === id);
+    if (!e) return;
+    editingEmpresaId = id;
+    document.getElementById('modal-empresa-titulo').textContent = 'Editar Empresa';
+    document.getElementById('emp-nome').value = e.nome || '';
+    document.getElementById('emp-cnpj').value = e.cnpj || '';
+    document.getElementById('emp-email').value = e.email || '';
+    document.getElementById('emp-telefone').value = e.telefone || '';
+    document.getElementById('emp-status').value = e.status || 'ativo';
+    document.getElementById('emp-senha').value = '';
+    document.getElementById('modal-empresa').classList.add('open');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function salvarEmpresa() {
+  const body = {
+    nome: document.getElementById('emp-nome').value,
+    cnpj: document.getElementById('emp-cnpj').value,
+    email: document.getElementById('emp-email').value,
+    telefone: document.getElementById('emp-telefone').value,
+    status: document.getElementById('emp-status').value,
   };
-  const [cls,label] = map[status]||map.pendente;
-  return <span className={"status-pill "+cls}>{label}</span>;
+  const senha = document.getElementById('emp-senha').value;
+  if (senha) body.senha = senha;
+  try {
+    if (editingEmpresaId) {
+      await api('PUT', '/api/admin/empresas/' + editingEmpresaId, body);
+    } else {
+      if (!senha) { toast('Informe uma senha para o gestor', 'error'); return; }
+      await api('POST', '/api/admin/empresas', body);
+    }
+    fecharModal('modal-empresa');
+    toast('Empresa salva com sucesso!', 'success');
+    carregarEmpresas();
+  } catch(e) { toast(e.message, 'error'); }
 }
 
-// ---------------- Funcionário / Player view ----------------
-function FuncionarioView({empresa, updateFuncionarioStatus}){
-  const funcionario = empresa && empresa.funcionarios[0];
-  const [moduloIdx, setModuloIdx] = useState(0);
-  const [posicaoPct, setPosicaoPct] = useState(0); // 0-100 dentro do módulo atual
-  const [tocando, setTocando] = useState(false);
-  const [checkpoint, setCheckpoint] = useState(null); // {tipo, resolvido}
-  const [log, setLog] = useState([]);
-  const [horasHoje, setHorasHoje] = useState(0);
-  const [concluido, setConcluido] = useState(false);
-  const [certCode] = useState(genCode());
-  const nextCheckpointAt = useRef(35 + Math.random()*30); // % aleatório dentro do módulo
-  const intervalRef = useRef(null);
-
-  const modulo = TREINAMENTO.modulos[moduloIdx];
-  const totalModulos = TREINAMENTO.modulos.length;
-
-  function addLog(msg){
-    setLog(l => [ '['+new Date().toLocaleTimeString('pt-BR')+'] ' + msg, ...l].slice(0,8));
-  }
-
-  useEffect(()=>{
-    if(!tocando || checkpoint) return;
-    intervalRef.current = setInterval(()=>{
-      setPosicaoPct(p=>{
-        const np = p + 1.2;
-        if(np >= nextCheckpointAt.current && np < 100){
-          setTocando(false);
-          setCheckpoint({tipo: Math.random()>0.5?'clique':'pergunta', t0:Date.now()});
-          return p;
-        }
-        if(np >= 100){
-          clearInterval(intervalRef.current);
-          addLog('Módulo "'+modulo.titulo+'" concluído.');
-          setHorasHoje(h=>h + modulo.minutos/60);
-          if(moduloIdx < totalModulos-1){
-            setModuloIdx(i=>i+1);
-            nextCheckpointAt.current = 35 + Math.random()*30;
-            return 0;
-          } else {
-            setConcluido(true);
-            setTocando(false);
-            return 100;
-          }
-        }
-        return np;
-      });
-    }, 220);
-    return ()=>clearInterval(intervalRef.current);
-  }, [tocando, checkpoint, moduloIdx]);
-
-  function resolverCheckpoint(ok){
-    const dt = Date.now() - checkpoint.t0;
-    addLog((ok?'Checkpoint respondido ✓':'Checkpoint ignorado ✕') + ' — pos. '+Math.round(posicaoPct)+'% · '+dt+'ms');
-    setCheckpoint(null);
-    nextCheckpointAt.current = posicaoPct + 25 + Math.random()*30;
-    if(ok) setTocando(true);
-  }
-
-  if(!funcionario){
-    return <main><div className="empty card">Nenhum funcionário cadastrado para simular ainda. Vá até "Empresa cliente" e adicione alguém.</div></main>;
-  }
-
-  if(concluido){
-    return (
-      <main>
-        <div className="eyebrow">Treinamento concluído</div>
-        <h1 className="page-title">Certificado emitido</h1>
-        <p className="page-desc">{funcionario.nome} completou as {TREINAMENTO.cargaHorasTotal} horas do treinamento com todos os checkpoints de presença validados.</p>
-        <div className="cert">
-          <div className="cert-seal">P</div>
-          <div className="serif" style={{fontSize:13, color:'#6b6759', letterSpacing:'.05em', textTransform:'uppercase'}}>Certificado de conclusão</div>
-          <div className="serif" style={{fontSize:26, fontWeight:600, margin:'10px 0 4px'}}>{funcionario.nome}</div>
-          <div style={{fontSize:13, color:'#6b6759'}}>CPF {formatCPF(funcionario.cpf)}</div>
-          <div style={{marginTop:18, fontSize:14.5}}>concluiu o treinamento</div>
-          <div className="serif" style={{fontSize:19, fontWeight:600, margin:'4px 0'}}>{TREINAMENTO.titulo}</div>
-          <div style={{fontSize:13, color:'#6b6759'}}>carga horária de {TREINAMENTO.cargaHorasTotal} horas — {new Date().toLocaleDateString('pt-BR')}</div>
-          <div className="cert-code">código de validação: {certCode}</div>
-        </div>
-        <div className="stat-row">
-          <div className="stat"><div className="stat-num">{TREINAMENTO.cargaHorasTotal}h</div><div className="stat-label">carga horária total</div></div>
-          <div className="stat"><div className="stat-num">{log.filter(l=>l.includes('✓')).length}</div><div className="stat-label">checkpoints validados</div></div>
-          <div className="stat"><div className="stat-num">0</div><div className="stat-label">checkpoints suspeitos</div></div>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main>
-      <div className="eyebrow">Área do funcionário</div>
-      <h1 className="page-title">{funcionario.nome}</h1>
-      <p className="page-desc">{TREINAMENTO.titulo} · módulo {moduloIdx+1} de {totalModulos} — {modulo.titulo}</p>
-
-      <div className="grid-2">
-        <div>
-          <div className="player-shell">
-            {checkpoint ? (
-              <div className="checkpoint-overlay">
-                <div className="checkpoint-icon">{checkpoint.tipo==='clique'?'!':'?'}</div>
-                {checkpoint.tipo==='clique' ? (
-                  <>
-                    <div style={{color:'#fff', fontWeight:600, fontSize:16}}>Você ainda está assistindo?</div>
-                    <div style={{color:'#9aa8a3', fontSize:12.5, maxWidth:280}}>O vídeo pausou automaticamente. Clique abaixo para continuar — checkpoints aleatórios confirmam a presença ao longo do treinamento.</div>
-                    <button className="btn btn-amber" onClick={()=>resolverCheckpoint(true)}>Sim, continuar assistindo</button>
-                  </>
-                ) : (
-                  <>
-                    <div style={{color:'#fff', fontWeight:600, fontSize:16}}>Pergunta rápida de confirmação</div>
-                    <div style={{color:'#9aa8a3', fontSize:12.5, maxWidth:300}}>Qual EPI é obrigatório na área demonstrada há pouco?</div>
-                    <div style={{display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center'}}>
-                      <button className="btn btn-ghost" style={{color:'#fff', borderColor:'#3a4a45'}} onClick={()=>resolverCheckpoint(false)}>Capacete</button>
-                      <button className="btn btn-amber" onClick={()=>resolverCheckpoint(true)}>Óculos de proteção</button>
-                      <button className="btn btn-ghost" style={{color:'#fff', borderColor:'#3a4a45'}} onClick={()=>resolverCheckpoint(false)}>Luvas térmicas</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="player-content">
-                {!tocando && posicaoPct===0 ? (
-                  <button className="btn btn-amber" onClick={()=>setTocando(true)}>▶ Iniciar módulo</button>
-                ) : !tocando ? (
-                  <button className="btn btn-amber" onClick={()=>setTocando(true)}>▶ Retomar</button>
-                ) : (
-                  <div style={{fontSize:13, letterSpacing:'.05em', textTransform:'uppercase', color:'#9aa8a3'}}>reproduzindo · {Math.round(posicaoPct)}%</div>
-                )}
-              </div>
-            )}
-            <div className="player-progress-track"><div className="player-progress-fill" style={{width:posicaoPct+'%'}}></div></div>
+// Contratos Admin
+async function carregarContratosAdmin() {
+  const tbody = document.getElementById('lista-contratos-admin');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/admin/contratos');
+    const lista = data.contratos || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Nenhum contrato</td></tr>'; return; }
+    tbody.innerHTML = lista.map(c => {
+      const pct = c.vagas_contratadas ? Math.round((c.vagas_usadas||0)/c.vagas_contratadas*100) : 0;
+      const cls = pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : '';
+      return `<tr>
+        <td>${c.empresa_nome || c.empresa_id}</td>
+        <td>${c.treinamento_titulo || c.treinamento_id}</td>
+        <td>
+          <div style="min-width:120px">
+            <div class="vagas-bar" style="margin-bottom:4px"><div class="vagas-fill ${cls}" style="width:${pct}%"></div></div>
+            <span style="font-size:11px;color:var(--text-muted)">${c.vagas_usadas||0} / ${c.vagas_contratadas} vagas</span>
           </div>
-          {!checkpoint && tocando && (
-            <button className="btn-danger-text" style={{marginTop:8}} onClick={()=>{ setTocando(false); addLog('Pausado manualmente pelo aluno.'); }}>pausar</button>
-          )}
-        </div>
+        </td>
+        <td>${c.data_validade ? new Date(c.data_validade).toLocaleDateString('pt-BR') : '—'}</td>
+        <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-gray'}">${c.status}</span></td>
+        <td></td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">${e.message}</td></tr>`; }
+}
 
-        <div className="card" style={{marginTop:0}}>
-          <p className="card-title">Controle de carga horária</p>
-          <p className="card-sub">Soma-se automaticamente, mesmo em dias diferentes</p>
-          <div className="stat-row" style={{marginTop:6}}>
-            <div className="stat">
-              <div className="stat-num">{horasHoje.toFixed(1)}h</div>
-              <div className="stat-label">assistidas nesta sessão</div>
+async function abrirModalContrato() {
+  try {
+    const [emps, treins] = await Promise.all([
+      api('GET', '/api/admin/empresas'),
+      api('GET', '/api/admin/treinamentos'),
+    ]);
+    const empresas = emps.empresas || emps || [];
+    const treinamentos = treins.treinamentos || treins || [];
+    document.getElementById('contrato-empresa-id').innerHTML = empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+    document.getElementById('contrato-treinamento-id').innerHTML = treinamentos.map(t => `<option value="${t.id}">${t.titulo}</option>`).join('');
+    document.getElementById('modal-contrato').classList.add('open');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function salvarContrato() {
+  const body = {
+    empresa_id: +document.getElementById('contrato-empresa-id').value,
+    treinamento_id: +document.getElementById('contrato-treinamento-id').value,
+    vagas_contratadas: +document.getElementById('contrato-vagas').value,
+    data_validade: document.getElementById('contrato-validade').value,
+    status: document.getElementById('contrato-status').value,
+  };
+  try {
+    await api('POST', '/api/admin/contratos', body);
+    fecharModal('modal-contrato');
+    toast('Contrato criado!', 'success');
+    carregarContratosAdmin();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Treinamentos
+async function carregarTreinamentos() {
+  const tbody = document.getElementById('lista-treinamentos');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/admin/treinamentos');
+    const lista = data.treinamentos || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum treinamento</td></tr>'; return; }
+    tbody.innerHTML = lista.map(t => `
+      <tr>
+        <td><strong>${t.titulo}</strong><div style="font-size:12px;color:var(--text-muted)">${t.descricao||''}</div></td>
+        <td>${t.total_modulos || 0}</td>
+        <td>${t.nota_minima || 70}%</td>
+        <td><span class="badge ${t.status==='ativo'?'badge-green':'badge-gray'}">${t.status}</span></td>
+        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick="verModulos(${t.id},'${escHtml(t.titulo)}')">Módulos</button>
+          <button class="btn btn-outline btn-sm" onclick="editarTreinamento(${t.id})">Editar</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
+}
+
+function abrirModalTreinamento() {
+  editingTreinId = null;
+  document.getElementById('modal-trein-titulo').textContent = 'Novo Treinamento';
+  ['trein-titulo','trein-descricao'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('trein-nota').value = 70;
+  document.getElementById('trein-validade').value = 365;
+  document.getElementById('trein-status').value = 'ativo';
+  document.getElementById('modal-treinamento').classList.add('open');
+}
+
+async function editarTreinamento(id) {
+  try {
+    const data = await api('GET', '/api/admin/treinamentos');
+    const t = (data.treinamentos || data || []).find(x => x.id === id);
+    if (!t) return;
+    editingTreinId = id;
+    document.getElementById('modal-trein-titulo').textContent = 'Editar Treinamento';
+    document.getElementById('trein-titulo').value = t.titulo || '';
+    document.getElementById('trein-descricao').value = t.descricao || '';
+    document.getElementById('trein-nota').value = t.nota_minima || 70;
+    document.getElementById('trein-validade').value = t.validade_certificado || 365;
+    document.getElementById('trein-status').value = t.status || 'ativo';
+    document.getElementById('modal-treinamento').classList.add('open');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function salvarTreinamento() {
+  const body = {
+    titulo: document.getElementById('trein-titulo').value,
+    descricao: document.getElementById('trein-descricao').value,
+    nota_minima: +document.getElementById('trein-nota').value,
+    validade_certificado: +document.getElementById('trein-validade').value,
+    status: document.getElementById('trein-status').value,
+  };
+  try {
+    if (editingTreinId) {
+      await api('PUT', '/api/admin/treinamentos/' + editingTreinId, body);
+    } else {
+      await api('POST', '/api/admin/treinamentos', body);
+    }
+    fecharModal('modal-treinamento');
+    toast('Treinamento salvo!', 'success');
+    carregarTreinamentos();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Módulos
+async function verModulos(treinId, titulo) {
+  currentAdminTreinId = treinId;
+  document.getElementById('modulo-titulo').textContent = 'Módulos: ' + titulo;
+  navTo('admin-modulos');
+  await carregarModulos();
+}
+
+async function carregarModulos() {
+  const tbody = document.getElementById('lista-modulos');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos');
+    const lista = data.modulos || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum módulo</td></tr>'; return; }
+    tbody.innerHTML = lista.map(m => `
+      <tr>
+        <td>${m.ordem}</td>
+        <td><strong>${m.titulo}</strong></td>
+        <td>${m.duracao_minutos || '—'} min</td>
+        <td>${m.checkpoints_obrigatorios || 0}</td>
+        <td></td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
+}
+
+function abrirModalModulo() {
+  ['mod-titulo','mod-descricao','mod-video'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mod-ordem').value = 1;
+  document.getElementById('mod-duracao').value = 30;
+  document.getElementById('mod-checkpoints').value = 2;
+  document.getElementById('modal-modulo').classList.add('open');
+}
+
+async function salvarModulo() {
+  const body = {
+    titulo: document.getElementById('mod-titulo').value,
+    descricao: document.getElementById('mod-descricao').value,
+    ordem: +document.getElementById('mod-ordem').value,
+    duracao_minutos: +document.getElementById('mod-duracao').value,
+    video_provider_id: document.getElementById('mod-video').value,
+    video_provider: document.getElementById('mod-provider').value,
+    checkpoints_obrigatorios: +document.getElementById('mod-checkpoints').value,
+  };
+  try {
+    await api('POST', '/api/admin/treinamentos/' + currentAdminTreinId + '/modulos', body);
+    fecharModal('modal-modulo');
+    toast('Módulo criado!', 'success');
+    carregarModulos();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Anti-Fraude
+async function carregarSuspeitos() {
+  const tbody = document.getElementById('lista-suspeitos');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/admin/suspeitos');
+    const lista = data.suspeitos || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">✓ Nenhuma atividade suspeita detectada</td></tr>'; return; }
+    tbody.innerHTML = lista.map(s => `
+      <tr class="fraud-row">
+        <td><strong>${s.funcionario_nome || '—'}</strong></td>
+        <td>${s.empresa_nome || '—'}</td>
+        <td>${s.treinamento_titulo || '—'}</td>
+        <td><span class="badge ${s.nivel_suspeita==='alto'?'badge-red':'badge-amber'}">${s.nivel_suspeita||'?'}</span></td>
+        <td>${s.checkpoints_falhados || 0}</td>
+        <td>${s.ultima_sessao ? new Date(s.ultima_sessao).toLocaleString('pt-BR') : '—'}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">${e.message}</td></tr>`; }
+}
+
+// ══════════════════════════════════════════════
+// ── EMPRESA ──
+// ══════════════════════════════════════════════
+
+async function carregarDashboardEmpresa() {
+  try {
+    const data = await api('GET', '/api/empresa/contratos');
+    const contratos = data.contratos || data || [];
+    const totalVagas = contratos.reduce((a,c) => a + (c.vagas_contratadas||0), 0);
+    const usadas = contratos.reduce((a,c) => a + (c.vagas_usadas||0), 0);
+    document.getElementById('empresa-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Contratos Ativos</div><div class="stat-value">${contratos.filter(c=>c.status==='ativo').length}</div></div>
+      <div class="stat-card"><div class="stat-label">Vagas Totais</div><div class="stat-value">${totalVagas}</div></div>
+      <div class="stat-card"><div class="stat-label">Vagas Usadas</div><div class="stat-value">${usadas}</div><div class="stat-sub">de ${totalVagas} disponíveis</div></div>
+    `;
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function carregarContratosEmpresa() {
+  const container = document.getElementById('lista-contratos-empresa');
+  container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Carregando…</div>';
+  try {
+    const data = await api('GET', '/api/empresa/contratos');
+    const lista = data.contratos || data || [];
+    if (!lista.length) { container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Nenhum contrato ativo</div>'; return; }
+    container.innerHTML = lista.map(c => {
+      const pct = c.vagas_contratadas ? Math.round((c.vagas_usadas||0)/c.vagas_contratadas*100) : 0;
+      const cls = pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : '';
+      return `<div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">${c.treinamento_titulo || 'Treinamento'}</span>
+          <span class="badge ${c.status==='ativo'?'badge-green':'badge-gray'}">${c.status}</span>
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:13px;color:var(--text-muted)">Uso de vagas</span>
+              <span style="font-size:13px;font-weight:600">${c.vagas_usadas||0} / ${c.vagas_contratadas}</span>
             </div>
-            <div className="stat">
-              <div className="stat-num">{TREINAMENTO.cargaHorasTotal}h</div>
-              <div className="stat-label">carga horária total</div>
+            <div class="vagas-bar"><div class="vagas-fill ${cls}" style="width:${pct}%"></div></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted)">Válido até: ${c.data_validade ? new Date(c.data_validade).toLocaleDateString('pt-BR') : '—'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { container.innerHTML = `<div style="padding:32px;text-align:center;color:var(--red)">${e.message}</div>`; }
+}
+
+async function carregarSelectContratos() {
+  try {
+    const data = await api('GET', '/api/empresa/contratos');
+    const lista = data.contratos || data || [];
+    const sel = document.getElementById('contrato-select-func');
+    sel.innerHTML = lista.map(c => `<option value="${c.id}">${c.treinamento_titulo || 'Contrato '+c.id}</option>`).join('');
+    if (lista.length) carregarFuncionarios();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function carregarFuncionarios() {
+  const contratoId = document.getElementById('contrato-select-func').value;
+  if (!contratoId) return;
+  const tbody = document.getElementById('lista-funcionarios');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
+  try {
+    const data = await api('GET', '/api/empresa/contratos/' + contratoId + '/funcionarios');
+    const lista = data.funcionarios || data || [];
+    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum funcionário neste contrato</td></tr>'; return; }
+    tbody.innerHTML = lista.map(f => `
+      <tr>
+        <td><strong>${f.nome}</strong></td>
+        <td class="mono">${f.cpf || '—'}</td>
+        <td>${f.matricula || '—'}</td>
+        <td><span class="badge ${f.status==='ativo'?'badge-green':'badge-gray'}">${f.status||'ativo'}</span></td>
+        <td style="text-align:right">
+          <button class="btn btn-red btn-sm" onclick="removerFuncionario(${contratoId},${f.id})">Remover</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
+}
+
+function abrirModalFuncionario() {
+  ['func-nome','func-cpf','func-matricula','func-email','func-senha'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-funcionario').classList.add('open');
+}
+
+async function salvarFuncionario() {
+  const contratoId = document.getElementById('contrato-select-func').value;
+  const body = {
+    nome: document.getElementById('func-nome').value,
+    cpf: document.getElementById('func-cpf').value,
+    matricula: document.getElementById('func-matricula').value,
+    email: document.getElementById('func-email').value,
+    senha: document.getElementById('func-senha').value,
+  };
+  try {
+    await api('POST', '/api/empresa/contratos/' + contratoId + '/funcionarios', body);
+    fecharModal('modal-funcionario');
+    toast('Funcionário cadastrado!', 'success');
+    carregarFuncionarios();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function removerFuncionario(contratoId, funcId) {
+  if (!confirm('Remover este funcionário do contrato?')) return;
+  try {
+    await api('DELETE', '/api/empresa/contratos/' + contratoId + '/funcionarios/' + funcId);
+    toast('Funcionário removido', 'success');
+    carregarFuncionarios();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════
+// ── FUNCIONÁRIO ──
+// ══════════════════════════════════════════════
+
+async function carregarMeusTrienamentos() {
+  const container = document.getElementById('lista-meus-treinamentos');
+  container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Carregando…</div>';
+  try {
+    const data = await api('GET', '/api/player/matricula');
+    const lista = data.matriculas || data || [];
+    if (!lista.length) {
+      container.innerHTML = `<div class="empty-state">${iconBookLarge()}<p>Você ainda não tem treinamentos disponíveis.<br>Entre em contato com o RH da sua empresa.</p></div>`;
+      return;
+    }
+    container.innerHTML = lista.map(m => {
+      const pct = m.progresso || 0;
+      return `<div class="card" style="margin-bottom:16px;cursor:pointer" onclick="abrirPlayer(${JSON.stringify(m).replace(/"/g,'&quot;')})">
+        <div class="card-body" style="display:flex;align-items:center;gap:20px">
+          <div style="font-size:40px">${iconBookEmoji(m.status)}</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px">${m.treinamento_titulo || 'Treinamento'}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin:4px 0">${m.descricao || ''}</div>
+            <div style="margin-top:8px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:11px;color:var(--text-muted)">Progresso</span>
+                <span style="font-size:11px;font-weight:600">${pct}%</span>
+              </div>
+              <div class="vagas-bar"><div class="vagas-fill" style="width:${pct}%"></div></div>
             </div>
           </div>
-          <p className="card-title" style={{marginTop:18, fontSize:13}}>Registro de presença (anti-fraude)</p>
-          <div className="session-log">
-            {log.length===0 ? <div style={{color:'#a39f8f'}}>nenhum evento ainda</div> : log.map((l,i)=><div key={i}>{l}</div>)}
+          <div style="text-align:right">
+            <span class="badge ${m.status==='concluido'?'badge-green':m.status==='em_andamento'?'badge-blue':'badge-gray'}">${statusLabel(m.status)}</span>
+            ${m.status !== 'concluido' ? '<br><button class="btn btn-navy btn-sm" style="margin-top:8px">Continuar →</button>' : '<br><button class="btn btn-green btn-sm" style="margin-top:8px" onclick="event.stopPropagation();navTo(\'func-certificado\')">Ver Cert.</button>'}
           </div>
         </div>
-      </div>
-    </main>
-  );
+      </div>`;
+    }).join('');
+  } catch(e) { container.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`; }
 }
 
-// ---------------- App ----------------
-function App(){
-  const [role, setRole] = useState('admin');
-  const [empresas, setEmpresas] = useState([
-    {id:'e1', nome:'Indústria Vale Forte Ltda', vagas:5, funcionarios:[
-      {id:'f1', nome:'Carlos Eduardo Ramos', cpf:'52998224725', status:'pendente'},
-      {id:'f2', nome:'Juliana Pereira Costa', cpf:'11144477735', status:'pendente'},
-    ]},
-  ]);
-
-  function criarContrato(nome, vagas){
-    setEmpresas(es => [...es, {id:'e_'+Date.now(), nome, vagas, funcionarios:[]}]);
-  }
-  function addFuncionario(empresaId, func){
-    setEmpresas(es => es.map(e => e.id===empresaId ? {...e, funcionarios:[...e.funcionarios, func]} : e));
-  }
-  function removeFuncionario(empresaId, funcId){
-    setEmpresas(es => es.map(e => e.id===empresaId ? {...e, funcionarios:e.funcionarios.filter(f=>f.id!==funcId)} : e));
-  }
-  function updateFuncionarioStatus(empresaId, funcId, status){
-    setEmpresas(es => es.map(e => e.id===empresaId ? {...e, funcionarios:e.funcionarios.map(f=>f.id===funcId?{...f,status}:f)} : e));
-  }
-
-  const empresaAtual = empresas[0];
-
-  return (
-    <div className="app">
-      <TopBar role={role} setRole={setRole} />
-      {role==='admin' && <AdminView empresas={empresas} criarContrato={criarContrato} />}
-      {role==='empresa' && <EmpresaView empresa={empresaAtual} addFuncionario={addFuncionario} removeFuncionario={removeFuncionario} />}
-      {role==='funcionario' && <FuncionarioView empresa={empresaAtual} updateFuncionarioStatus={updateFuncionarioStatus} />}
-    </div>
-  );
+function statusLabel(s) {
+  const m = { 'nao_iniciado':'Não iniciado', 'em_andamento':'Em andamento', 'concluido':'Concluído', 'aprovado':'Aprovado', 'reprovado':'Reprovado' };
+  return m[s] || s || '—';
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+async function abrirPlayer(matricula) {
+  matriculaAtual = matricula;
+  treinamentoAtual = null;
+  moduloAtual = null;
+  navTo('func-player');
+
+  try {
+    const data = await api('GET', '/api/admin/treinamentos/' + matricula.treinamento_id + '/modulos');
+    const modulos = data.modulos || data || [];
+    treinamentoAtual = { ...matricula, modulos };
+    renderModulosPlayer(modulos);
+  } catch(e) {
+    // Tenta busca alternativa
+    document.getElementById('modulos-lista').innerHTML = `<div style="color:var(--red);font-size:13px">${e.message}</div>`;
+  }
+}
+
+function renderModulosPlayer(modulos) {
+  const lista = document.getElementById('modulos-lista');
+  if (!modulos.length) { lista.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Nenhum módulo disponível</div>'; return; }
+  lista.innerHTML = '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Módulos</div>' +
+    modulos.map((m, i) => `
+      <div onclick="selecionarModulo(${i})" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:6px;cursor:pointer;border:1.5px solid var(--surface2);margin-bottom:6px;transition:all .15s" 
+           onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--surface2)'">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${m.ordem||i+1}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600">${m.titulo}</div><div style="font-size:11px;color:var(--text-muted)">${m.duracao_minutos||'—'} min • ${m.checkpoints_obrigatorios||0} checkpoints</div></div>
+      </div>`).join('');
+
+  // Seleciona primeiro automaticamente
+  if (modulos.length) selecionarModulo(0);
+}
+
+function selecionarModulo(idx) {
+  if (!treinamentoAtual?.modulos) return;
+  moduloAtual = treinamentoAtual.modulos[idx];
+  document.getElementById('player-modulo-titulo').textContent = moduloAtual.titulo;
+  document.getElementById('player-modulo-desc').textContent = moduloAtual.descricao || '';
+
+  // Renderiza player de vídeo
+  const videoEl = document.getElementById('player-placeholder');
+  if (moduloAtual.video_provider_id) {
+    const provider = moduloAtual.video_provider || 'youtube';
+    let embedUrl = '';
+    if (provider === 'youtube') embedUrl = `https://www.youtube.com/embed/${moduloAtual.video_provider_id}?rel=0`;
+    else if (provider === 'vimeo') embedUrl = `https://player.vimeo.com/video/${moduloAtual.video_provider_id}`;
+    else embedUrl = moduloAtual.video_provider_id;
+
+    videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
+  }
+
+  document.getElementById('btn-iniciar-sessao').style.display = 'inline-flex';
+  document.getElementById('btn-concluir-modulo').style.display = 'none';
+}
+
+async function iniciarSessao() {
+  if (!moduloAtual || !matriculaAtual) { toast('Selecione um módulo primeiro', 'error'); return; }
+  try {
+    const data = await api('POST', '/api/player/sessao/iniciar', {
+      matricula_id: matriculaAtual.id,
+      modulo_id: moduloAtual.id
+    });
+    sessaoAtual = data.sessao || data;
+    toast('Sessão iniciada! Bons estudos 📚', 'success');
+    document.getElementById('btn-iniciar-sessao').style.display = 'none';
+    document.getElementById('btn-concluir-modulo').style.display = 'inline-flex';
+
+    // Agenda checkpoints
+    agendarCheckpoints();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function agendarCheckpoints() {
+  const intervalo = (moduloAtual?.checkpoints_obrigatorios > 0) ? 60000 : null; // 1 min p/ teste
+  if (!intervalo) return;
+  if (checkpointTimer) clearInterval(checkpointTimer);
+  checkpointTimer = setInterval(() => {
+    document.getElementById('player-checkpoint-overlay').style.display = 'flex';
+  }, intervalo);
+}
+
+async function responderCheckpoint() {
+  document.getElementById('player-checkpoint-overlay').style.display = 'none';
+  if (!sessaoAtual) return;
+  try {
+    await api('POST', '/api/player/checkpoint', { sessao_id: sessaoAtual.id });
+    toast('Presença confirmada ✓', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function encerrarSessao() {
+  if (!sessaoAtual) return;
+  try {
+    await api('POST', '/api/player/sessao/encerrar', { sessao_id: sessaoAtual.id });
+    if (checkpointTimer) clearInterval(checkpointTimer);
+    sessaoAtual = null;
+    toast('Módulo concluído!', 'success');
+    document.getElementById('btn-concluir-modulo').style.display = 'none';
+    document.getElementById('btn-iniciar-sessao').style.display = 'inline-flex';
+    document.getElementById('btn-ir-prova').style.display = 'inline-flex';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Prova
+async function carregarProva() {
+  if (!matriculaAtual) { navTo('func-treinamentos'); return; }
+  const container = document.getElementById('prova-container');
+  container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Carregando prova…</div>';
+  document.getElementById('prova-resultado').style.display = 'none';
+
+  try {
+    const data = await api('GET', '/api/player/prova?matricula_id=' + matriculaAtual.id);
+    const perguntas = data.perguntas || data || [];
+    if (!perguntas.length) {
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Nenhuma pergunta disponível para este treinamento.</div>';
+      return;
+    }
+    window._respostas = {};
+    container.innerHTML = perguntas.map((p, i) => `
+      <div class="question-card">
+        <div class="question-num">Questão ${i+1} de ${perguntas.length}</div>
+        <div class="question-text">${escHtml(p.pergunta)}</div>
+        ${(p.opcoes||[]).map((op, j) => `
+          <label class="option-label" id="opt-${i}-${j}">
+            <input type="radio" name="q${i}" value="${j}" onchange="selecionarOpcao(${i},${j},this.closest('label').closest('.question-card'))">
+            ${escHtml(op)}
+          </label>`).join('')}
+      </div>`).join('') +
+      '<button class="btn btn-navy" onclick="enviarProva(' + JSON.stringify(perguntas).replace(/"/g,'&quot;') + ')">Enviar Respostas</button>';
+  } catch(e) { container.innerHTML = `<div style="padding:32px;text-align:center;color:var(--red)">${e.message}</div>`; }
+}
+
+function selecionarOpcao(qi, oi, card) {
+  card.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
+  card.querySelectorAll('.option-label')[oi].classList.add('selected');
+  window._respostas[qi] = oi;
+}
+
+async function enviarProva(perguntas) {
+  const respostas = perguntas.map((_, i) => window._respostas[i] ?? null);
+  if (respostas.some(r => r === null)) { toast('Responda todas as questões antes de enviar', 'error'); return; }
+  try {
+    const data = await api('POST', '/api/player/prova', {
+      matricula_id: matriculaAtual.id,
+      respostas
+    });
+    document.getElementById('prova-container').innerHTML = '';
+    const res = document.getElementById('prova-resultado');
+    res.style.display = 'block';
+    const aprovado = data.aprovado || data.resultado === 'aprovado';
+    res.innerHTML = `<div class="cert-result">
+      <div class="cert-icon">${aprovado ? '🏆' : '😕'}</div>
+      <h2 style="color:${aprovado?'var(--green)':'var(--red)'}">${aprovado ? 'Aprovado!' : 'Reprovado'}</h2>
+      <p>Você acertou <strong>${data.nota || data.acertos || '—'}%</strong> das questões.<br>
+      ${aprovado ? 'Seu certificado está disponível!' : 'Você pode refazer a prova. Revise os módulos e tente novamente.'}</p>
+      ${aprovado ? '<button class="btn btn-green" onclick="navTo(\'func-certificado\')">Ver Certificado 🎓</button>' :
+        '<button class="btn btn-navy" onclick="navTo(\'func-player\')">Rever os módulos</button>'}
+    </div>`;
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Certificado
+async function carregarCertificado() {
+  const container = document.getElementById('cert-container');
+  container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Verificando certificado…</div>';
+  try {
+    const data = await api('GET', '/api/player/certificado');
+    const certs = data.certificados || data || [];
+    if (!certs.length) {
+      container.innerHTML = `<div class="empty-state">${iconCertLarge()}<p>Nenhum certificado ainda.<br>Conclua um treinamento para receber o seu!</p></div>`;
+      return;
+    }
+    container.innerHTML = certs.map(c => `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body" style="display:flex;align-items:center;gap:20px">
+          <div style="font-size:48px">🎓</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:16px">${c.treinamento_titulo || 'Treinamento'}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Emitido em ${c.emitido_em ? new Date(c.emitido_em).toLocaleDateString('pt-BR') : '—'}</div>
+            ${c.valido_ate ? `<div style="font-size:12px;color:var(--text-muted)">Válido até ${new Date(c.valido_ate).toLocaleDateString('pt-BR')}</div>` : ''}
+            <div class="mono" style="margin-top:6px;font-size:12px;color:var(--blue-accent)">Código: ${c.codigo_validacao || '—'}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-navy btn-sm" onclick="baixarCertificado(${c.id})">⬇ Baixar PDF</button>
+            ${c.codigo_validacao ? `<button class="btn btn-outline btn-sm" onclick="validarPublico('${c.codigo_validacao}')">🔗 Validar</button>` : ''}
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    container.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
+  }
+}
+
+async function baixarCertificado(certId) {
+  toast('Gerando PDF…', '');
+  try {
+    const r = await fetch(API + '/api/player/certificado/pdf?id=' + certId, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) throw new Error('Erro ao gerar PDF');
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'certificado.pdf'; a.click();
+    URL.revokeObjectURL(url);
+    toast('PDF baixado!', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function validarPublico(codigo) {
+  window.open(API + '/api/validar/' + codigo, '_blank');
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Fecha modal clicando fora
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// Prova: precisa carregar ao entrar na página
+const origNavTo = navTo;
+window.navTo = function(id) {
+  origNavTo(id);
+  if (id === 'func-prova') carregarProva();
+};
+
+function iconBookEmoji(status) {
+  if (status === 'concluido' || status === 'aprovado') return '✅';
+  if (status === 'em_andamento') return '📖';
+  return '📚';
+}
+
+// ── ÍCONES ──
+function iconGrid() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`; }
+function iconBuilding() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 21V9"/></svg>`; }
+function iconDoc() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`; }
+function iconBook() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`; }
+function iconShield() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; }
+function iconUsers() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`; }
+function iconCert() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
+function iconBookLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`; }
+function iconCertLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 </script>
 </body>
 </html>
