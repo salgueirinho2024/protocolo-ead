@@ -15,8 +15,6 @@
     { "source": "/api/admin/contratos", "destination": "/api/admin?recurso=contratos" },
     { "source": "/api/admin/suspeitos", "destination": "/api/admin?recurso=suspeitos" },
     { "source": "/api/admin/treinamentos", "destination": "/api/admin/treinamentos/[[...id]]" },
-    { "source": "/api/admin/treinamentos/:id/modulos", "destination": "/api/admin/treinamentos/[[...id]]?id=:id&sub=modulos" },
-    { "source": "/api/admin/treinamentos/:id", "destination": "/api/admin/treinamentos/[[...id]]?id=:id" },
     { "source": "/api/empresa/contratos/:id/funcionarios/:fId", "destination": "/api/empresa/contratos/:id/funcionarios?fId=:fId" },
     { "source": "/api/player/sessao/iniciar", "destination": "/api/player/sessao?acao=iniciar" },
     { "source": "/api/player/sessao/encerrar", "destination": "/api/player/sessao?acao=encerrar" },
