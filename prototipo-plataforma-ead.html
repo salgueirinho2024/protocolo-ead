@@ -744,10 +744,10 @@ function navTo(id) {
 async function carregarDashboardAdmin() {
   try {
     const [emps, contratos, treins, suspeitos] = await Promise.all([
-      api('GET', '/api/admin/empresas').catch(() => []),
-      api('GET', '/api/admin/contratos').catch(() => []),
-      api('GET', '/api/admin/treinamentos').catch(() => []),
-      api('GET', '/api/admin/suspeitos').catch(() => []),
+      api('GET', '/api/admin/empresas').catch(() => ({ empresas: [] })),
+      api('GET', '/api/admin/contratos').catch(() => ({ contratos: [] })),
+      api('GET', '/api/admin/treinamentos').catch(() => ({ treinamentos: [] })),
+      api('GET', '/api/admin/suspeitos').catch(() => ({ suspeitos: [] })),
     ]);
     const empresas = emps.empresas || emps || [];
     const contratosList = contratos.contratos || contratos || [];
