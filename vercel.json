@@ -9,9 +9,14 @@
   },
   "rewrites": [
     { "source": "/api/auth/login-funcionario", "destination": "/api/auth/login?tipo=funcionario" },
+    { "source": "/api/admin/empresas/:id", "destination": "/api/admin?recurso=empresas&id=:id" },
     { "source": "/api/admin/empresas", "destination": "/api/admin?recurso=empresas" },
+    { "source": "/api/admin/contratos/:id", "destination": "/api/admin?recurso=contratos&id=:id" },
     { "source": "/api/admin/contratos", "destination": "/api/admin?recurso=contratos" },
     { "source": "/api/admin/suspeitos", "destination": "/api/admin?recurso=suspeitos" },
+    { "source": "/api/admin/treinamentos/:id/modulos", "destination": "/api/admin/treinamentos/[[...id]]?id=:id&sub=modulos" },
+    { "source": "/api/admin/treinamentos/:id", "destination": "/api/admin/treinamentos/[[...id]]?id=:id" },
+    { "source": "/api/admin/treinamentos", "destination": "/api/admin/treinamentos/[[...id]]" },
     { "source": "/api/player/sessao/iniciar", "destination": "/api/player/sessao?acao=iniciar" },
     { "source": "/api/player/sessao/encerrar", "destination": "/api/player/sessao?acao=encerrar" },
     { "source": "/api/player/certificado/pdf", "destination": "/api/player/certificado?rota=pdf" }
