@@ -34,8 +34,7 @@ module.exports = async (req, res) => {
         GROUP BY m.id, t.titulo, t.carga_horaria_min, t.nota_minima_prova`,
       [user.id]
     );
-    if (!rows[0]) return res.status(404).json({ erro: 'Nenhuma matrícula encontrada.' });
-    res.json(rows[0]);
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao buscar matrícula.' });

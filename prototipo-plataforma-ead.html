@@ -1361,7 +1361,7 @@ async function carregarMeusTrienamentos() {
   container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Carregando…</div>';
   try {
     const data = await api('GET', '/api/player/matricula');
-    const lista = data.matriculas || data || [];
+    const lista = Array.isArray(data) ? data : (data.matriculas || []);
     if (!lista.length) {
       container.innerHTML = `<div class="empty-state">${iconBookLarge()}<p>Você ainda não tem treinamentos disponíveis.<br>Entre em contato com o RH da sua empresa.</p></div>`;
       return;
