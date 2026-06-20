@@ -1,12 +1,9 @@
-// api/empresa/contratos/[id]/funcionarios/[[...fId]].js
+// api/empresa/contratos/[id]/funcionarios/index.js
 //   GET    /api/empresa/contratos/:id/funcionarios        — lista funcionários do contrato
 //   POST   /api/empresa/contratos/:id/funcionarios        — cadastra funcionário (trava de vagas aqui)
 //   DELETE /api/empresa/contratos/:id/funcionarios/:fId   — remove funcionário (só se ainda não iniciou)
-//
-// Consolidado num único arquivo (catch-all opcional [[...fId]]) para caber
-// no limite de 12 Serverless Functions do plano Hobby da Vercel. O Vercel
-// entrega req.query.fId como array: [] quando a URL não tem o segmento
-// extra (GET/POST) e ['algum-id'] quando tem (DELETE).
+//                                                             (chega aqui via rewrite no vercel.json,
+//                                                              que passa o fId como query string)
 const bcrypt = require('bcryptjs');
 const db = require('../../../../../lib/db');
 const { exigirAuth } = require('../../../../../lib/auth');
