@@ -17,6 +17,7 @@
     { "source": "/api/admin/treinamentos", "destination": "/api/admin/treinamentos/[[...id]]" },
     { "source": "/api/admin/treinamentos/:id/modulos", "destination": "/api/admin/treinamentos/[[...id]]?id=:id&sub=modulos" },
     { "source": "/api/admin/treinamentos/:id", "destination": "/api/admin/treinamentos/[[...id]]?id=:id" },
+    { "source": "/api/empresa/contratos/:id/funcionarios", "destination": "/api/empresa/contratos/:id/funcionarios/[[...fId]]" },
     { "source": "/api/player/sessao/iniciar", "destination": "/api/player/sessao?acao=iniciar" },
     { "source": "/api/player/sessao/encerrar", "destination": "/api/player/sessao?acao=encerrar" },
     { "source": "/api/player/certificado/pdf", "destination": "/api/player/certificado?rota=pdf" }
