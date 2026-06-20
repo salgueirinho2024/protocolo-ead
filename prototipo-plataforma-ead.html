@@ -792,7 +792,7 @@ async function carregarEmpresas() {
         <td><span class="badge ${e.status==='ativo'?'badge-green':'badge-gray'}">${e.status || 'ativo'}</span></td>
         <td>${e.total_contratos || 0}</td>
         <td style="text-align:right">
-          <button class="btn btn-outline btn-sm" onclick="editarEmpresa(${e.id})">Editar</button>
+          <button class="btn btn-outline btn-sm" onclick="editarEmpresa('${e.id}')">Editar</button>
         </td>
       </tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
@@ -919,8 +919,8 @@ async function carregarTreinamentos() {
         <td>${t.nota_minima || 70}%</td>
         <td><span class="badge ${t.status==='ativo'?'badge-green':'badge-gray'}">${t.status}</span></td>
         <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
-          <button class="btn btn-outline btn-sm" onclick="verModulos(${t.id},'${escHtml(t.titulo)}')">Módulos</button>
-          <button class="btn btn-outline btn-sm" onclick="editarTreinamento(${t.id})">Editar</button>
+          <button class="btn btn-outline btn-sm" onclick="verModulos('${t.id}','${escHtml(t.titulo)}')">Módulos</button>
+          <button class="btn btn-outline btn-sm" onclick="editarTreinamento('${t.id}')">Editar</button>
         </td>
       </tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
@@ -1379,7 +1379,7 @@ async function carregarCertificado() {
             <div class="mono" style="margin-top:6px;font-size:12px;color:var(--blue-accent)">Código: ${c.codigo_validacao || '—'}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-navy btn-sm" onclick="baixarCertificado(${c.id})">⬇ Baixar PDF</button>
+            <button class="btn btn-navy btn-sm" onclick="baixarCertificado('${c.id}')">⬇ Baixar PDF</button>
             ${c.codigo_validacao ? `<button class="btn btn-outline btn-sm" onclick="validarPublico('${c.codigo_validacao}')">🔗 Validar</button>` : ''}
           </div>
         </div>
