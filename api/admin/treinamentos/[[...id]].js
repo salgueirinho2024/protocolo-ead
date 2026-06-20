@@ -1,12 +1,14 @@
 // api/admin/treinamentos/[[...id]].js
 //   GET  /api/admin/treinamentos              — lista treinamentos
 //   POST /api/admin/treinamentos              — cria treinamento
+//   PUT  /api/admin/treinamentos/:id          — edita treinamento
 //   GET  /api/admin/treinamentos/:id/modulos  — lista módulos do treinamento
 //   POST /api/admin/treinamentos/:id/modulos  — cria módulo
 //
 // Consolidado num único arquivo (catch-all opcional [[...id]]) para caber
 // no limite de 12 Serverless Functions do plano Hobby da Vercel. O Vercel
-// entrega req.query.id como array: [] para /api/admin/treinamentos e
+// entrega req.query.id como array: [] para /api/admin/treinamentos,
+// ['algum-id'] para /api/admin/treinamentos/algum-id, e
 // ['algum-id', 'modulos'] para /api/admin/treinamentos/algum-id/modulos.
 const db = require('../../../lib/db');
 const { exigirAuth } = require('../../../lib/auth');
@@ -40,6 +42,35 @@ async function handleTreinamentos(req, res) {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ erro: 'Erro ao criar treinamento.' });
+  }
+}
+
+async function handleTreinamentoPorId(req, res, treinamentoId) {
+  if (!metodoPermitido(req, res, 'PUT')) return;
+
+  const { titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses } = req.body || {};
+  if (!titulo || !carga_horaria_min) {
+    return res.status(400).json({ erro: 'Título e carga horária são obrigatórios.' });
+  }
+  try {
+    const { rows } = await db.query(
+      `UPDATE treinamentos
+          SET titulo = $1,
+              descricao = $2,
+              carga_horaria_min = $3,
+              nota_minima_prova = $4,
+              validade_certificado_meses = $5
+        WHERE id = $6
+        RETURNING *`,
+      [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null, treinamentoId]
+    );
+    if (!rows[0]) {
+      return res.status(404).json({ erro: 'Treinamento não encontrado.' });
+    }
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao atualizar treinamento.' });
   }
 }
 
@@ -90,6 +121,10 @@ module.exports = async (req, res) => {
 
   if (segmentos.length === 0) {
     return handleTreinamentos(req, res);
+  }
+
+  if (segmentos.length === 1) {
+    return handleTreinamentoPorId(req, res, segmentos[0]);
   }
 
   if (segmentos.length === 2 && segmentos[1] === 'modulos') {
