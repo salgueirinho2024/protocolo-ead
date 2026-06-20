@@ -1,16 +1,53 @@
-// api/player/sessao/encerrar.js — POST /api/player/sessao/encerrar — fecha sessão e atualiza progresso
+// api/player/sessao/index.js
+//   POST /api/player/sessao/iniciar   — abre sessão de visualização
+//   POST /api/player/sessao/encerrar  — fecha sessão, soma tempo assistido
+//
+// Consolidado num único arquivo para caber no limite de 12 Serverless
+// Functions do plano Hobby da Vercel. As duas URLs continuam existindo
+// normalmente: um rewrite no vercel.json aponta ambas para este arquivo,
+// adicionando ?acao=iniciar ou ?acao=encerrar na query.
 const db = require('../../../lib/db');
 const { exigirAuth } = require('../../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../../lib/http');
 
-module.exports = async (req, res) => {
-  if (aplicarCors(req, res)) return;
-  if (!validarEnv(res)) return;
-  if (!metodoPermitido(req, res, 'POST')) return;
+async function minhaMatricula(matriculaId, funcionarioId) {
+  const { rows } = await db.query(
+    `SELECT id FROM matriculas WHERE id = $1 AND funcionario_id = $2`,
+    [matriculaId, funcionarioId]
+  );
+  return rows[0] || null;
+}
 
-  const user = exigirAuth(req, res, 'funcionario');
-  if (!user) return;
+async function iniciarSessao(req, res, user) {
+  const { matricula_id, modulo_id } = req.body || {};
+  if (!matricula_id || !modulo_id) return res.status(400).json({ erro: 'matricula_id e modulo_id são obrigatórios.' });
 
+  try {
+    const mat = await minhaMatricula(matricula_id, user.id);
+    if (!mat) return res.status(403).json({ erro: 'Matrícula não encontrada.' });
+
+    await db.query(
+      `UPDATE matriculas SET status = 'em_andamento', iniciado_em = COALESCE(iniciado_em, now())
+        WHERE id = $1 AND status = 'nao_iniciado'`,
+      [matricula_id]
+    );
+
+    // Em Vercel, req.ip não existe nativamente — usamos o header padrão do proxy
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || null;
+
+    const { rows } = await db.query(
+      `INSERT INTO sessoes_visualizacao (matricula_id, modulo_id, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4) RETURNING id, inicio_em`,
+      [matricula_id, modulo_id, ip, req.headers['user-agent'] || null]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao iniciar sessão.' });
+  }
+}
+
+async function encerrarSessao(req, res, user) {
   const { sessao_id, matricula_id, modulo_id, segundos_efetivos, ultima_posicao_seg } = req.body || {};
   if (!sessao_id || !matricula_id || !modulo_id || segundos_efetivos === undefined) {
     return res.status(400).json({ erro: 'sessao_id, matricula_id, modulo_id e segundos_efetivos são obrigatórios.' });
@@ -69,4 +106,18 @@ module.exports = async (req, res) => {
   } finally {
     client.release();
   }
+}
+
+module.exports = async (req, res) => {
+  if (aplicarCors(req, res)) return;
+  if (!validarEnv(res)) return;
+  if (!metodoPermitido(req, res, 'POST')) return;
+
+  const user = exigirAuth(req, res, 'funcionario');
+  if (!user) return;
+
+  if (req.query.acao === 'encerrar') {
+    return encerrarSessao(req, res, user);
+  }
+  return iniciarSessao(req, res, user);
 };

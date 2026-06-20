@@ -1,6 +1,12 @@
-// api/empresa/contratos/[id]/funcionarios/index.js
-//   GET  /api/empresa/contratos/:id/funcionarios  — lista funcionários do contrato
-//   POST /api/empresa/contratos/:id/funcionarios  — cadastra funcionário (trava de vagas aqui)
+// api/empresa/contratos/[id]/funcionarios/[[...fId]].js
+//   GET    /api/empresa/contratos/:id/funcionarios        — lista funcionários do contrato
+//   POST   /api/empresa/contratos/:id/funcionarios        — cadastra funcionário (trava de vagas aqui)
+//   DELETE /api/empresa/contratos/:id/funcionarios/:fId   — remove funcionário (só se ainda não iniciou)
+//
+// Consolidado num único arquivo (catch-all opcional [[...fId]]) para caber
+// no limite de 12 Serverless Functions do plano Hobby da Vercel. O Vercel
+// entrega req.query.fId como array: [] quando a URL não tem o segmento
+// extra (GET/POST) e ['algum-id'] quando tem (DELETE).
 const bcrypt = require('bcryptjs');
 const db = require('../../../../../lib/db');
 const { exigirAuth } = require('../../../../../lib/auth');
@@ -9,12 +15,44 @@ const { aplicarCors, metodoPermitido, validarEnv } = require('../../../../../lib
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
-  if (!metodoPermitido(req, res, 'GET', 'POST')) return;
 
   const user = exigirAuth(req, res, 'empresa_admin');
   if (!user) return;
 
-  const { id } = req.query;
+  const { id, fId: fIdParam } = req.query;
+  const fId = Array.isArray(fIdParam) ? fIdParam[0] : fIdParam;
+
+  // ---- DELETE /api/empresa/contratos/:id/funcionarios/:fId ----
+  if (fId) {
+    if (!metodoPermitido(req, res, 'DELETE')) return;
+
+    try {
+      const { rows } = await db.query(
+        `SELECT m.status, c.empresa_id
+           FROM funcionarios_contrato fc
+           JOIN contratos c ON c.id = fc.contrato_id
+           LEFT JOIN matriculas m ON m.funcionario_id = fc.id
+          WHERE fc.id = $1`,
+        [fId]
+      );
+
+      if (!rows[0] || rows[0].empresa_id !== user.empresaId) {
+        return res.status(404).json({ erro: 'Funcionário não encontrado.' });
+      }
+      if (rows[0].status && rows[0].status !== 'nao_iniciado') {
+        return res.status(422).json({ erro: 'Não é possível remover quem já iniciou o treinamento.' });
+      }
+
+      await db.query(`DELETE FROM funcionarios_contrato WHERE id = $1`, [fId]);
+      return res.json({ mensagem: 'Removido com sucesso.' });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao remover funcionário.' });
+    }
+  }
+
+  // ---- GET/POST /api/empresa/contratos/:id/funcionarios ----
+  if (!metodoPermitido(req, res, 'GET', 'POST')) return;
 
   if (req.method === 'GET') {
     try {

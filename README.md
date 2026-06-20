@@ -12,34 +12,31 @@ Esta versão roda como **Vercel Functions** (serverless) — sem servidor
 ```
 protocolo-ead/
 ├── api/                          ← cada arquivo aqui é uma função serverless
+│   │                                (12 ao todo — limite do plano Hobby da Vercel;
+│   │                                 ver "Sobre o limite de 12 functions" abaixo)
 │   ├── health.js                 ← GET /api/health
 │   ├── auth/
-│   │   ├── login.js              ← POST /api/auth/login (admin/empresa)
-│   │   └── login-funcionario.js  ← POST /api/auth/login-funcionario
+│   │   └── login.js              ← POST /api/auth/login e /api/auth/login-funcionario
 │   ├── admin/
-│   │   ├── treinamentos/
-│   │   │   ├── index.js          ← GET/POST /api/admin/treinamentos
-│   │   │   └── [id]/modulos.js   ← GET/POST /api/admin/treinamentos/:id/modulos
-│   │   ├── empresas.js           ← GET/POST /api/admin/empresas
-│   │   ├── contratos.js          ← GET/POST /api/admin/contratos
-│   │   └── suspeitos.js          ← GET /api/admin/suspeitos
+│   │   ├── index.js              ← GET/POST /api/admin/empresas, /contratos, /suspeitos
+│   │   └── treinamentos/
+│   │       └── [[...id]].js      ← GET/POST /api/admin/treinamentos
+│   │                                e /api/admin/treinamentos/:id/modulos
 │   ├── empresa/
 │   │   └── contratos/
 │   │       ├── index.js                   ← GET /api/empresa/contratos
 │   │       └── [id]/
 │   │           └── funcionarios/
-│   │               ├── index.js           ← GET/POST .../funcionarios
-│   │               └── [fId].js           ← DELETE .../funcionarios/:fId
+│   │               └── [[...fId]].js      ← GET/POST .../funcionarios
+│   │                                          e DELETE .../funcionarios/:fId
 │   ├── player/
 │   │   ├── matricula.js          ← GET /api/player/matricula
 │   │   ├── checkpoint.js         ← POST /api/player/checkpoint
 │   │   ├── prova.js              ← POST /api/player/prova (gera certificado)
 │   │   ├── sessao/
-│   │   │   ├── iniciar.js        ← POST /api/player/sessao/iniciar
-│   │   │   └── encerrar.js       ← POST /api/player/sessao/encerrar
+│   │   │   └── index.js          ← POST /api/player/sessao/iniciar e /encerrar
 │   │   └── certificado/
-│   │       ├── index.js          ← GET /api/player/certificado
-│   │       └── pdf.js            ← GET /api/player/certificado/pdf?codigo=...
+│   │       └── index.js          ← GET /api/player/certificado e .../certificado/pdf
 │   └── validar/
 │       └── [codigo].js           ← GET /api/validar/:codigo (público)
 ├── lib/                           ← código compartilhado entre as functions
@@ -52,7 +49,7 @@ protocolo-ead/
 │   └── seed.js                    ← cria o primeiro usuário super admin
 ├── schema.sql                     ← estrutura do banco de dados
 ├── prototipo-plataforma-ead.html  ← protótipo visual (ainda não conectado à API)
-├── vercel.json                    ← timeout estendido para a rota que gera PDF
+├── vercel.json                    ← timeouts + rewrites das URLs consolidadas
 ├── .env.example                   ← modelo de variáveis de ambiente
 └── package.json
 ```
@@ -231,6 +228,27 @@ não fala com o backend). Pode ser:
   Vercel serve arquivos estáticos automaticamente lado a lado com `api/`.
 
 ---
+
+## Sobre o limite de 12 functions do plano Hobby
+
+A Vercel limita o plano gratuito (Hobby) a **12 Serverless Functions por
+deploy**. Como a API original tinha 18 rotas (uma function por arquivo),
+algumas foram agrupadas no mesmo arquivo físico para caber no limite — sem
+mudar nenhuma URL pública. Um arquivo de `rewrites` no `vercel.json` cuida
+de redirecionar internamente cada URL antiga para o arquivo certo:
+
+| Arquivo físico | URLs que ele atende |
+|---|---|
+| `api/auth/login.js` | `/api/auth/login` e `/api/auth/login-funcionario` |
+| `api/admin/index.js` | `/api/admin/empresas`, `/api/admin/contratos`, `/api/admin/suspeitos` |
+| `api/admin/treinamentos/[[...id]].js` | `/api/admin/treinamentos` e `/api/admin/treinamentos/:id/modulos` |
+| `api/empresa/contratos/[id]/funcionarios/[[...fId]].js` | `/api/empresa/contratos/:id/funcionarios` e `.../funcionarios/:fId` |
+| `api/player/sessao/index.js` | `/api/player/sessao/iniciar` e `/api/player/sessao/encerrar` |
+| `api/player/certificado/index.js` | `/api/player/certificado` e `/api/player/certificado/pdf` |
+
+Se um dia migrar para o plano Pro, isso pode ser desfeito (voltar a um
+arquivo por rota) por organização, mas não é obrigatório — funciona
+perfeitamente assim também.
 
 ## O que ainda falta construir
 
