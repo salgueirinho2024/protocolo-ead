@@ -13,7 +13,7 @@ const { exigirAuth } = require('../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../lib/http');
 
 async function handleEmpresas(req, res) {
-  if (!metodoPermitido(req, res, 'GET', 'POST')) return;
+  if (!metodoPermitido(req, res, 'GET', 'POST', 'PUT')) return;
 
   if (req.method === 'GET') {
     try {
@@ -30,6 +30,57 @@ async function handleEmpresas(req, res) {
     } catch (err) {
       console.error(err);
       return res.status(500).json({ erro: 'Erro ao listar empresas.' });
+    }
+  }
+
+  if (req.method === 'PUT') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ erro: 'ID da empresa não informado.' });
+
+    const { razao_social, cnpj, email_contato, telefone, ativo, admin_senha } = req.body || {};
+    if (!razao_social || !cnpj) {
+      return res.status(400).json({ erro: 'Campos obrigatórios faltando.' });
+    }
+
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { rows: emp } = await client.query(
+        `UPDATE empresas
+            SET razao_social = $1, cnpj = $2, email_contato = $3, telefone = $4,
+                ativo = COALESCE($5, ativo)
+          WHERE id = $6
+          RETURNING id`,
+        [razao_social, cnpj.replace(/\D/g, ''), email_contato || null, telefone || null,
+         typeof ativo === 'boolean' ? ativo : null, id]
+      );
+
+      if (!emp.length) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ erro: 'Empresa não encontrada.' });
+      }
+
+      // Senha do gestor é opcional na edição — só atualiza se foi enviada.
+      if (admin_senha) {
+        const hash = await bcrypt.hash(admin_senha, 12);
+        await client.query(
+          `UPDATE usuarios u
+              SET senha_hash = $1
+            WHERE u.id IN (SELECT usuario_id FROM empresa_usuarios WHERE empresa_id = $2)`,
+          [hash, id]
+        );
+      }
+
+      await client.query('COMMIT');
+      return res.json({ empresaId: id });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      if (err.code === '23505') return res.status(409).json({ erro: 'CNPJ ou e-mail já cadastrado.' });
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao editar empresa.' });
+    } finally {
+      client.release();
     }
   }
 

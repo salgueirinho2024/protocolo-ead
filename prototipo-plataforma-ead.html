@@ -581,7 +581,7 @@ async function api(method, path, body) {
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(API + path, opts);
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || data.message || 'Erro ' + r.status);
+  if (!r.ok) throw new Error(data.erro || data.error || data.message || 'Erro ' + r.status);
   return data;
 }
 
@@ -787,10 +787,10 @@ async function carregarEmpresas() {
     if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhuma empresa cadastrada</td></tr>'; return; }
     tbody.innerHTML = lista.map(e => `
       <tr>
-        <td><strong>${e.nome}</strong></td>
+        <td><strong>${e.razao_social}</strong></td>
         <td class="mono">${e.cnpj || '—'}</td>
-        <td><span class="badge ${e.status==='ativo'?'badge-green':'badge-gray'}">${e.status || 'ativo'}</span></td>
-        <td>${e.total_contratos || 0}</td>
+        <td><span class="badge ${e.ativo!==false?'badge-green':'badge-gray'}">${e.ativo!==false?'ativo':'inativo'}</span></td>
+        <td>${e.total_funcionarios || 0}</td>
         <td style="text-align:right">
           <button class="btn btn-outline btn-sm" onclick="editarEmpresa('${e.id}')">Editar</button>
         </td>
@@ -813,31 +813,40 @@ async function editarEmpresa(id) {
     if (!e) return;
     editingEmpresaId = id;
     document.getElementById('modal-empresa-titulo').textContent = 'Editar Empresa';
-    document.getElementById('emp-nome').value = e.nome || '';
+    document.getElementById('emp-nome').value = e.razao_social || '';
     document.getElementById('emp-cnpj').value = e.cnpj || '';
-    document.getElementById('emp-email').value = e.email || '';
+    document.getElementById('emp-email').value = e.email_contato || '';
     document.getElementById('emp-telefone').value = e.telefone || '';
-    document.getElementById('emp-status').value = e.status || 'ativo';
+    document.getElementById('emp-status').value = e.ativo === false ? 'inativo' : 'ativo';
     document.getElementById('emp-senha').value = '';
     document.getElementById('modal-empresa').classList.add('open');
   } catch(e) { toast(e.message, 'error'); }
 }
 
 async function salvarEmpresa() {
-  const body = {
-    nome: document.getElementById('emp-nome').value,
-    cnpj: document.getElementById('emp-cnpj').value,
-    email: document.getElementById('emp-email').value,
-    telefone: document.getElementById('emp-telefone').value,
-    status: document.getElementById('emp-status').value,
-  };
+  const email = document.getElementById('emp-email').value;
   const senha = document.getElementById('emp-senha').value;
-  if (senha) body.senha = senha;
   try {
     if (editingEmpresaId) {
+      const body = {
+        razao_social: document.getElementById('emp-nome').value,
+        cnpj: document.getElementById('emp-cnpj').value,
+        email_contato: email,
+        telefone: document.getElementById('emp-telefone').value,
+        ativo: document.getElementById('emp-status').value === 'ativo',
+      };
+      if (senha) body.admin_senha = senha;
       await api('PUT', '/api/admin/empresas/' + editingEmpresaId, body);
     } else {
       if (!senha) { toast('Informe uma senha para o gestor', 'error'); return; }
+      const body = {
+        razao_social: document.getElementById('emp-nome').value,
+        cnpj: document.getElementById('emp-cnpj').value,
+        email_contato: email,
+        telefone: document.getElementById('emp-telefone').value,
+        admin_email: email,
+        admin_senha: senha,
+      };
       await api('POST', '/api/admin/empresas', body);
     }
     fecharModal('modal-empresa');
