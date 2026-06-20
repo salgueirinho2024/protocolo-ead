@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protocolo — Plataforma de Treinamento EAD</title>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15231f;
+    --paper:#f6f4ee;
+    --paper-2:#eeebe1;
+    --line:#d8d3c4;
+    --petrol:#1f3d37;
+    --petrol-2:#2c5048;
+    --amber:#c5731f;
+    --amber-soft:#f3e3cf;
+    --red:#9a3324;
+    --green:#3c6b4a;
+    --muted:#6b6759;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{ font-family:'Fraunces', serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  .app{ min-height:100vh; display:flex; flex-direction:column; }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px; border-bottom:1px solid var(--line);
+    background:var(--paper);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:30px; height:30px; border-radius:6px;
+    background:var(--petrol); color:var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:15px;
+  }
+  .brand-name{ font-family:'Fraunces',serif; font-weight:600; font-size:18px; letter-spacing:-0.01em;}
+  .brand-sub{ font-size:11px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-top:1px;}
+
+  .role-switch{ display:flex; gap:6px; background:var(--paper-2); padding:4px; border-radius:10px; border:1px solid var(--line);}
+  .role-btn{
+    border:none; background:transparent; padding:8px 14px; border-radius:7px;
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:500; color:var(--muted);
+    cursor:pointer; transition:all .15s ease;
+  }
+  .role-btn.active{ background:var(--petrol); color:var(--paper); }
+  .role-btn:not(.active):hover{ color:var(--ink); }
+
+  main{ flex:1; padding:36px 32px 64px; max-width:1080px; width:100%; margin:0 auto; }
+
+  .eyebrow{
+    font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--amber); font-weight:600; margin-bottom:6px;
+  }
+  h1.page-title{ font-family:'Fraunces',serif; font-size:30px; font-weight:600; margin:0 0 6px; letter-spacing:-0.01em;}
+  .page-desc{ color:var(--muted); font-size:14.5px; max-width:560px; line-height:1.55; margin-bottom:28px;}
+
+  /* ---------- cards ---------- */
+  .card{
+    background:#fffdf9; border:1px solid var(--line); border-radius:12px;
+    padding:22px 24px;
+  }
+  .card + .card{ margin-top:16px; }
+  .card-title{ font-weight:600; font-size:15px; margin:0 0 4px; }
+  .card-sub{ font-size:12.5px; color:var(--muted); margin:0 0 16px; }
+
+  .grid-2{ display:grid; grid-template-columns:1.1fr .9fr; gap:20px; align-items:start; }
+  @media (max-width:860px){ .grid-2{ grid-template-columns:1fr; } }
+
+  /* ---------- vagas meter ---------- */
+  .meter-wrap{ margin:14px 0 4px; }
+  .meter-track{
+    height:10px; background:var(--paper-2); border-radius:6px; overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .meter-fill{ height:100%; background:var(--petrol); transition:width .3s ease; }
+  .meter-fill.full{ background:var(--amber); }
+  .meter-label{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; }
+  .meter-label .count{ font-family:'JetBrains Mono',monospace; font-weight:500; color:var(--ink); }
+
+  /* ---------- forms ---------- */
+  label.field-label{ display:block; font-size:12px; font-weight:600; color:var(--ink); margin-bottom:5px; }
+  input[type=text]{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    font-family:'Inter',sans-serif; font-size:14px; background:#fff; color:var(--ink);
+  }
+  input[type=text]:focus{ outline:none; border-color:var(--petrol); box-shadow:0 0 0 3px rgba(31,61,55,.1); }
+  input[type=text]:disabled{ background:var(--paper-2); color:var(--muted); cursor:not-allowed; }
+  .field-row{ display:grid; grid-template-columns:1.3fr 1fr auto; gap:10px; align-items:end; margin-bottom:6px; }
+  @media (max-width:640px){ .field-row{ grid-template-columns:1fr; } }
+  .field-err{ font-size:11.5px; color:var(--red); margin-top:4px; min-height:14px; }
+
+  button{ font-family:'Inter',sans-serif; cursor:pointer; }
+  .btn{
+    padding:10px 16px; border-radius:8px; border:1px solid transparent;
+    font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px;
+    transition:all .15s ease;
+  }
+  .btn-primary{ background:var(--petrol); color:var(--paper); }
+  .btn-primary:hover{ background:var(--petrol-2); }
+  .btn-primary:disabled{ background:var(--line); color:var(--muted); cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border-color:var(--line); color:var(--ink); }
+  .btn-ghost:hover{ border-color:var(--petrol); }
+  .btn-danger-text{ background:transparent; border:none; color:var(--red); font-size:12px; font-weight:500; padding:4px 8px;}
+  .btn-danger-text:hover{ text-decoration:underline; }
+  .btn-amber{ background:var(--amber); color:#fff; }
+  .btn-amber:hover{ background:#a85f17; }
+
+  .banner{
+    border-radius:9px; padding:12px 14px; font-size:13px; display:flex; gap:10px; align-items:flex-start;
+    border:1px solid; margin-bottom:14px; line-height:1.5;
+  }
+  .banner-amber{ background:var(--amber-soft); border-color:#e3c294; color:#6b4314; }
+  .banner-green{ background:#e6efe5; border-color:#b9d2b8; color:var(--green); }
+  .banner-red{ background:#f6e6e1; border-color:#e2bcae; color:var(--red); }
+
+  /* ---------- table ---------- */
+  table{ width:100%; border-collapse:collapse; margin-top:14px; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; padding:0 10px 8px; border-bottom:1px solid var(--line); }
+  td{ padding:10px; font-size:13.5px; border-bottom:1px solid #eee9dc; }
+  tr:last-child td{ border-bottom:none; }
+  td.cpf{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--muted); }
+  .status-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; }
+  .pill-pendente{ background:#ece8da; color:var(--muted); }
+  .pill-andamento{ background:var(--amber-soft); color:#8a5618; }
+  .pill-concluido{ background:#e0ecdf; color:var(--green); }
+  .pill-suspeito{ background:#f6e1db; color:var(--red); }
+
+  /* ---------- empty state ---------- */
+  .empty{ text-align:center; padding:36px 20px; color:var(--muted); }
+  .empty i{ font-size:13px; }
+
+  /* ---------- video player mock ---------- */
+  .player-shell{ background:#0f1a17; border-radius:14px; overflow:hidden; position:relative; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; }
+  .player-content{ color:#cfd8d4; text-align:center; }
+  .player-progress-track{ position:absolute; bottom:0; left:0; right:0; height:5px; background:rgba(255,255,255,.15); }
+  .player-progress-fill{ height:100%; background:var(--amber); transition:width .2s linear; }
+  .checkpoint-overlay{
+    position:absolute; inset:0; background:rgba(15,26,23,.93);
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+    padding:24px; text-align:center;
+  }
+  .checkpoint-icon{ width:48px; height:48px; border-radius:50%; background:var(--amber); display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; font-weight:700; font-family:'Fraunces',serif; }
+  .session-log{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); background:var(--paper-2); border-radius:8px; padding:10px 12px; max-height:120px; overflow-y:auto; }
+  .session-log div{ padding:2px 0; }
+
+  /* ---------- certificate ---------- */
+  .cert{
+    border:2px solid var(--petrol); border-radius:10px; padding:30px;
+    background:repeating-linear-gradient(135deg, #fffdf9, #fffdf9 18px, #fbf8f0 18px, #fbf8f0 19px);
+    text-align:center; position:relative;
+  }
+  .cert-seal{ width:56px; height:56px; border-radius:50%; border:2px solid var(--amber); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; font-family:'Fraunces',serif; font-weight:600; color:var(--amber); font-size:20px; }
+  .cert-code{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:.05em; margin-top:18px; }
+
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
+  .toggle{ position:relative; width:38px; height:21px; background:var(--line); border-radius:11px; cursor:pointer; transition:background .15s; }
+  .toggle.on{ background:var(--petrol); }
+  .toggle-knob{ position:absolute; top:2px; left:2px; width:17px; height:17px; background:#fff; border-radius:50%; transition:transform .15s; }
+  .toggle.on .toggle-knob{ transform:translateX(17px); }
+
+  .stat-row{ display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
+  .stat{ flex:1; min-width:140px; background:var(--paper-2); border-radius:9px; padding:14px 16px; border:1px solid var(--line); }
+  .stat-num{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; }
+  .stat-label{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+
+  .company-card{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--line); border-radius:10px; background:#fffdf9; cursor:pointer; transition:border-color .15s; }
+  .company-card:hover{ border-color:var(--petrol); }
+  .company-card + .company-card{ margin-top:10px; }
+  .company-name{ font-weight:600; font-size:14.5px; }
+  .company-meta{ font-size:12px; color:var(--muted); margin-top:2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState, useMemo, useEffect, useRef} = React;
+
+// ---------------- seed data ----------------
+const TREINAMENTO = {
+  titulo: "Integração corporativa — segurança do trabalho",
+  cargaHorasTotal: 24,
+  modulos: [
+    {id:'m1', titulo:'Módulo 1 — Normas e EPIs', minutos:480},
+    {id:'m2', titulo:'Módulo 2 — Procedimentos de emergência', minutos:480},
+    {id:'m3', titulo:'Módulo 3 — Ergonomia e prevenção', minutos:480},
+  ]
+};
+
+function onlyDigits(s){ return s.replace(/\D/g,''); }
+function formatCPF(v){
+  const d = onlyDigits(v).slice(0,11);
+  let out = d;
+  if(d.length>3) out = d.slice(0,3)+'.'+d.slice(3);
+  if(d.length>6) out = out.slice(0,7)+'.'+d.slice(6);
+  if(d.length>9) out = out.slice(0,11)+'-'+d.slice(11);
+  return out;
+}
+function validaCPF(cpfRaw){
+  const cpf = onlyDigits(cpfRaw);
+  if(cpf.length !== 11) return false;
+  if(/^(\d)\1{10}$/.test(cpf)) return false;
+  let soma=0;
+  for(let i=0;i<9;i++) soma += parseInt(cpf[i])*(10-i);
+  let resto = (soma*10)%11; if(resto===10) resto=0;
+  if(resto !== parseInt(cpf[9])) return false;
+  soma=0;
+  for(let i=0;i<10;i++) soma += parseInt(cpf[i])*(11-i);
+  resto = (soma*10)%11; if(resto===10) resto=0;
+  if(resto !== parseInt(cpf[10])) return false;
+  return true;
+}
+
+function genCode(){
+  return 'CERT-' + Math.random().toString(36).slice(2,6).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+}
+
+// ---------------- Top bar ----------------
+function TopBar({role, setRole}){
+  return (
+    <div className="topbar">
+      <div className="brand">
+        <div className="brand-mark">P</div>
+        <div>
+          <div className="brand-name">Protocolo</div>
+          <div className="brand-sub">Treinamento &amp; certificação</div>
+        </div>
+      </div>
+      <div className="role-switch">
+        <button className={"role-btn "+(role==='admin'?'active':'')} onClick={()=>setRole('admin')}>Super admin</button>
+        <button className={"role-btn "+(role==='empresa'?'active':'')} onClick={()=>setRole('empresa')}>Empresa cliente</button>
+        <button className={"role-btn "+(role==='funcionario'?'active':'')} onClick={()=>setRole('funcionario')}>Funcionário</button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Super Admin view ----------------
+function AdminView({empresas, criarContrato}){
+  const [empresaNome, setEmpresaNome] = useState('');
+  const [vagas, setVagas] = useState(20);
+
+  return (
+    <main>
+      <div className="eyebrow">Painel do super admin</div>
+      <h1 className="page-title">Liberar acesso para uma empresa</h1>
+      <p className="page-desc">Você cria o contrato com o número exato de vagas vendidas. A empresa recebe um login e só consegue cadastrar até esse limite — nem um a mais.</p>
+
+      <div className="grid-2">
+        <div className="card">
+          <p className="card-title">Novo contrato</p>
+          <p className="card-sub">{TREINAMENTO.titulo} · {TREINAMENTO.cargaHorasTotal}h de carga horária</p>
+
+          <label className="field-label">Empresa</label>
+          <input type="text" placeholder="Ex: Indústria Vale Forte Ltda" value={empresaNome} onChange={e=>setEmpresaNome(e.target.value)} style={{marginBottom:14}}/>
+
+          <label className="field-label">Vagas contratadas</label>
+          <input type="text" value={vagas} onChange={e=>setVagas(onlyDigits(e.target.value))} style={{marginBottom:18}}/>
+
+          <button className="btn btn-primary" disabled={!empresaNome || !vagas}
+            onClick={()=>{ criarContrato(empresaNome, parseInt(vagas)||0); setEmpresaNome(''); setVagas(20); }}>
+            Liberar acesso à empresa
+          </button>
+        </div>
+
+        <div className="card">
+          <p className="card-title">Empresas com acesso liberado</p>
+          <p className="card-sub">{empresas.length} contrato(s) ativo(s)</p>
+          {empresas.length===0 && <div className="empty">Nenhuma empresa cadastrada ainda</div>}
+          {empresas.map(emp=>{
+            const ocupadas = emp.funcionarios.length;
+            return (
+              <div className="company-card" key={emp.id}>
+                <div>
+                  <div className="company-name">{emp.nome}</div>
+                  <div className="company-meta">{ocupadas} de {emp.vagas} vagas usadas</div>
+                </div>
+                <span className={"status-pill " + (ocupadas>=emp.vagas?'pill-concluido':'pill-andamento')}>
+                  {ocupadas>=emp.vagas?'completo':'em uso'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// ---------------- Empresa view ----------------
+function EmpresaView({empresa, addFuncionario, removeFuncionario}){
+  const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [erro, setErro] = useState('');
+
+  if(!empresa){
+    return (
+      <main>
+        <div className="empty card">Nenhum contrato ativo. Peça ao super admin para liberar o acesso da sua empresa.</div>
+      </main>
+    );
+  }
+
+  const ocupadas = empresa.funcionarios.length;
+  const restantes = empresa.vagas - ocupadas;
+  const cheio = restantes <= 0;
+  const pct = Math.min(100, Math.round((ocupadas/empresa.vagas)*100));
+
+  function handleAdd(){
+    setErro('');
+    if(cheio){ setErro('Limite de vagas atingido — fale com o administrador para contratar mais.'); return; }
+    if(!nome.trim() || nome.trim().length<3){ setErro('Informe o nome completo do funcionário.'); return; }
+    if(!validaCPF(cpf)){ setErro('CPF inválido. Confira os números digitados.'); return; }
+    const cpfLimpo = onlyDigits(cpf);
+    if(empresa.funcionarios.some(f=>f.cpf===cpfLimpo)){ setErro('Este CPF já foi cadastrado neste contrato.'); return; }
+    addFuncionario(empresa.id, {id:'f_'+Date.now(), nome:nome.trim(), cpf:cpfLimpo, status:'pendente'});
+    setNome(''); setCpf('');
+  }
+
+  return (
+    <main>
+      <div className="eyebrow">Painel da empresa</div>
+      <h1 className="page-title">{empresa.nome}</h1>
+      <p className="page-desc">{TREINAMENTO.titulo} — cadastre exatamente os funcionários que vão fazer o treinamento. O limite de vagas contratadas é travado pelo sistema.</p>
+
+      <div className="card">
+        <div className="meter-wrap">
+          <div className="meter-track">
+            <div className={"meter-fill "+(cheio?'full':'')} style={{width:pct+'%'}}></div>
+          </div>
+          <div className="meter-label">
+            <span>Vagas utilizadas</span>
+            <span className="count">{ocupadas} / {empresa.vagas}</span>
+          </div>
+        </div>
+
+        {cheio && (
+          <div className="banner banner-amber" style={{marginTop:14}}>
+            <span>Todas as {empresa.vagas} vagas contratadas já foram preenchidas. Para adicionar mais funcionários, contrate vagas adicionais com o administrador.</span>
+          </div>
+        )}
+
+        <div style={{marginTop:cheio?0:14, opacity:cheio?0.45:1, pointerEvents:cheio?'none':'auto'}}>
+          <div className="field-row">
+            <div>
+              <label className="field-label">Nome completo</label>
+              <input type="text" placeholder="Ex: Maria da Silva Santos" value={nome} disabled={cheio} onChange={e=>setNome(e.target.value)} />
+            </div>
+            <div>
+              <label className="field-label">CPF</label>
+              <input type="text" placeholder="000.000.000-00" value={formatCPF(cpf)} disabled={cheio} onChange={e=>setCpf(e.target.value)} maxLength={14}/>
+            </div>
+            <button className="btn btn-primary" disabled={cheio} onClick={handleAdd}>Adicionar</button>
+          </div>
+          <div className="field-err">{erro}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <p className="card-title">Funcionários cadastrados</p>
+        <p className="card-sub">Cada um recebe um acesso individual vinculado ao CPF</p>
+        {empresa.funcionarios.length===0 ? (
+          <div className="empty">Nenhum funcionário cadastrado ainda</div>
+        ) : (
+          <table>
+            <thead><tr><th>Nome</th><th>CPF</th><th>Progresso</th><th></th></tr></thead>
+            <tbody>
+              {empresa.funcionarios.map(f=>(
+                <tr key={f.id}>
+                  <td>{f.nome}</td>
+                  <td className="cpf">{formatCPF(f.cpf)}</td>
+                  <td><StatusPill status={f.status} /></td>
+                  <td style={{textAlign:'right'}}>
+                    {f.status==='pendente' && <button className="btn-danger-text" onClick={()=>removeFuncionario(empresa.id, f.id)}>remover</button>}
+                    {f.status==='concluido' && <a href="#" style={{fontSize:12, color:'#1f3d37', fontWeight:600}} onClick={(e)=>e.preventDefault()}>baixar certificado ↓</a>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function StatusPill({status}){
+  const map = {
+    pendente: ['pill-pendente','não iniciado'],
+    andamento: ['pill-andamento','em andamento'],
+    concluido: ['pill-concluido','concluído'],
+    suspeito: ['pill-suspeito','revisar — checkpoints falhos'],
+  };
+  const [cls,label] = map[status]||map.pendente;
+  return <span className={"status-pill "+cls}>{label}</span>;
+}
+
+// ---------------- Funcionário / Player view ----------------
+function FuncionarioView({empresa, updateFuncionarioStatus}){
+  const funcionario = empresa && empresa.funcionarios[0];
+  const [moduloIdx, setModuloIdx] = useState(0);
+  const [posicaoPct, setPosicaoPct] = useState(0); // 0-100 dentro do módulo atual
+  const [tocando, setTocando] = useState(false);
+  const [checkpoint, setCheckpoint] = useState(null); // {tipo, resolvido}
+  const [log, setLog] = useState([]);
+  const [horasHoje, setHorasHoje] = useState(0);
+  const [concluido, setConcluido] = useState(false);
+  const [certCode] = useState(genCode());
+  const nextCheckpointAt = useRef(35 + Math.random()*30); // % aleatório dentro do módulo
+  const intervalRef = useRef(null);
+
+  const modulo = TREINAMENTO.modulos[moduloIdx];
+  const totalModulos = TREINAMENTO.modulos.length;
+
+  function addLog(msg){
+    setLog(l => [ '['+new Date().toLocaleTimeString('pt-BR')+'] ' + msg, ...l].slice(0,8));
+  }
+
+  useEffect(()=>{
+    if(!tocando || checkpoint) return;
+    intervalRef.current = setInterval(()=>{
+      setPosicaoPct(p=>{
+        const np = p + 1.2;
+        if(np >= nextCheckpointAt.current && np < 100){
+          setTocando(false);
+          setCheckpoint({tipo: Math.random()>0.5?'clique':'pergunta', t0:Date.now()});
+          return p;
+        }
+        if(np >= 100){
+          clearInterval(intervalRef.current);
+          addLog('Módulo "'+modulo.titulo+'" concluído.');
+          setHorasHoje(h=>h + modulo.minutos/60);
+          if(moduloIdx < totalModulos-1){
+            setModuloIdx(i=>i+1);
+            nextCheckpointAt.current = 35 + Math.random()*30;
+            return 0;
+          } else {
+            setConcluido(true);
+            setTocando(false);
+            return 100;
+          }
+        }
+        return np;
+      });
+    }, 220);
+    return ()=>clearInterval(intervalRef.current);
+  }, [tocando, checkpoint, moduloIdx]);
+
+  function resolverCheckpoint(ok){
+    const dt = Date.now() - checkpoint.t0;
+    addLog((ok?'Checkpoint respondido ✓':'Checkpoint ignorado ✕') + ' — pos. '+Math.round(posicaoPct)+'% · '+dt+'ms');
+    setCheckpoint(null);
+    nextCheckpointAt.current = posicaoPct + 25 + Math.random()*30;
+    if(ok) setTocando(true);
+  }
+
+  if(!funcionario){
+    return <main><div className="empty card">Nenhum funcionário cadastrado para simular ainda. Vá até "Empresa cliente" e adicione alguém.</div></main>;
+  }
+
+  if(concluido){
+    return (
+      <main>
+        <div className="eyebrow">Treinamento concluído</div>
+        <h1 className="page-title">Certificado emitido</h1>
+        <p className="page-desc">{funcionario.nome} completou as {TREINAMENTO.cargaHorasTotal} horas do treinamento com todos os checkpoints de presença validados.</p>
+        <div className="cert">
+          <div className="cert-seal">P</div>
+          <div className="serif" style={{fontSize:13, color:'#6b6759', letterSpacing:'.05em', textTransform:'uppercase'}}>Certificado de conclusão</div>
+          <div className="serif" style={{fontSize:26, fontWeight:600, margin:'10px 0 4px'}}>{funcionario.nome}</div>
+          <div style={{fontSize:13, color:'#6b6759'}}>CPF {formatCPF(funcionario.cpf)}</div>
+          <div style={{marginTop:18, fontSize:14.5}}>concluiu o treinamento</div>
+          <div className="serif" style={{fontSize:19, fontWeight:600, margin:'4px 0'}}>{TREINAMENTO.titulo}</div>
+          <div style={{fontSize:13, color:'#6b6759'}}>carga horária de {TREINAMENTO.cargaHorasTotal} horas — {new Date().toLocaleDateString('pt-BR')}</div>
+          <div className="cert-code">código de validação: {certCode}</div>
+        </div>
+        <div className="stat-row">
+          <div className="stat"><div className="stat-num">{TREINAMENTO.cargaHorasTotal}h</div><div className="stat-label">carga horária total</div></div>
+          <div className="stat"><div className="stat-num">{log.filter(l=>l.includes('✓')).length}</div><div className="stat-label">checkpoints validados</div></div>
+          <div className="stat"><div className="stat-num">0</div><div className="stat-label">checkpoints suspeitos</div></div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main>
+      <div className="eyebrow">Área do funcionário</div>
+      <h1 className="page-title">{funcionario.nome}</h1>
+      <p className="page-desc">{TREINAMENTO.titulo} · módulo {moduloIdx+1} de {totalModulos} — {modulo.titulo}</p>
+
+      <div className="grid-2">
+        <div>
+          <div className="player-shell">
+            {checkpoint ? (
+              <div className="checkpoint-overlay">
+                <div className="checkpoint-icon">{checkpoint.tipo==='clique'?'!':'?'}</div>
+                {checkpoint.tipo==='clique' ? (
+                  <>
+                    <div style={{color:'#fff', fontWeight:600, fontSize:16}}>Você ainda está assistindo?</div>
+                    <div style={{color:'#9aa8a3', fontSize:12.5, maxWidth:280}}>O vídeo pausou automaticamente. Clique abaixo para continuar — checkpoints aleatórios confirmam a presença ao longo do treinamento.</div>
+                    <button className="btn btn-amber" onClick={()=>resolverCheckpoint(true)}>Sim, continuar assistindo</button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{color:'#fff', fontWeight:600, fontSize:16}}>Pergunta rápida de confirmação</div>
+                    <div style={{color:'#9aa8a3', fontSize:12.5, maxWidth:300}}>Qual EPI é obrigatório na área demonstrada há pouco?</div>
+                    <div style={{display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center'}}>
+                      <button className="btn btn-ghost" style={{color:'#fff', borderColor:'#3a4a45'}} onClick={()=>resolverCheckpoint(false)}>Capacete</button>
+                      <button className="btn btn-amber" onClick={()=>resolverCheckpoint(true)}>Óculos de proteção</button>
+                      <button className="btn btn-ghost" style={{color:'#fff', borderColor:'#3a4a45'}} onClick={()=>resolverCheckpoint(false)}>Luvas térmicas</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="player-content">
+                {!tocando && posicaoPct===0 ? (
+                  <button className="btn btn-amber" onClick={()=>setTocando(true)}>▶ Iniciar módulo</button>
+                ) : !tocando ? (
+                  <button className="btn btn-amber" onClick={()=>setTocando(true)}>▶ Retomar</button>
+                ) : (
+                  <div style={{fontSize:13, letterSpacing:'.05em', textTransform:'uppercase', color:'#9aa8a3'}}>reproduzindo · {Math.round(posicaoPct)}%</div>
+                )}
+              </div>
+            )}
+            <div className="player-progress-track"><div className="player-progress-fill" style={{width:posicaoPct+'%'}}></div></div>
+          </div>
+          {!checkpoint && tocando && (
+            <button className="btn-danger-text" style={{marginTop:8}} onClick={()=>{ setTocando(false); addLog('Pausado manualmente pelo aluno.'); }}>pausar</button>
+          )}
+        </div>
+
+        <div className="card" style={{marginTop:0}}>
+          <p className="card-title">Controle de carga horária</p>
+          <p className="card-sub">Soma-se automaticamente, mesmo em dias diferentes</p>
+          <div className="stat-row" style={{marginTop:6}}>
+            <div className="stat">
+              <div className="stat-num">{horasHoje.toFixed(1)}h</div>
+              <div className="stat-label">assistidas nesta sessão</div>
+            </div>
+            <div className="stat">
+              <div className="stat-num">{TREINAMENTO.cargaHorasTotal}h</div>
+              <div className="stat-label">carga horária total</div>
+            </div>
+          </div>
+          <p className="card-title" style={{marginTop:18, fontSize:13}}>Registro de presença (anti-fraude)</p>
+          <div className="session-log">
+            {log.length===0 ? <div style={{color:'#a39f8f'}}>nenhum evento ainda</div> : log.map((l,i)=><div key={i}>{l}</div>)}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// ---------------- App ----------------
+function App(){
+  const [role, setRole] = useState('admin');
+  const [empresas, setEmpresas] = useState([
+    {id:'e1', nome:'Indústria Vale Forte Ltda', vagas:5, funcionarios:[
+      {id:'f1', nome:'Carlos Eduardo Ramos', cpf:'52998224725', status:'pendente'},
+      {id:'f2', nome:'Juliana Pereira Costa', cpf:'11144477735', status:'pendente'},
+    ]},
+  ]);
+
+  function criarContrato(nome, vagas){
+    setEmpresas(es => [...es, {id:'e_'+Date.now(), nome, vagas, funcionarios:[]}]);
+  }
+  function addFuncionario(empresaId, func){
+    setEmpresas(es => es.map(e => e.id===empresaId ? {...e, funcionarios:[...e.funcionarios, func]} : e));
+  }
+  function removeFuncionario(empresaId, funcId){
+    setEmpresas(es => es.map(e => e.id===empresaId ? {...e, funcionarios:e.funcionarios.filter(f=>f.id!==funcId)} : e));
+  }
+  function updateFuncionarioStatus(empresaId, funcId, status){
+    setEmpresas(es => es.map(e => e.id===empresaId ? {...e, funcionarios:e.funcionarios.map(f=>f.id===funcId?{...f,status}:f)} : e));
+  }
+
+  const empresaAtual = empresas[0];
+
+  return (
+    <div className="app">
+      <TopBar role={role} setRole={setRole} />
+      {role==='admin' && <AdminView empresas={empresas} criarContrato={criarContrato} />}
+      {role==='empresa' && <EmpresaView empresa={empresaAtual} addFuncionario={addFuncionario} removeFuncionario={removeFuncionario} />}
+      {role==='funcionario' && <FuncionarioView empresa={empresaAtual} updateFuncionarioStatus={updateFuncionarioStatus} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

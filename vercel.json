@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/player/prova.js": {
+      "maxDuration": 30
+    },
+    "api/player/certificado/pdf.js": {
+      "maxDuration": 15
+    }
+  }
+}
