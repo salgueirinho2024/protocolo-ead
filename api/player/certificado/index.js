@@ -1,18 +1,8 @@
 // api/player/certificado/index.js
-//   GET /api/player/certificado            — lista (array) de certificados do funcionário logado
-//   GET /api/player/certificado/pdf        — devolve o PDF binário, via ?codigo= (público,
-//                                              usado no QR code) OU ?id= (autenticado, usado
-//                                              pelo botão "Baixar PDF" da listagem)
-//
-// Consolidado num único arquivo para caber no limite de 12 Serverless
-// Functions do plano Hobby da Vercel. A URL /api/player/certificado/pdf
-// continua existindo normalmente: um rewrite no vercel.json aponta para
-// este arquivo, adicionando ?rota=pdf na query (além do ?codigo= que o
-// cliente já envia).
-//
-// Substitui o antigo `express.static('/uploads/certificados')`. Como a Vercel
-// não tem filesystem persistente, o PDF é guardado em base64 no banco
-// (coluna certificados.arquivo_pdf_base64) e devolvido aqui como binário puro.
+//   GET /api/player/certificado       — lista certificados do funcionário logado
+//                                       (inclui dados_certificado para o frontend gerar o PDF)
+//   GET /api/player/certificado?rota=pdf&codigo=XXXX — rota de validação pública
+//                                       (retorna metadados em JSON, pois o PDF é gerado no frontend)
 const db = require('../../../lib/db');
 const { exigirAuth } = require('../../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../../lib/http');
@@ -34,57 +24,55 @@ async function metadadosCertificado(req, res) {
         ORDER BY cert.emitido_em DESC`,
       [user.id]
     );
-    res.json(rows);
+
+    // Busca dados da emissora para o frontend gerar o PDF
+    const { rows: emissoraRows } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
+    const emissora = emissoraRows[0] || null;
+
+    // Adiciona dados_certificado em cada registro para o frontend montar o PDF
+    const resultado = rows.map(c => ({
+      ...c,
+      dados_certificado: {
+        nome: c.funcionario_nome,
+        cpf: c.cpf,
+        titulo: c.treinamento_titulo,
+        carga_horaria_min: c.carga_horaria_min,
+        data_conclusao: c.emitido_em ? new Date(c.emitido_em).toLocaleDateString('pt-BR') : '—',
+        valido_ate: c.valido_ate ? new Date(c.valido_ate).toLocaleDateString('pt-BR') : null,
+        codigo_validacao: c.codigo_validacao,
+        emissora,
+      },
+    }));
+
+    res.json(resultado);
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao buscar certificado.' });
   }
 }
 
-async function pdfCertificado(req, res) {
+async function validacaoPublica(req, res) {
   const codigo = (req.query.codigo || '').toString().toUpperCase().trim();
-  const id = (req.query.id || '').toString().trim();
-
-  if (!codigo && !id) {
-    return res.status(400).json({ erro: 'Parâmetro codigo ou id é obrigatório.' });
-  }
+  if (!codigo) return res.status(400).json({ erro: 'Parâmetro codigo é obrigatório.' });
 
   try {
-    let rows;
-    if (codigo) {
-      // Rota pública por design (é o link que vai no certificado/QR code), mas só
-      // funciona com o código de validação certo — não dá pra "listar" certificados.
-      ({ rows } = await db.query(
-        `SELECT arquivo_pdf_base64, codigo_validacao FROM certificados WHERE codigo_validacao = $1`,
-        [codigo]
-      ));
-    } else {
-      // Download autenticado pelo próprio funcionário a partir da listagem
-      // ("Baixar PDF"). Confere que o certificado pertence a quem está logado.
-      const user = exigirAuth(req, res, 'funcionario');
-      if (!user) return;
-      ({ rows } = await db.query(
-        `SELECT cert.arquivo_pdf_base64, cert.codigo_validacao
-           FROM certificados cert
-           JOIN matriculas m ON m.id = cert.matricula_id
-          WHERE cert.id = $1 AND m.funcionario_id = $2`,
-        [id, user.id]
-      ));
-    }
+    const { rows } = await db.query(
+      `SELECT cert.codigo_validacao, cert.emitido_em, cert.valido_ate,
+              t.titulo AS treinamento_titulo, t.carga_horaria_min,
+              fc.nome AS funcionario_nome
+         FROM certificados cert
+         JOIN matriculas m ON m.id = cert.matricula_id
+         JOIN funcionarios_contrato fc ON fc.id = m.funcionario_id
+         JOIN treinamentos t ON t.id = m.treinamento_id
+        WHERE cert.codigo_validacao = $1`,
+      [codigo]
+    );
 
-    if (!rows[0] || !rows[0].arquivo_pdf_base64) {
-      return res.status(404).json({ erro: 'Certificado não encontrado.' });
-    }
-
-    const pdfBuffer = Buffer.from(rows[0].arquivo_pdf_base64, 'base64');
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${rows[0].codigo_validacao}.pdf"`);
-    res.setHeader('Content-Length', pdfBuffer.length);
-    res.status(200).send(pdfBuffer);
+    if (!rows[0]) return res.status(404).json({ erro: 'Certificado não encontrado.' });
+    res.json({ valido: true, ...rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ erro: 'Erro ao buscar o PDF do certificado.' });
+    res.status(500).json({ erro: 'Erro ao validar certificado.' });
   }
 }
 
@@ -94,7 +82,7 @@ module.exports = async (req, res) => {
   if (!metodoPermitido(req, res, 'GET')) return;
 
   if (req.query.rota === 'pdf') {
-    return pdfCertificado(req, res);
+    return validacaoPublica(req, res);
   }
   return metadadosCertificado(req, res);
 };
