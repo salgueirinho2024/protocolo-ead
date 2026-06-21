@@ -206,7 +206,27 @@
   .score-fill { height: 100%; border-radius: 20px; }
 
   .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+  /* Certificado visual (gerado no navegador) */
+  #cert-preview-wrapper {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.7);
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #cert-preview-wrapper.open { display: flex; }
+  #cert-preview-frame {
+    width: 842px; max-width: 96vw;
+    background: #f6f4ee;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  }
+  #cert-preview-actions { display: flex; gap: 12px; }
 </style>
+<!-- html2pdf: gera PDF do certificado direto no navegador, sem servidor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -1656,11 +1676,6 @@ async function carregarProva() {
       return;
     }
     window._respostas = {};
-    // BUG CORRIGIDO: armazenar perguntas em window._perguntas em vez de
-    // serializar via JSON.stringify() dentro do onclick — perguntas com
-    // aspas, parênteses ou caracteres especiais quebravam o atributo HTML
-    // e causavam erro de sintaxe JS ao submeter a prova.
-    window._perguntas = perguntas;
     container.innerHTML = perguntas.map((p, i) => `
       <div class="question-card">
         <div class="question-num">Questão ${i+1} de ${perguntas.length}</div>
@@ -1671,7 +1686,7 @@ async function carregarProva() {
             ${escHtml(op)}
           </label>`).join('')}
       </div>`).join('') +
-      '<button class="btn btn-navy" onclick="enviarProva(window._perguntas)">Enviar Respostas</button>';
+      '<button class="btn btn-navy" onclick="enviarProva(' + JSON.stringify(perguntas).replace(/"/g,'&quot;') + ')">Enviar Respostas</button>';
   } catch(e) { container.innerHTML = `<div style="padding:32px;text-align:center;color:var(--red)">${e.message}</div>`; }
 }
 
@@ -1698,63 +1713,129 @@ async function enviarProva(perguntas) {
       <div class="cert-icon">${aprovado ? '🏆' : '😕'}</div>
       <h2 style="color:${aprovado?'var(--green)':'var(--red)'}">${aprovado ? 'Aprovado!' : 'Reprovado'}</h2>
       <p>Você acertou <strong>${data.nota ?? '—'}%</strong> das questões${detalheAcertos}.<br>
-      ${aprovado ? 'Seu certificado está disponível!' : `Nota mínima exigida: ${data.nota_minima ?? '—'}%. Você pode refazer a prova. Revise os módulos e tente novamente.`}</p>
+      ${aprovado ? 'Seu certificado está pronto!' : `Nota mínima exigida: ${data.nota_minima ?? '—'}%. Você pode refazer a prova. Revise os módulos e tente novamente.`}</p>
       ${aprovado ? '<button class="btn btn-green" onclick="navTo(\'func-certificado\')">Ver Certificado 🎓</button>' :
         '<button class="btn btn-navy" onclick="navTo(\'func-player\')">Rever os módulos</button>'}
     </div>`;
+    // Se aprovado e o servidor já retornou dados_certificado, abre o preview automaticamente
+    if (aprovado && data.certificado && data.certificado.dados_certificado) {
+      setTimeout(() => {
+        _dadosCertAtual = data.certificado.dados_certificado;
+        document.getElementById('cert-preview-html').innerHTML = htmlCertificado(data.certificado.dados_certificado);
+        document.getElementById('cert-preview-wrapper').classList.add('open');
+      }, 800);
+    }
   } catch(e) { toast(e.message, 'error'); }
 }
 
-// Certificado
+// ── CERTIFICADO ─────────────────────────────────────────────────────────────
+// O PDF é gerado no navegador do aluno via html2pdf.js.
+// O servidor apenas guarda os metadados (sem PDF em base64).
+
+let _dadosCertAtual = null; // guarda dados para baixarCertificadoPDF()
+
+function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_conclusao, valido_ate, codigo_validacao, emissora }) {
+  function formatarCPF(c) { return c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'); }
+  function minutosParaHoras(min) {
+    const h = Math.floor(min / 60);
+    return `${h}h${min % 60 > 0 ? ` ${min % 60}min` : ''}`;
+  }
+  const rodapeExtra = emissora && (emissora.responsavel_tecnico_nome || emissora.instrutor_nome) ? `
+  <div class="footer" style="margin-top:12px;display:flex;gap:48px;justify-content:center">
+    ${emissora.instrutor_nome ? `<div style="text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9a9690;margin-bottom:4px">Instrutor</div><div style="font-size:12px;font-weight:600;color:#15231f">${emissora.instrutor_nome}</div></div>` : ''}
+    ${emissora.responsavel_tecnico_nome ? `<div style="text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9a9690;margin-bottom:4px">Responsável Técnico</div><div style="font-size:12px;font-weight:600;color:#15231f">${emissora.responsavel_tecnico_nome}</div></div>` : ''}
+  </div>` : '';
+  const emissoraLinha = emissora && emissora.empresa_razao_social
+    ? `<div style="font-size:10px;color:#c0bbb0;margin-top:8px">Emitido por ${emissora.empresa_razao_social}${emissora.empresa_cnpj ? ' — CNPJ ' + emissora.empresa_cnpj : ''}</div>` : '';
+  const appUrl = window.location.origin;
+  return `<div style="width:842px;height:595px;font-family:'Inter',sans-serif;background:#f6f4ee;display:flex;align-items:center;justify-content:center">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<div style="width:780px;height:548px;border:2px solid #1f3d37;border-radius:16px;background:#fffdf9;background-image:repeating-linear-gradient(135deg,transparent,transparent 18px,rgba(0,0,0,.025) 18px,rgba(0,0,0,.025) 19px);padding:48px 56px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative">
+  <div style="position:absolute;inset:8px;border:1px solid rgba(31,61,55,.25);border-radius:10px;pointer-events:none"></div>
+  <div style="width:64px;height:64px;border-radius:50%;border:2px solid #c5731f;display:flex;align-items:center;justify-content:center;color:#c5731f;font-family:'Fraunces',serif;font-weight:700;font-size:24px;margin-bottom:20px">P</div>
+  <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#c5731f;font-weight:600;margin-bottom:8px">Certificado de Conclusão</div>
+  <div style="font-size:14px;color:#6b6759;margin-bottom:4px">Certificamos que</div>
+  <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:600;color:#15231f;letter-spacing:-.01em;margin:8px 0 2px">${nome}</div>
+  <div style="font-size:12px;color:#9a9690;letter-spacing:.04em;margin-bottom:20px">CPF ${formatarCPF(cpf)}</div>
+  <div style="font-size:13px;color:#6b6759;margin-bottom:4px">concluiu com êxito o treinamento</div>
+  <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:#1f3d37;margin-bottom:4px">${titulo}</div>
+  <div style="font-size:12.5px;color:#9a9690">com carga horária de ${minutosParaHoras(carga_horaria_min)}</div>
+  <div style="width:60px;height:1px;background:#d8d3c4;margin:20px auto"></div>
+  <div style="display:flex;gap:48px;justify-content:center">
+    <div style="text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9a9690;margin-bottom:4px">Data de conclusão</div><div style="font-size:12px;font-weight:600;color:#15231f">${data_conclusao}</div></div>
+    ${valido_ate ? `<div style="text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9a9690;margin-bottom:4px">Válido até</div><div style="font-size:12px;font-weight:600;color:#15231f">${valido_ate}</div></div>` : ''}
+    <div style="text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9a9690;margin-bottom:4px">Código de validação</div><div style="font-size:12px;font-weight:600;color:#15231f;font-family:monospace;letter-spacing:.08em">${codigo_validacao}</div></div>
+  </div>
+  ${rodapeExtra}
+  <div style="font-size:10px;color:#c0bbb0;margin-top:16px">Verifique a autenticidade em ${appUrl}/validar/${codigo_validacao}</div>
+  ${emissoraLinha}
+</div>
+</div>`;
+}
+
 async function carregarCertificado() {
   const container = document.getElementById('cert-container');
   container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Verificando certificado…</div>';
   try {
     const data = await api('GET', '/api/player/certificado');
-    const certs = data.certificados || data || [];
+    const certs = Array.isArray(data) ? data : (data.certificados || []);
     if (!certs.length) {
       container.innerHTML = `<div class="empty-state">${iconCertLarge()}<p>Nenhum certificado ainda.<br>Conclua um treinamento para receber o seu!</p></div>`;
       return;
     }
-    container.innerHTML = certs.map(c => `
+    container.innerHTML = certs.map((c, idx) => `
       <div class="card" style="margin-bottom:16px">
         <div class="card-body" style="display:flex;align-items:center;gap:20px">
           <div style="font-size:48px">🎓</div>
           <div style="flex:1">
             <div style="font-weight:700;font-size:16px">${c.treinamento_titulo || 'Treinamento'}</div>
             <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Emitido em ${c.emitido_em ? new Date(c.emitido_em).toLocaleDateString('pt-BR') : '—'}</div>
-            ${c.valido_ate ? `<div style="font-size:12px;color:var(--text-muted)">Válido até ${new Date(c.valido_ate).toLocaleDateString('pt-BR')}</div>` : ''}
+            ${c.valido_ate ? `<div style="font-size:12px;color:var(--text-muted)">Válido até ${new Date(c.valido_ate + 'T00:00:00').toLocaleDateString('pt-BR')}</div>` : ''}
             <div class="mono" style="margin-top:6px;font-size:12px;color:var(--blue-accent)">Código: ${c.codigo_validacao || '—'}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-navy btn-sm" onclick="baixarCertificado('${c.id}')">⬇ Baixar PDF</button>
+            <button class="btn btn-navy btn-sm" onclick="verCertificado(${idx})">🎓 Ver / Baixar</button>
             ${c.codigo_validacao ? `<button class="btn btn-outline btn-sm" onclick="validarPublico('${c.codigo_validacao}')">🔗 Validar</button>` : ''}
           </div>
         </div>
       </div>`).join('');
+
+    // Guarda lista para uso por índice no verCertificado()
+    window._certsList = certs;
   } catch(e) {
     container.innerHTML = `<div class="empty-state"><p>${e.message}</p></div>`;
   }
 }
 
-async function baixarCertificado(certId) {
+function verCertificado(idx) {
+  const c = (window._certsList || [])[idx];
+  if (!c || !c.dados_certificado) { toast('Dados do certificado não encontrados.', 'error'); return; }
+  _dadosCertAtual = c.dados_certificado;
+  document.getElementById('cert-preview-html').innerHTML = htmlCertificado(c.dados_certificado);
+  document.getElementById('cert-preview-wrapper').classList.add('open');
+}
+
+function baixarCertificadoPDF() {
+  if (!_dadosCertAtual) return;
+  const el = document.getElementById('cert-preview-html').firstElementChild;
+  if (!el) return;
   toast('Gerando PDF…', '');
-  try {
-    const r = await fetch(API + '/api/player/certificado/pdf?id=' + certId, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!r.ok) throw new Error('Erro ao gerar PDF');
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'certificado.pdf'; a.click();
-    URL.revokeObjectURL(url);
-    toast('PDF baixado!', 'success');
-  } catch(e) { toast(e.message, 'error'); }
+  html2pdf()
+    .set({
+      margin: 0,
+      filename: `certificado-${_dadosCertAtual.codigo_validacao}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' },
+    })
+    .from(el)
+    .save()
+    .then(() => toast('PDF baixado!', 'success'))
+    .catch(e => toast('Erro ao gerar PDF: ' + e.message, 'error'));
 }
 
 function validarPublico(codigo) {
-  window.open(API + '/api/validar/' + codigo, '_blank');
+  window.open(window.location.origin + '/validar/' + codigo, '_blank');
 }
 
 // ══════════════════════════════════════════════
@@ -1792,5 +1873,16 @@ function iconCert() { return `<svg width="16" height="16" fill="none" stroke="cu
 function iconBookLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`; }
 function iconCertLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 </script>
+<!-- Modal: preview do certificado antes de baixar -->
+<div id="cert-preview-wrapper">
+  <div id="cert-preview-frame">
+    <div id="cert-preview-html"></div>
+  </div>
+  <div id="cert-preview-actions">
+    <button class="btn btn-green" onclick="baixarCertificadoPDF()">⬇ Baixar PDF</button>
+    <button class="btn btn-outline" onclick="document.getElementById('cert-preview-wrapper').classList.remove('open')" style="color:#fff;border-color:#fff">Fechar</button>
+  </div>
+</div>
+
 </body>
 </html>
