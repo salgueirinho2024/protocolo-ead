@@ -99,7 +99,7 @@ async function handlePost(req, res, user) {
 
   await db.query(
     `UPDATE matriculas
-        SET nota_prova_final = $2, status = $3, concluido_em = CASE WHEN $3 = 'concluido' THEN now() ELSE NULL END
+        SET nota_prova_final = $2, status = $3::progresso_status, concluido_em = CASE WHEN $3::progresso_status = 'concluido' THEN now() ELSE NULL END
       WHERE id = $1`,
     [matricula_id, notaNum, novoStatus]
   );
