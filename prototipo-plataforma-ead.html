@@ -1656,6 +1656,11 @@ async function carregarProva() {
       return;
     }
     window._respostas = {};
+    // BUG CORRIGIDO: armazenar perguntas em window._perguntas em vez de
+    // serializar via JSON.stringify() dentro do onclick — perguntas com
+    // aspas, parênteses ou caracteres especiais quebravam o atributo HTML
+    // e causavam erro de sintaxe JS ao submeter a prova.
+    window._perguntas = perguntas;
     container.innerHTML = perguntas.map((p, i) => `
       <div class="question-card">
         <div class="question-num">Questão ${i+1} de ${perguntas.length}</div>
@@ -1666,7 +1671,7 @@ async function carregarProva() {
             ${escHtml(op)}
           </label>`).join('')}
       </div>`).join('') +
-      '<button class="btn btn-navy" onclick="enviarProva(' + JSON.stringify(perguntas).replace(/"/g,'&quot;') + ')">Enviar Respostas</button>';
+      '<button class="btn btn-navy" onclick="enviarProva(window._perguntas)">Enviar Respostas</button>';
   } catch(e) { container.innerHTML = `<div style="padding:32px;text-align:center;color:var(--red)">${e.message}</div>`; }
 }
 

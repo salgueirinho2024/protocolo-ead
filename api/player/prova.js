@@ -26,7 +26,7 @@ async function minhaMatricula(matriculaId, funcionarioId) {
 }
 
 async function handleGet(req, res, user) {
-  const matriculaId = (req.query.matricula_id || '').toString();
+  const matriculaId = (req.query.matricula_id || '').toString().trim();
   if (!matriculaId) {
     return res.status(400).json({ erro: 'matricula_id é obrigatório.' });
   }
@@ -51,8 +51,16 @@ async function handleGet(req, res, user) {
     return res.status(404).json({ erro: 'Este treinamento ainda não possui prova final cadastrada. Contate o administrador.' });
   }
 
+  // BUG CORRIGIDO #1: opcoes vem como JSONB do banco — garantir que é array JS
+  // (Neon/pg devolve JSONB já parseado, mas dependendo da versão do driver
+  // pode chegar como string. Normalizamos aqui para o frontend não quebrar.)
+  const perguntasNormalizadas = perguntas.map(p => ({
+    ...p,
+    opcoes: Array.isArray(p.opcoes) ? p.opcoes : JSON.parse(p.opcoes),
+  }));
+
   res.json({
-    perguntas,
+    perguntas: perguntasNormalizadas,
     nota_minima: mat.nota_minima_prova,
     tentativa_anterior: mat.nota_prova_final,
   });
@@ -66,6 +74,17 @@ async function handlePost(req, res, user) {
 
   const mat = await minhaMatricula(matricula_id, user.id);
   if (!mat) return res.status(403).json({ erro: 'Matrícula não encontrada.' });
+
+  // BUG CORRIGIDO #2: Bloquear envio se já foi concluído (aprovado).
+  // Sem esse bloqueio, aluno aprovado poderia reenviar a prova via POST
+  // direto e sobrescrever o certificado desnecessariamente.
+  if (mat.status === 'concluido') {
+    return res.status(409).json({
+      erro: 'Este treinamento já foi concluído. Não é possível refazer a prova.',
+      aprovado: true,
+      nota: mat.nota_prova_final,
+    });
+  }
 
   const cargaExigidaSegs = mat.carga_horaria_min * 60;
   if (mat.segundos_assistidos_total < cargaExigidaSegs * 0.95) {
@@ -87,20 +106,33 @@ async function handlePost(req, res, user) {
     return res.status(400).json({ erro: `Esperado ${perguntas.length} respostas, recebido ${respostas.length}.` });
   }
 
-  // Nota é sempre calculada no servidor a partir do gabarito — nunca
-  // confiamos em uma nota enviada pelo cliente.
+  // BUG CORRIGIDO #3: Comparação de tipo — respostas[i] vem do JSON como number,
+  // mas pode chegar como string dependendo do body parser. p.resposta_correta
+  // vem do banco como SMALLINT (number). Forçar Number() em ambos os lados
+  // garante que a comparação funciona em qualquer caso.
+  // Antes: Number(respostas[i]) === p.resposta_correta
+  //   → p.resposta_correta era comparado sem conversão explícita,
+  //     e se o banco devolver string (ex: driver antigo), sempre daria 0 acertos.
   const acertos = perguntas.reduce(
-    (total, p, i) => total + (Number(respostas[i]) === p.resposta_correta ? 1 : 0),
+    (total, p, i) => total + (Number(respostas[i]) === Number(p.resposta_correta) ? 1 : 0),
     0
   );
   const notaNum = Math.round((acertos / perguntas.length) * 100);
   const aprovado = notaNum >= mat.nota_minima_prova;
   const novoStatus = aprovado ? 'concluido' : 'reprovado';
 
-  await db.query(
+  // BUG CORRIGIDO #4: Usar RETURNING para obter o concluido_em real que o banco
+  // gravou. Antes, o UPDATE não retornava nada, e gerarCertificadoPDF fazia
+  // um SELECT separado que podia pegar concluido_em = NULL em situação de
+  // race condition (principalmente em Vercel Functions com múltiplas instâncias).
+  // Agora passamos o timestamp do RETURNING diretamente para o gerador.
+  const { rows: updRows } = await db.query(
     `UPDATE matriculas
-        SET nota_prova_final = $2, status = $3::progresso_status, concluido_em = CASE WHEN $3::progresso_status = 'concluido' THEN now() ELSE NULL END
-      WHERE id = $1`,
+        SET nota_prova_final = $2,
+            status = $3::progresso_status,
+            concluido_em = CASE WHEN $3::progresso_status = 'concluido' THEN now() ELSE NULL END
+      WHERE id = $1
+      RETURNING concluido_em`,
     [matricula_id, notaNum, novoStatus]
   );
 
@@ -109,7 +141,7 @@ async function handlePost(req, res, user) {
     // Atenção (deploy Vercel): geração de PDF com Chromium pode levar alguns
     // segundos. Garanta maxDuration suficiente no vercel.json para esta rota
     // (plano Hobby tem limite de 10s por padrão; Pro permite até 60s+).
-    certificado = await gerarCertificadoPDF(matricula_id, user.id);
+    certificado = await gerarCertificadoPDF(matricula_id, user.id, updRows[0]?.concluido_em);
   }
 
   res.json({ aprovado, nota: notaNum, acertos, total: perguntas.length, nota_minima: mat.nota_minima_prova, certificado });
