@@ -14,7 +14,7 @@ async function metadadosCertificado(req, res) {
   try {
     const { rows } = await db.query(
       `SELECT cert.id, cert.codigo_validacao, cert.arquivo_pdf_url, cert.emitido_em, cert.valido_ate,
-              t.titulo AS treinamento_titulo, t.carga_horaria_min,
+              t.titulo AS treinamento_titulo, t.carga_horaria_min, t.conteudo_programatico,
               fc.nome AS funcionario_nome, fc.cpf
          FROM certificados cert
          JOIN matriculas m ON m.id = cert.matricula_id
@@ -37,6 +37,7 @@ async function metadadosCertificado(req, res) {
         cpf: c.cpf,
         titulo: c.treinamento_titulo,
         carga_horaria_min: c.carga_horaria_min,
+        conteudo_programatico: c.conteudo_programatico,
         data_conclusao: c.emitido_em ? new Date(c.emitido_em).toLocaleDateString('pt-BR') : '—',
         valido_ate: c.valido_ate ? new Date(c.valido_ate).toLocaleDateString('pt-BR') : null,
         codigo_validacao: c.codigo_validacao,
