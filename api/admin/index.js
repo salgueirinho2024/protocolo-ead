@@ -13,7 +13,7 @@ const { exigirAuth } = require('../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../lib/http');
 
 async function handleEmpresas(req, res) {
-  if (!metodoPermitido(req, res, 'GET', 'POST', 'PUT')) return;
+  if (!metodoPermitido(req, res, 'GET', 'POST', 'PUT', 'DELETE')) return;
 
   if (req.method === 'GET') {
     try {
@@ -30,6 +30,36 @@ async function handleEmpresas(req, res) {
     } catch (err) {
       console.error(err);
       return res.status(500).json({ erro: 'Erro ao listar empresas.' });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ erro: 'ID da empresa não informado.' });
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Remove usuários vinculados à empresa
+      await client.query(
+        `DELETE FROM usuarios WHERE id IN (SELECT usuario_id FROM empresa_usuarios WHERE empresa_id = $1)`,
+        [id]
+      );
+      // Remove a empresa (cascata devia cuidar do resto, mas garantimos a ordem)
+      const { rows } = await client.query(
+        `DELETE FROM empresas WHERE id = $1 RETURNING id`, [id]
+      );
+      if (!rows[0]) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ erro: 'Empresa não encontrada.' });
+      }
+      await client.query('COMMIT');
+      return res.json({ mensagem: 'Empresa excluída.' });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao excluir empresa: ' + err.message });
+    } finally {
+      client.release();
     }
   }
 
@@ -123,7 +153,7 @@ async function handleEmpresas(req, res) {
 }
 
 async function handleContratos(req, res, user) {
-  if (!metodoPermitido(req, res, 'GET', 'POST', 'PUT')) return;
+  if (!metodoPermitido(req, res, 'GET', 'POST', 'PUT', 'DELETE')) return;
 
   if (req.method === 'GET') {
     try {
@@ -142,6 +172,21 @@ async function handleContratos(req, res, user) {
     } catch (err) {
       console.error(err);
       return res.status(500).json({ erro: 'Erro ao listar contratos.' });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ erro: 'ID do contrato não informado.' });
+    try {
+      const { rows } = await db.query(
+        `DELETE FROM contratos WHERE id = $1 RETURNING id`, [id]
+      );
+      if (!rows[0]) return res.status(404).json({ erro: 'Contrato não encontrado.' });
+      return res.json({ mensagem: 'Contrato excluído.' });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao excluir contrato: ' + err.message });
     }
   }
 

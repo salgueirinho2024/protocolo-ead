@@ -147,17 +147,17 @@ async function handleModulos(req, res, treinamentoId, moduloId) {
     }
 
     // PUT
-    const { titulo, ordem, video_provider_id, duracao_segundos } = req.body || {};
-    if (!titulo || !ordem || !video_provider_id || !duracao_segundos) {
-      return res.status(400).json({ erro: 'titulo, ordem, video_provider_id e duracao_segundos são obrigatórios.' });
+    const { titulo, ordem, video_provider_id, duracao_segundos, pdf_url } = req.body || {};
+    if (!titulo || !ordem || !duracao_segundos) {
+      return res.status(400).json({ erro: 'titulo, ordem e duracao_segundos são obrigatórios.' });
     }
     try {
       const { rows } = await db.query(
         `UPDATE treinamento_modulos
-            SET titulo = $1, ordem = $2, video_provider_id = $3, duracao_segundos = $4
-          WHERE id = $5 AND treinamento_id = $6
+            SET titulo = $1, ordem = $2, video_provider_id = $3, duracao_segundos = $4, pdf_url = $5
+          WHERE id = $6 AND treinamento_id = $7
           RETURNING *`,
-        [titulo, ordem, video_provider_id, duracao_segundos, moduloId, treinamentoId]
+        [titulo, ordem, video_provider_id || null, duracao_segundos, pdf_url || null, moduloId, treinamentoId]
       );
       if (!rows[0]) return res.status(404).json({ erro: 'Módulo não encontrado.' });
       return res.json(rows[0]);
@@ -183,16 +183,16 @@ async function handleModulos(req, res, treinamentoId, moduloId) {
     }
   }
 
-  // POST
-  const { titulo, ordem, video_provider_id, duracao_segundos } = req.body || {};
-  if (!titulo || !ordem || !video_provider_id || !duracao_segundos) {
-    return res.status(400).json({ erro: 'titulo, ordem, video_provider_id e duracao_segundos são obrigatórios.' });
+  // POST modulos
+  const { titulo, ordem, video_provider_id, duracao_segundos, pdf_url } = req.body || {};
+  if (!titulo || !ordem || !duracao_segundos) {
+    return res.status(400).json({ erro: 'titulo, ordem e duracao_segundos são obrigatórios.' });
   }
   try {
     const { rows } = await db.query(
-      `INSERT INTO treinamento_modulos (treinamento_id, titulo, ordem, video_provider_id, duracao_segundos)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [treinamentoId, titulo, ordem, video_provider_id, duracao_segundos]
+      `INSERT INTO treinamento_modulos (treinamento_id, titulo, ordem, video_provider_id, duracao_segundos, pdf_url)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [treinamentoId, titulo, ordem, video_provider_id || null, duracao_segundos, pdf_url || null]
     );
     return res.status(201).json(rows[0]);
   } catch (err) {

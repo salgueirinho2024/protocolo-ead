@@ -232,7 +232,7 @@
   #cert-preview-wrapper.open { display: flex; }
   #cert-preview-frame {
     width: 842px; max-width: 96vw;
-    background: #f6f4ee;
+    background: transparent;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 24px 80px rgba(0,0,0,0.5);
@@ -519,6 +519,24 @@
       <div id="cert-container"></div>
     </div>
 
+    <!-- Validar Certificado -->
+    <div id="page-validar-certificado" class="page">
+      <div class="page-header">
+        <h2>Validar Certificado</h2>
+        <p>Verifique a autenticidade de um certificado pelo código de validação</p>
+      </div>
+      <div class="card" style="max-width:560px">
+        <div class="card-body">
+          <div class="field">
+            <label>Código de Validação</label>
+            <input type="text" id="validar-codigo" placeholder="Ex: ABC123XY" style="text-transform:uppercase;letter-spacing:.1em;font-family:monospace">
+          </div>
+          <button class="btn btn-navy" onclick="executarValidacao()">🔍 Verificar Certificado</button>
+        </div>
+      </div>
+      <div id="validar-resultado" style="margin-top:20px;max-width:560px"></div>
+    </div>
+
   </main>
 </div>
 
@@ -613,6 +631,7 @@
         <option value="cloudflare">Cloudflare Stream</option>
       </select>
     </div>
+    <div class="field"><label>URL do PDF de Apoio (opcional)</label><input type="text" id="mod-pdf-url" placeholder="https://exemplo.com/apostila.pdf"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="fecharModal('modal-modulo')">Cancelar</button>
       <button class="btn btn-navy" id="btn-salvar-modulo" onclick="salvarModulo()">Salvar</button>
@@ -792,6 +811,8 @@ const navConfigs = {
     { id: 'admin-treinamentos', label: 'Treinamentos', icon: iconBook(), onEnter: carregarTreinamentos },
     { section: 'Segurança' },
     { id: 'admin-fraude', label: 'Anti-Fraude', icon: iconShield(), onEnter: carregarSuspeitos },
+    { section: 'Ferramentas' },
+    { id: 'validar-certificado', label: 'Validar Certificado', icon: iconCert(), onEnter: () => {} },
     { section: 'Configurações' },
     { id: 'admin-configuracao', label: 'Empresa Emissora', icon: iconBuilding(), onEnter: carregarConfiguracao },
   ],
@@ -801,11 +822,15 @@ const navConfigs = {
     { section: 'Gestão' },
     { id: 'empresa-contratos', label: 'Contratos', icon: iconDoc(), onEnter: carregarContratosEmpresa },
     { id: 'empresa-funcionarios', label: 'Funcionários', icon: iconUsers(), onEnter: carregarSelectContratos },
+    { section: 'Ferramentas' },
+    { id: 'validar-certificado', label: 'Validar Certificado', icon: iconCert(), onEnter: () => {} },
   ],
   funcionario: [
     { section: 'EAD' },
     { id: 'func-treinamentos', label: 'Meus Treinamentos', icon: iconBook(), onEnter: carregarMeusTrienamentos },
     { id: 'func-certificado', label: 'Certificado', icon: iconCert(), onEnter: carregarCertificado },
+    { section: 'Ferramentas' },
+    { id: 'validar-certificado', label: 'Validar Certificado', icon: iconCert(), onEnter: () => {} },
   ]
 };
 
@@ -897,11 +922,21 @@ async function carregarEmpresas() {
         <td class="mono">${e.cnpj || '—'}</td>
         <td><span class="badge ${e.ativo!==false?'badge-green':'badge-gray'}">${e.ativo!==false?'ativo':'inativo'}</span></td>
         <td>${e.total_funcionarios || 0}</td>
-        <td style="text-align:right">
+        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
           <button class="btn btn-outline btn-sm" onclick="editarEmpresa('${e.id}')">Editar</button>
+          <button class="btn btn-red btn-sm" onclick="excluirEmpresa('${e.id}')">Excluir</button>
         </td>
       </tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
+}
+
+async function excluirEmpresa(id) {
+  if (!confirm('Excluir esta empresa? Todos os dados vinculados serão removidos permanentemente.')) return;
+  try {
+    await api('DELETE', '/api/admin/empresas/' + id);
+    toast('Empresa excluída.', 'success');
+    carregarEmpresas();
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 function abrirModalEmpresa() {
@@ -985,12 +1020,22 @@ async function carregarContratosAdmin() {
         </td>
         <td>${c.data_limite ? new Date(c.data_limite).toLocaleDateString('pt-BR') : '—'}</td>
         <td><span class="badge ${c.status==='ativo'?'badge-green':'badge-gray'}">${c.status}</span></td>
-        <td style="text-align:right">
+        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
           <button class="btn btn-outline btn-sm" onclick='editarContrato(${JSON.stringify(c)})'>Editar</button>
+          <button class="btn btn-red btn-sm" onclick="excluirContrato('${c.id}')">Excluir</button>
         </td>
       </tr>`;
     }).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">${e.message}</td></tr>`; }
+}
+
+async function excluirContrato(id) {
+  if (!confirm('Excluir este contrato? As matrículas e progresso dos funcionários também serão removidos.')) return;
+  try {
+    await api('DELETE', '/api/admin/contratos/' + id);
+    toast('Contrato excluído.', 'success');
+    carregarContratosAdmin();
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 async function abrirModalContrato() {
@@ -1172,7 +1217,7 @@ async function carregarModulos() {
 function abrirModalModulo() {
   editingModuloId = null;
   document.getElementById('modal-modulo-titulo').textContent = 'Novo Módulo';
-  ['mod-titulo','mod-descricao','mod-video'].forEach(id => document.getElementById(id).value = '');
+  ['mod-titulo','mod-descricao','mod-video','mod-pdf-url'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('mod-ordem').value = 1;
   document.getElementById('mod-duracao').value = 1800;
   document.getElementById('mod-provider').value = 'youtube';
@@ -1186,6 +1231,7 @@ function editarModulo(m) {
   document.getElementById('mod-ordem').value = m.ordem || 1;
   document.getElementById('mod-duracao').value = m.duracao_segundos || 1800;
   document.getElementById('mod-video').value = m.video_provider_id || '';
+  document.getElementById('mod-pdf-url').value = m.pdf_url || '';
   document.getElementById('modal-modulo').classList.add('open');
 }
 
@@ -1195,6 +1241,7 @@ async function salvarModulo() {
     ordem: +document.getElementById('mod-ordem').value,
     video_provider_id: document.getElementById('mod-video').value,
     duracao_segundos: +document.getElementById('mod-duracao').value,
+    pdf_url: document.getElementById('mod-pdf-url').value || null,
   };
   try {
     if (editingModuloId) {
@@ -1612,6 +1659,25 @@ function selecionarModulo(idx) {
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
   }
 
+  // Botão de PDF de apoio
+  let pdfBtn = document.getElementById('player-pdf-btn');
+  if (!pdfBtn) {
+    const actionsEl = document.getElementById('player-actions');
+    const btn = document.createElement('a');
+    btn.id = 'player-pdf-btn';
+    btn.target = '_blank';
+    btn.className = 'btn btn-outline';
+    btn.innerHTML = '📄 Material de Apoio (PDF)';
+    actionsEl.appendChild(btn);
+    pdfBtn = btn;
+  }
+  if (moduloAtual.pdf_url) {
+    pdfBtn.href = moduloAtual.pdf_url;
+    pdfBtn.style.display = 'inline-flex';
+  } else {
+    pdfBtn.style.display = 'none';
+  }
+
   document.getElementById('btn-iniciar-sessao').style.display = 'inline-flex';
   document.getElementById('btn-concluir-modulo').style.display = 'none';
 }
@@ -1896,6 +1962,46 @@ function baixarCertificadoPDF() {
 function validarPublico(codigo) {
   window.open(window.location.origin + '/validar/' + codigo, '_blank');
 }
+
+async function executarValidacao() {
+  const codigo = (document.getElementById('validar-codigo').value || '').trim().toUpperCase();
+  const resultado = document.getElementById('validar-resultado');
+  if (!codigo) { toast('Digite o código de validação.', 'error'); return; }
+  resultado.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Verificando…</div>';
+  try {
+    const data = await api('GET', '/api/validar/' + codigo);
+    if (data.valido) {
+      resultado.innerHTML = `<div class="card">
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+            <div style="font-size:40px">✅</div>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:var(--green)">Certificado Válido</div>
+              <div style="font-size:13px;color:var(--text-muted)">Código: <span class="mono">${data.codigo_validacao}</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+            <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Participante</span><br><strong>${data.funcionario_nome || '—'}</strong></div>
+            <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Treinamento</span><br><strong>${data.treinamento_titulo || '—'}</strong></div>
+            <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Emitido em</span><br>${data.emitido_em ? new Date(data.emitido_em).toLocaleDateString('pt-BR') : '—'}</div>
+            <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Válido até</span><br>${data.valido_ate ? new Date(data.valido_ate + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem vencimento'}</div>
+          </div>
+        </div>
+      </div>`;
+    } else if (data.expirado) {
+      resultado.innerHTML = `<div class="card"><div class="card-body"><div style="display:flex;align-items:center;gap:16px"><div style="font-size:40px">⚠️</div><div><div style="font-size:18px;font-weight:700;color:var(--amber)">Certificado Expirado</div><div style="font-size:13px;color:var(--text-muted)">Este certificado foi emitido mas está fora do período de validade.</div></div></div></div></div>`;
+    } else {
+      resultado.innerHTML = `<div class="card"><div class="card-body"><div style="display:flex;align-items:center;gap:16px"><div style="font-size:40px">❌</div><div><div style="font-size:18px;font-weight:700;color:var(--red)">Certificado Não Encontrado</div><div style="font-size:13px;color:var(--text-muted)">Nenhum certificado foi localizado com esse código.</div></div></div></div></div>`;
+    }
+  } catch(e) {
+    resultado.innerHTML = `<div class="card"><div class="card-body"><div style="display:flex;align-items:center;gap:16px"><div style="font-size:40px">❌</div><div><div style="font-size:18px;font-weight:700;color:var(--red)">Certificado Não Encontrado</div><div style="font-size:13px;color:var(--text-muted)">${e.message || 'Código inválido ou não encontrado.'}</div></div></div></div></div>`;
+  }
+}
+
+// Enter key in validar input
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement?.id === 'validar-codigo') executarValidacao();
+});
 
 // ══════════════════════════════════════════════
 // UTILS
