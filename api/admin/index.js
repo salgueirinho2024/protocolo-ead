@@ -245,8 +245,20 @@ async function handleContratos(req, res, user) {
     );
     return res.status(201).json(rows[0]);
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ erro: 'Erro ao criar contrato.' });
+    console.error('Erro ao criar contrato:', err);
+    if (err.code === '23503') {
+      return res.status(422).json({ erro: 'Empresa ou treinamento informado não existe (FK).', detalhe: err.detail || err.message });
+    }
+    if (err.code === '23505') {
+      return res.status(409).json({ erro: 'Contrato duplicado.', detalhe: err.detail || err.message });
+    }
+    if (err.code === '23502') {
+      return res.status(400).json({ erro: 'Campo obrigatório faltando no banco.', detalhe: err.column || err.message });
+    }
+    if (err.code === '42703' || err.code === '42P01') {
+      return res.status(500).json({ erro: 'Schema do banco desatualizado — rode as migrações em /migrations.', detalhe: err.message });
+    }
+    return res.status(500).json({ erro: 'Erro ao criar contrato: ' + (err.message || err.code || 'desconhecido'), detalhe: err.detail });
   }
 }
 

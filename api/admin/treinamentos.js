@@ -44,6 +44,8 @@ async function handleTreinamentos(req, res) {
   const {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
     conteudo_programatico, data_inicio, data_fim, ativo,
+    emissora_nome, emissora_cnpj,
+    assinatura_base64, assinatura_nome, assinatura_cargo,
   } = req.body || {};
   if (!titulo || !carga_horaria_min) {
     return res.status(400).json({ erro: 'Título e carga horária são obrigatórios.' });
@@ -52,12 +54,15 @@ async function handleTreinamentos(req, res) {
     const { rows } = await db.query(
       `INSERT INTO treinamentos
          (titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
-          conteudo_programatico, data_inicio, data_fim, ativo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,COALESCE($9, TRUE))
+          conteudo_programatico, data_inicio, data_fim, ativo,
+          emissora_nome, emissora_cnpj, assinatura_base64, assinatura_nome, assinatura_cargo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,COALESCE($9, TRUE),$10,$11,$12,$13,$14)
        RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
        conteudo_programatico || null, data_inicio || null, data_fim || null,
-       typeof ativo === 'boolean' ? ativo : null]
+       typeof ativo === 'boolean' ? ativo : null,
+       emissora_nome || null, emissora_cnpj || null,
+       assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null]
     );
     return res.status(201).json(rows[0]);
   } catch (err) {
@@ -87,6 +92,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
   const {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
     conteudo_programatico, data_inicio, data_fim, ativo,
+    emissora_nome, emissora_cnpj,
+    assinatura_base64, assinatura_nome, assinatura_cargo,
   } = req.body || {};
   if (!titulo || !carga_horaria_min) {
     return res.status(400).json({ erro: 'Título e carga horária são obrigatórios.' });
@@ -102,12 +109,19 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
               conteudo_programatico = $6,
               data_inicio = $7,
               data_fim = $8,
-              ativo = COALESCE($9, ativo)
+              ativo = COALESCE($9, ativo),
+              emissora_nome = $11,
+              emissora_cnpj = $12,
+              assinatura_base64 = $13,
+              assinatura_nome = $14,
+              assinatura_cargo = $15
         WHERE id = $10
         RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
        conteudo_programatico || null, data_inicio || null, data_fim || null,
-       typeof ativo === 'boolean' ? ativo : null, treinamentoId]
+       typeof ativo === 'boolean' ? ativo : null, treinamentoId,
+       emissora_nome || null, emissora_cnpj || null,
+       assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null]
     );
     if (!rows[0]) {
       return res.status(404).json({ erro: 'Treinamento não encontrado.' });
