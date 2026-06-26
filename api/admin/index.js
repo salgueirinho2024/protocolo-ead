@@ -240,7 +240,7 @@ async function handleContratos(req, res, user) {
   try {
     const { rows } = await db.query(
       `INSERT INTO contratos (empresa_id, treinamento_id, vagas_contratadas, data_limite, status, criado_por)
-       VALUES ($1,$2,$3,$4,COALESCE($5,'ativo'),$6) RETURNING *`,
+       VALUES ($1,$2,$3,$4,COALESCE($5::contrato_status,'ativo'::contrato_status),$6) RETURNING *`,
       [empresa_id, treinamento_id, vagas_contratadas, data_limite || null, status || null, user.id]
     );
     return res.status(201).json(rows[0]);
