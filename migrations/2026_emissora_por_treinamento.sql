@@ -25,4 +25,5 @@ ALTER TABLE treinamentos
   ADD COLUMN IF NOT EXISTS data_fim              DATE;
 
 ALTER TABLE treinamento_modulos
-  ADD COLUMN IF NOT EXISTS pdf_url               TEXT;
+  ADD COLUMN IF NOT EXISTS pdf_url               TEXT,
+  ADD COLUMN IF NOT EXISTS descricao             TEXT;

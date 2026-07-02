@@ -18,9 +18,10 @@ module.exports = async (req, res) => {
               t.titulo AS treinamento_titulo, t.carga_horaria_min, t.nota_minima_prova,
               json_agg(
                 json_build_object(
-                  'id', mod.id, 'titulo', mod.titulo, 'ordem', mod.ordem,
+                  'id', mod.id, 'titulo', mod.titulo, 'descricao', mod.descricao, 'ordem', mod.ordem,
                   'duracao_segundos', mod.duracao_segundos,
                   'video_provider_id', mod.video_provider_id,
+                  'pdf_url', mod.pdf_url,
                   'segundos_assistidos', COALESCE(mp.segundos_assistidos, 0),
                   'concluido', COALESCE(mp.concluido, false),
                   'ultima_posicao_seg', COALESCE(mp.ultima_posicao_seg, 0)

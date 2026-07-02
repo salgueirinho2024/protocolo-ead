@@ -77,9 +77,11 @@ CREATE TABLE IF NOT EXISTS treinamento_modulos (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     treinamento_id      UUID NOT NULL REFERENCES treinamentos(id) ON DELETE CASCADE,
     titulo              VARCHAR(200) NOT NULL,
+    descricao           TEXT,
     ordem               SMALLINT NOT NULL,
     video_provider_id   VARCHAR(255) NOT NULL, -- id do vídeo no Mux/Cloudflare Stream/Bunny
     duracao_segundos    INTEGER NOT NULL CHECK (duracao_segundos > 0),
+    pdf_url             TEXT, -- link externo (Google Drive/Dropbox) do material de apoio em PDF
     criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (treinamento_id, ordem)
 );

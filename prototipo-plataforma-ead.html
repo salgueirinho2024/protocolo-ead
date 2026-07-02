@@ -179,6 +179,14 @@
   .checkpoint-alert { background: var(--gold); color: #1B2D24; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; }
   .player-meta { padding: 16px 20px; }
   .player-meta h3 { font-size: 16px; font-weight: 700; }
+  .material-apoio { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 10px; background: var(--surface2); border: 1.5px solid transparent; margin-top: 16px; transition: border-color .15s; text-decoration: none; }
+  .material-apoio:hover { border-color: var(--green); }
+  .material-apoio__icone { width: 42px; height: 42px; border-radius: 8px; background: var(--navy); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .material-apoio__texto { flex: 1; min-width: 0; }
+  .material-apoio__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .material-apoio__titulo { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+  .material-apoio__dica { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .material-apoio__seta { font-size: 18px; color: var(--navy); flex-shrink: 0; }
   .progress-steps { display: flex; gap: 6px; margin-top: 12px; }
   .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; }
   .step-dot.done { background: var(--green); }
@@ -517,6 +525,15 @@
         <div class="player-meta">
           <h3 id="player-modulo-titulo">—</h3>
           <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
+          <a id="player-material-apoio" class="material-apoio" style="display:none" target="_blank" rel="noopener">
+            <div class="material-apoio__icone">📄</div>
+            <div class="material-apoio__texto">
+              <div class="material-apoio__label">Material de apoio</div>
+              <div class="material-apoio__titulo">PDF para leitura</div>
+              <div class="material-apoio__dica">Terminou o vídeo? Leia o material complementar deste módulo.</div>
+            </div>
+            <div class="material-apoio__seta">→</div>
+          </a>
           <div id="modulos-lista" style="margin-top:16px"></div>
         </div>
       </div>
@@ -650,7 +667,7 @@
         <option value="cloudflare">Cloudflare Stream</option>
       </select>
     </div>
-    <div class="field"><label>URL do PDF de Apoio (opcional)</label><input type="text" id="mod-pdf-url" placeholder="https://exemplo.com/apostila.pdf"></div>
+    <div class="field"><label>Link do PDF de Apoio (opcional)</label><input type="text" id="mod-pdf-url" placeholder="Link do Google Drive, Dropbox etc. (compartilhamento público)"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="fecharModal('modal-modulo')">Cancelar</button>
       <button class="btn btn-navy" id="btn-salvar-modulo" onclick="salvarModulo()">Salvar</button>
@@ -1257,6 +1274,7 @@ function editarModulo(m) {
   editingModuloId = m.id;
   document.getElementById('modal-modulo-titulo').textContent = 'Editar Módulo';
   document.getElementById('mod-titulo').value = m.titulo || '';
+  document.getElementById('mod-descricao').value = m.descricao || '';
   document.getElementById('mod-ordem').value = m.ordem || 1;
   document.getElementById('mod-duracao').value = m.duracao_segundos || 1800;
   document.getElementById('mod-video').value = m.video_provider_id || '';
@@ -1267,6 +1285,7 @@ function editarModulo(m) {
 async function salvarModulo() {
   const body = {
     titulo: document.getElementById('mod-titulo').value,
+    descricao: document.getElementById('mod-descricao').value || null,
     ordem: +document.getElementById('mod-ordem').value,
     video_provider_id: document.getElementById('mod-video').value,
     duracao_segundos: +document.getElementById('mod-duracao').value,
@@ -1688,23 +1707,13 @@ function selecionarModulo(idx) {
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
   }
 
-  // Botão de PDF de apoio
-  let pdfBtn = document.getElementById('player-pdf-btn');
-  if (!pdfBtn) {
-    const actionsEl = document.getElementById('player-actions');
-    const btn = document.createElement('a');
-    btn.id = 'player-pdf-btn';
-    btn.target = '_blank';
-    btn.className = 'btn btn-outline';
-    btn.innerHTML = '📄 Material de Apoio (PDF)';
-    actionsEl.appendChild(btn);
-    pdfBtn = btn;
-  }
+  // Card de material de apoio (PDF), exibido logo abaixo do vídeo
+  const materialEl = document.getElementById('player-material-apoio');
   if (moduloAtual.pdf_url) {
-    pdfBtn.href = moduloAtual.pdf_url;
-    pdfBtn.style.display = 'inline-flex';
+    materialEl.href = moduloAtual.pdf_url;
+    materialEl.style.display = 'flex';
   } else {
-    pdfBtn.style.display = 'none';
+    materialEl.style.display = 'none';
   }
 
   document.getElementById('btn-iniciar-sessao').style.display = 'inline-flex';
