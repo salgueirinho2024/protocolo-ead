@@ -61,17 +61,24 @@ async function loginFuncionario(req, res) {
   }
 
   try {
+    // OBS: CPF é único por EMPRESA (não globalmente) — de propósito, pra
+    // permitir que a mesma pessoa trabalhe em duas empresas clientes
+    // diferentes. Se isso acontecer, o login abaixo pega o cadastro mais
+    // recente (ORDER BY criado_em DESC) — caso raro, mas existe. Se um dia
+    // virar problema de verdade, a solução é pedir também o CNPJ/nome da
+    // empresa na tela de login do funcionário pra desambiguar.
     const { rows } = await db.query(
-      `SELECT fc.id, fc.nome, fc.cpf, fc.contrato_id, fa.senha_hash, fa.id AS acesso_id
-         FROM funcionarios_contrato fc
-         JOIN funcionario_acessos fa ON fa.funcionario_id = fc.id
-        WHERE fc.cpf = $1
+      `SELECT f.id, f.nome, f.cpf, f.empresa_id, f.ativo, fa.senha_hash, fa.id AS acesso_id
+         FROM funcionarios f
+         JOIN funcionario_acessos fa ON fa.funcionario_id = f.id
+        WHERE f.cpf = $1
+        ORDER BY f.criado_em DESC
         LIMIT 1`,
       [cpf]
     );
 
     const func = rows[0];
-    if (!func || !func.senha_hash) return res.status(401).json({ erro: 'Credenciais inválidas.' });
+    if (!func || !func.senha_hash || !func.ativo) return res.status(401).json({ erro: 'Credenciais inválidas.' });
 
     const senhaOk = await bcrypt.compare(senha, func.senha_hash);
     if (!senhaOk) return res.status(401).json({ erro: 'Credenciais inválidas.' });
@@ -79,7 +86,7 @@ async function loginFuncionario(req, res) {
     await db.query(`UPDATE funcionario_acessos SET ultimo_login_em = now() WHERE id = $1`, [func.acesso_id]);
 
     const token = jwt.sign(
-      { id: func.id, role: 'funcionario', nome: func.nome, contratoId: func.contrato_id },
+      { id: func.id, role: 'funcionario', nome: func.nome, empresaId: func.empresa_id },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );

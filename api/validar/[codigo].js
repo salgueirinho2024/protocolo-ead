@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
               t.carga_horaria_min
          FROM certificados cert
          JOIN matriculas m ON m.id = cert.matricula_id
-         JOIN funcionarios_contrato fc ON fc.id = m.funcionario_id
+         JOIN funcionarios fc ON fc.id = m.funcionario_id
          JOIN treinamentos t ON t.id = m.treinamento_id
         WHERE cert.codigo_validacao = $1`,
       [(codigo || '').toUpperCase()]

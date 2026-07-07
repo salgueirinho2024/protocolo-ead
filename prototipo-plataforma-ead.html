@@ -426,40 +426,6 @@
       </div>
     </div>
 
-    <!-- Configuração da Empresa Emissora -->
-    <div id="page-admin-configuracao" class="page">
-      <div class="page-header">
-        <h2>Empresa Emissora</h2>
-        <p>Dados únicos, reaproveitados em todos os treinamentos e certificados</p>
-      </div>
-      <div class="card" style="padding:20px">
-        <h3 style="margin-bottom:12px;font-size:14px">Dados da empresa</h3>
-        <div class="field"><label>Razão social</label><input type="text" id="cfg-empresa-razao-social"></div>
-        <div class="fields-row">
-          <div class="field"><label>CNPJ</label><input type="text" id="cfg-empresa-cnpj"></div>
-          <div class="field"><label>Telefone</label><input type="text" id="cfg-empresa-telefone"></div>
-        </div>
-        <div class="field"><label>E-mail</label><input type="email" id="cfg-empresa-email"></div>
-        <div class="field"><label>Endereço</label><textarea id="cfg-empresa-endereco"></textarea></div>
-
-        <h3 style="margin:20px 0 12px;font-size:14px">Responsável técnico</h3>
-        <div class="fields-row">
-          <div class="field"><label>Nome</label><input type="text" id="cfg-resp-nome"></div>
-          <div class="field"><label>Registro/Documento</label><input type="text" id="cfg-resp-doc"></div>
-        </div>
-
-        <h3 style="margin:20px 0 12px;font-size:14px">Instrutor</h3>
-        <div class="fields-row">
-          <div class="field"><label>Nome</label><input type="text" id="cfg-instrutor-nome"></div>
-          <div class="field"><label>Registro/Documento</label><input type="text" id="cfg-instrutor-doc"></div>
-        </div>
-
-        <div class="modal-footer" style="justify-content:flex-start;margin-top:20px">
-          <button class="btn btn-navy" onclick="salvarConfiguracao()">Salvar configuração</button>
-        </div>
-      </div>
-    </div>
-
     <!-- ══ EMPRESA PAGES ══ -->
 
     <!-- Dashboard Empresa -->
@@ -617,11 +583,8 @@
       <div class="field"><label>Carga horária (min)</label><input type="number" id="trein-carga" value="60" min="1"></div>
       <div class="field"><label>Nota mínima na prova (%)</label><input type="number" id="trein-nota" value="70" min="0" max="100"></div>
     </div>
-    <div class="fields-row">
-      <div class="field"><label>Data de início</label><input type="date" id="trein-data-inicio"></div>
-      <div class="field"><label>Data final</label><input type="date" id="trein-data-fim"></div>
-    </div>
     <div class="field"><label>Validade do certificado (meses)</label><input type="number" id="trein-validade" value="12" min="1"></div>
+    <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px">Este treinamento não tem data fixa de início/fim: fica pronto e pode ser disponibilizado para várias empresas em datas diferentes. A data de início de cada funcionário é calculada automaticamente a partir de quando ele começa a assistir.</p>
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
     <div style="font-weight:600;font-size:14px;margin-bottom:8px">Dados do certificado (emissora & assinatura)</div>
     <div class="fields-row">
@@ -847,8 +810,6 @@ const navConfigs = {
     { id: 'admin-treinamentos', label: 'Treinamentos', icon: iconBook(), onEnter: carregarTreinamentos },
     { section: 'Segurança' },
     { id: 'admin-fraude', label: 'Anti-Fraude', icon: iconShield(), onEnter: carregarSuspeitos },
-    { section: 'Configurações' },
-    { id: 'admin-configuracao', label: 'Empresa Emissora', icon: iconBuilding(), onEnter: carregarConfiguracao },
   ],
   empresa: [
     { section: 'Painel' },
@@ -1155,7 +1116,7 @@ async function carregarTreinamentos() {
 function abrirModalTreinamento() {
   editingTreinId = null;
   document.getElementById('modal-trein-titulo').textContent = 'Novo Treinamento';
-  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-data-inicio','trein-data-fim','trein-emissora-nome','trein-emissora-cnpj','trein-assinatura-nome','trein-assinatura-cargo'].forEach(id => document.getElementById(id).value = '');
+  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-emissora-nome','trein-emissora-cnpj','trein-assinatura-nome','trein-assinatura-cargo'].forEach(id => document.getElementById(id).value = '');
   window._assinaturaB64 = null;
   document.getElementById('trein-assinatura-preview').innerHTML = '';
   const af = document.getElementById('trein-assinatura-file'); if (af) af.value = '';
@@ -1179,8 +1140,6 @@ async function editarTreinamento(id) {
     document.getElementById('trein-carga').value = t.carga_horaria_min || 60;
     document.getElementById('trein-nota').value = t.nota_minima_prova || 70;
     document.getElementById('trein-validade').value = t.validade_certificado_meses || 365;
-    document.getElementById('trein-data-inicio').value = t.data_inicio ? t.data_inicio.slice(0,10) : '';
-    document.getElementById('trein-data-fim').value = t.data_fim ? t.data_fim.slice(0,10) : '';
     document.getElementById('trein-status').value = t.ativo === false ? 'inativo' : 'ativo';
     document.getElementById('trein-emissora-nome').value = t.emissora_nome || '';
     document.getElementById('trein-emissora-cnpj').value = t.emissora_cnpj || '';
@@ -1202,8 +1161,6 @@ async function salvarTreinamento() {
     carga_horaria_min: +document.getElementById('trein-carga').value,
     nota_minima_prova: +document.getElementById('trein-nota').value,
     validade_certificado_meses: +document.getElementById('trein-validade').value,
-    data_inicio: document.getElementById('trein-data-inicio').value || null,
-    data_fim: document.getElementById('trein-data-fim').value || null,
     ativo: document.getElementById('trein-status').value === 'ativo',
     emissora_nome: document.getElementById('trein-emissora-nome').value || null,
     emissora_cnpj: document.getElementById('trein-emissora-cnpj').value || null,
@@ -1413,40 +1370,6 @@ async function excluirPergunta(perguntaId) {
   } catch(e) { toast(e.message, 'error'); }
 }
 
-// Configuração Empresa Emissora
-async function carregarConfiguracao() {
-  try {
-    const cfg = await api('GET', '/api/admin/configuracao');
-    document.getElementById('cfg-empresa-razao-social').value = cfg.empresa_razao_social || '';
-    document.getElementById('cfg-empresa-cnpj').value = cfg.empresa_cnpj || '';
-    document.getElementById('cfg-empresa-telefone').value = cfg.empresa_telefone || '';
-    document.getElementById('cfg-empresa-email').value = cfg.empresa_email || '';
-    document.getElementById('cfg-empresa-endereco').value = cfg.empresa_endereco || '';
-    document.getElementById('cfg-resp-nome').value = cfg.responsavel_tecnico_nome || '';
-    document.getElementById('cfg-resp-doc').value = cfg.responsavel_tecnico_documento || '';
-    document.getElementById('cfg-instrutor-nome').value = cfg.instrutor_nome || '';
-    document.getElementById('cfg-instrutor-doc').value = cfg.instrutor_documento || '';
-  } catch(e) { toast(e.message, 'error'); }
-}
-
-async function salvarConfiguracao() {
-  const body = {
-    empresa_razao_social: document.getElementById('cfg-empresa-razao-social').value,
-    empresa_cnpj: document.getElementById('cfg-empresa-cnpj').value,
-    empresa_telefone: document.getElementById('cfg-empresa-telefone').value,
-    empresa_email: document.getElementById('cfg-empresa-email').value,
-    empresa_endereco: document.getElementById('cfg-empresa-endereco').value,
-    responsavel_tecnico_nome: document.getElementById('cfg-resp-nome').value,
-    responsavel_tecnico_documento: document.getElementById('cfg-resp-doc').value,
-    instrutor_nome: document.getElementById('cfg-instrutor-nome').value,
-    instrutor_documento: document.getElementById('cfg-instrutor-doc').value,
-  };
-  try {
-    await api('PUT', '/api/admin/configuracao', body);
-    toast('Configuração salva!', 'success');
-  } catch(e) { toast(e.message, 'error'); }
-}
-
 // Anti-Fraude
 async function carregarSuspeitos() {
   const tbody = document.getElementById('lista-suspeitos');
@@ -1646,6 +1569,7 @@ async function carregarMeusTrienamentos() {
               </div>
               <div class="vagas-bar"><div class="vagas-fill" style="width:${pct}%"></div></div>
             </div>
+            ${m.status === 'em_andamento' && m.periodo_previsto && m.periodo_previsto.data_fim ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">Previsão de conclusão: ${m.periodo_previsto.data_fim}</div>` : ''}
           </div>
           <div style="text-align:right">
             <span class="badge ${m.status==='concluido'?'badge-green':m.status==='em_andamento'?'badge-blue':'badge-gray'}">${statusLabel(m.status)}</span>
@@ -1853,7 +1777,7 @@ async function enviarProva(perguntas) {
 
 let _dadosCertAtual = null; // guarda dados para baixarCertificadoPDF()
 
-function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_conclusao, valido_ate, codigo_validacao, emissora, conteudo_programatico }) {
+function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, data_fim, data_conclusao, valido_ate, codigo_validacao, emissora, conteudo_programatico }) {
   function formatarCPF(c) { return c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'); }
   function minutosParaHoras(min) {
     const h = Math.floor(min / 60);
@@ -1910,7 +1834,7 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_conclusao,
     <div style="flex:1;overflow:hidden;font-size:11.5px;color:#374151;line-height:1.65;white-space:pre-wrap">${conteudo_programatico}</div>
     <!-- footer -->
     <div style="margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
-      <div style="font-size:9px;color:#9ca3af">Carga horária: ${minutosParaHoras(carga_horaria_min)} · Conclusão: ${data_conclusao}</div>
+      <div style="font-size:9px;color:#9ca3af">Carga horária: ${minutosParaHoras(carga_horaria_min)}${data_inicio && data_fim ? ` · Período: ${data_inicio}${data_fim !== data_inicio ? ` a ${data_fim}` : ''}` : ''} · Conclusão: ${data_conclusao}</div>
       <div style="font-size:9px;font-family:monospace;color:#0B6E2A;letter-spacing:.08em">${codigo_validacao}</div>
     </div>
   </div>
@@ -1936,6 +1860,7 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_conclusao,
     <div style="font-size:13px;color:#6b7280;margin-bottom:4px">concluiu com êxito o treinamento</div>
     <div style="font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:#0B6E2A;margin-bottom:4px">${titulo}</div>
     <div style="font-size:12px;color:#9ca3af">com carga horária de ${minutosParaHoras(carga_horaria_min)}</div>
+    ${data_inicio && data_fim ? `<div style="font-size:11px;color:#6b7280;margin-top:2px">Realizado de ${data_inicio}${data_fim !== data_inicio ? ` a ${data_fim}` : ''}</div>` : ''}
     <div style="width:80px;height:2px;background:linear-gradient(90deg,#1DAA4E,#3EC96A);margin:16px auto;border-radius:2px"></div>
     <div style="display:flex;gap:40px;justify-content:center">
       <div style="text-align:center"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:3px">Conclusão</div><div style="font-size:12px;font-weight:600;color:#111827">${data_conclusao}</div></div>

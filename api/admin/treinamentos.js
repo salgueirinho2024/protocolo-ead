@@ -41,9 +41,13 @@ async function handleTreinamentos(req, res) {
   }
 
   // POST
+  // OBS: o treinamento NÃO tem mais data_inicio/data_fim fixas — é um
+  // "molde" reutilizável, disponibilizado para várias empresas/contratos
+  // diferentes. O período de cada funcionário é calculado individualmente
+  // (ver lib/periodoTreinamento.js), a partir de quando ELE começou.
   const {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
-    conteudo_programatico, data_inicio, data_fim, ativo,
+    conteudo_programatico, ativo,
     emissora_nome, emissora_cnpj,
     assinatura_base64, assinatura_nome, assinatura_cargo,
   } = req.body || {};
@@ -54,12 +58,12 @@ async function handleTreinamentos(req, res) {
     const { rows } = await db.query(
       `INSERT INTO treinamentos
          (titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
-          conteudo_programatico, data_inicio, data_fim, ativo,
+          conteudo_programatico, ativo,
           emissora_nome, emissora_cnpj, assinatura_base64, assinatura_nome, assinatura_cargo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,COALESCE($9, TRUE),$10,$11,$12,$13,$14)
+       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12)
        RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
-       conteudo_programatico || null, data_inicio || null, data_fim || null,
+       conteudo_programatico || null,
        typeof ativo === 'boolean' ? ativo : null,
        emissora_nome || null, emissora_cnpj || null,
        assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null]
@@ -91,7 +95,7 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
   // PUT
   const {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
-    conteudo_programatico, data_inicio, data_fim, ativo,
+    conteudo_programatico, ativo,
     emissora_nome, emissora_cnpj,
     assinatura_base64, assinatura_nome, assinatura_cargo,
   } = req.body || {};
@@ -107,18 +111,16 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
               nota_minima_prova = $4,
               validade_certificado_meses = $5,
               conteudo_programatico = $6,
-              data_inicio = $7,
-              data_fim = $8,
-              ativo = COALESCE($9, ativo),
-              emissora_nome = $11,
-              emissora_cnpj = $12,
-              assinatura_base64 = $13,
-              assinatura_nome = $14,
-              assinatura_cargo = $15
-        WHERE id = $10
+              ativo = COALESCE($7, ativo),
+              emissora_nome = $9,
+              emissora_cnpj = $10,
+              assinatura_base64 = $11,
+              assinatura_nome = $12,
+              assinatura_cargo = $13
+        WHERE id = $8
         RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
-       conteudo_programatico || null, data_inicio || null, data_fim || null,
+       conteudo_programatico || null,
        typeof ativo === 'boolean' ? ativo : null, treinamentoId,
        emissora_nome || null, emissora_cnpj || null,
        assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null]

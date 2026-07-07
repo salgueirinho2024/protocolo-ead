@@ -130,27 +130,76 @@ CREATE TABLE IF NOT EXISTS contratos (
 CREATE INDEX IF NOT EXISTS idx_contratos_empresa ON contratos(empresa_id);
 
 -- =========================================================
--- 5. FUNCIONÁRIOS CADASTRADOS NO CONTRATO
+-- 5. FUNCIONÁRIOS (cadastro único por empresa, reutilizável
+--    entre contratos/treinamentos — NÃO tem limite de vagas
+--    aqui; a empresa cadastra quantos funcionários quiser)
 -- =========================================================
--- Aqui mora a trava de "não pode passar de N". A empresa só
--- pode inserir até vagas_contratadas linhas para este contrato.
 
-CREATE TABLE IF NOT EXISTS funcionarios_contrato (
+CREATE TABLE IF NOT EXISTS funcionarios (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    contrato_id         UUID NOT NULL REFERENCES contratos(id) ON DELETE CASCADE,
+    empresa_id          UUID NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
     nome                VARCHAR(150) NOT NULL,
     cpf                 CHAR(11) NOT NULL, -- armazenar só dígitos, validar formato na aplicação
     email               VARCHAR(150),      -- opcional, útil p/ enviar acesso e certificado
+    ativo               BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    UNIQUE (contrato_id, cpf) -- mesmo CPF não pode duplicar no mesmo contrato
+    UNIQUE (empresa_id, cpf) -- mesmo CPF não duplica dentro da mesma empresa
 );
 
-CREATE INDEX IF NOT EXISTS idx_funcionarios_contrato ON funcionarios_contrato(contrato_id);
-CREATE INDEX IF NOT EXISTS idx_funcionarios_cpf ON funcionarios_contrato(cpf);
+CREATE INDEX IF NOT EXISTS idx_funcionarios_empresa ON funcionarios(empresa_id);
+CREATE INDEX IF NOT EXISTS idx_funcionarios_cpf ON funcionarios(cpf);
+
+-- =========================================================
+-- 6. ACESSO/LOGIN DO FUNCIONÁRIO (CPF + senha simples ou link mágico)
+-- =========================================================
+-- 1 login por funcionário (não mais por cadastro-em-contrato).
+
+CREATE TABLE IF NOT EXISTS funcionario_acessos (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    funcionario_id      UUID NOT NULL UNIQUE REFERENCES funcionarios(id) ON DELETE CASCADE,
+    senha_hash          VARCHAR(255), -- pode ser NULL se usar só link mágico/token por email
+    ultimo_login_em     TIMESTAMPTZ,
+    criado_em           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =========================================================
+-- 7. MATRÍCULAS — vínculo entre um FUNCIONÁRIO e UM CONTRATO
+--    (é aqui que mora a trava de vagas, não mais no cadastro
+--    do funcionário)
+-- =========================================================
+
+DO $$ BEGIN
+    CREATE TYPE progresso_status AS ENUM ('nao_iniciado', 'em_andamento', 'concluido', 'reprovado');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS matriculas (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    funcionario_id      UUID NOT NULL REFERENCES funcionarios(id) ON DELETE CASCADE,
+    contrato_id         UUID NOT NULL REFERENCES contratos(id) ON DELETE CASCADE,
+    treinamento_id      UUID NOT NULL REFERENCES treinamentos(id) ON DELETE RESTRICT,
+    status              progresso_status NOT NULL DEFAULT 'nao_iniciado',
+    segundos_assistidos_total INTEGER NOT NULL DEFAULT 0, -- soma de todas as sessões
+    nota_prova_final    SMALLINT,
+    iniciado_em         TIMESTAMPTZ,
+    concluido_em        TIMESTAMPTZ,
+    criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    -- Não pode vincular o mesmo funcionário 2x ao MESMO contrato. Repetir o
+    -- MESMO treinamento é permitido, desde que seja em outro contrato (ex.:
+    -- reciclagem/retreinamento anual de NR) — por isso NÃO há
+    -- UNIQUE(funcionario_id, treinamento_id) travando isso pra sempre.
+    UNIQUE (funcionario_id, contrato_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_matriculas_funcionario ON matriculas(funcionario_id);
+CREATE INDEX IF NOT EXISTS idx_matriculas_contrato ON matriculas(contrato_id);
 
 -- --- TRIGGER: trava o limite de vagas no próprio banco -----
 -- Mesmo que a aplicação tenha um bug, o banco não deixa passar.
+-- Agora roda em cima de MATRICULAS (o vínculo), não mais no
+-- cadastro do funcionário — cadastrar funcionário é livre.
 
 CREATE OR REPLACE FUNCTION fn_valida_limite_vagas()
 RETURNS TRIGGER AS $$
@@ -163,7 +212,7 @@ BEGIN
     FOR UPDATE; -- lock evita race condition de inserts simultâneos
 
     SELECT COUNT(*) INTO v_ocupadas
-    FROM funcionarios_contrato
+    FROM matriculas
     WHERE contrato_id = NEW.contrato_id;
 
     IF v_ocupadas >= v_vagas THEN
@@ -175,44 +224,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_valida_limite_vagas ON funcionarios_contrato;
+DROP TRIGGER IF EXISTS trg_valida_limite_vagas ON matriculas;
 CREATE TRIGGER trg_valida_limite_vagas
-    BEFORE INSERT ON funcionarios_contrato
+    BEFORE INSERT ON matriculas
     FOR EACH ROW EXECUTE FUNCTION fn_valida_limite_vagas();
-
--- =========================================================
--- 6. ACESSO/LOGIN DO FUNCIONÁRIO (CPF + senha simples ou link mágico)
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS funcionario_acessos (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    funcionario_id      UUID NOT NULL UNIQUE REFERENCES funcionarios_contrato(id) ON DELETE CASCADE,
-    senha_hash          VARCHAR(255), -- pode ser NULL se usar só link mágico/token por email
-    ultimo_login_em     TIMESTAMPTZ,
-    criado_em           TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- =========================================================
--- 7. PROGRESSO DO TREINAMENTO (controle de horas e retomada)
--- =========================================================
-
-DO $$ BEGIN
-    CREATE TYPE progresso_status AS ENUM ('nao_iniciado', 'em_andamento', 'concluido', 'reprovado');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
-CREATE TABLE IF NOT EXISTS matriculas (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    funcionario_id      UUID NOT NULL REFERENCES funcionarios_contrato(id) ON DELETE CASCADE,
-    treinamento_id      UUID NOT NULL REFERENCES treinamentos(id) ON DELETE RESTRICT,
-    status              progresso_status NOT NULL DEFAULT 'nao_iniciado',
-    segundos_assistidos_total INTEGER NOT NULL DEFAULT 0, -- soma de todas as sessões
-    nota_prova_final    SMALLINT,
-    iniciado_em         TIMESTAMPTZ,
-    concluido_em        TIMESTAMPTZ,
-    criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (funcionario_id, treinamento_id)
-);
 
 -- Progresso por módulo/vídeo individual (permite retomar exatamente
 -- de onde parou, módulo a módulo)

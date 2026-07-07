@@ -15,10 +15,10 @@ module.exports = async (req, res) => {
     const { rows } = await db.query(
       `SELECT c.id, c.vagas_contratadas, c.status,
               t.titulo AS treinamento_titulo, t.carga_horaria_min,
-              COUNT(fc.id) AS vagas_usadas
+              COUNT(m.id) AS vagas_usadas
          FROM contratos c
          JOIN treinamentos t ON t.id = c.treinamento_id
-         LEFT JOIN funcionarios_contrato fc ON fc.contrato_id = c.id
+         LEFT JOIN matriculas m ON m.contrato_id = c.id
         WHERE c.empresa_id = $1 AND c.status = 'ativo'
         GROUP BY c.id, t.titulo, t.carga_horaria_min
         ORDER BY c.criado_em DESC`,

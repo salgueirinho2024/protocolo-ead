@@ -6,6 +6,7 @@
 const db = require('../../../lib/db');
 const { exigirAuth } = require('../../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../../lib/http');
+const { calcularPeriodoTreinamentoFormatado } = require('../../../lib/periodoTreinamento');
 
 async function metadadosCertificado(req, res) {
   const user = exigirAuth(req, res, 'funcionario');
@@ -15,10 +16,11 @@ async function metadadosCertificado(req, res) {
     const { rows } = await db.query(
       `SELECT cert.id, cert.codigo_validacao, cert.arquivo_pdf_url, cert.emitido_em, cert.valido_ate,
               t.titulo AS treinamento_titulo, t.carga_horaria_min, t.conteudo_programatico,
+              m.iniciado_em,
               fc.nome AS funcionario_nome, fc.cpf
          FROM certificados cert
          JOIN matriculas m ON m.id = cert.matricula_id
-         JOIN funcionarios_contrato fc ON fc.id = m.funcionario_id
+         JOIN funcionarios fc ON fc.id = m.funcionario_id
          JOIN treinamentos t ON t.id = m.treinamento_id
         WHERE m.funcionario_id = $1
         ORDER BY cert.emitido_em DESC`,
@@ -30,7 +32,11 @@ async function metadadosCertificado(req, res) {
     const emissora = emissoraRows[0] || null;
 
     // Adiciona dados_certificado em cada registro para o frontend montar o PDF
-    const resultado = rows.map(c => ({
+    const resultado = rows.map(c => {
+      // Período (início/fim) calculado a partir de quando o funcionário
+      // iniciou o treinamento + carga horária ÷ 8h por dia.
+      const periodo = calcularPeriodoTreinamentoFormatado(c.iniciado_em, c.carga_horaria_min);
+      return {
       ...c,
       dados_certificado: {
         nome: c.funcionario_nome,
@@ -38,12 +44,15 @@ async function metadadosCertificado(req, res) {
         titulo: c.treinamento_titulo,
         carga_horaria_min: c.carga_horaria_min,
         conteudo_programatico: c.conteudo_programatico,
+        data_inicio: periodo.data_inicio,
+        data_fim: periodo.data_fim,
         data_conclusao: c.emitido_em ? new Date(c.emitido_em).toLocaleDateString('pt-BR') : '—',
         valido_ate: c.valido_ate ? new Date(c.valido_ate).toLocaleDateString('pt-BR') : null,
         codigo_validacao: c.codigo_validacao,
         emissora,
       },
-    }));
+      };
+    });
 
     res.json(resultado);
   } catch (err) {
@@ -60,17 +69,19 @@ async function validacaoPublica(req, res) {
     const { rows } = await db.query(
       `SELECT cert.codigo_validacao, cert.emitido_em, cert.valido_ate,
               t.titulo AS treinamento_titulo, t.carga_horaria_min,
+              m.iniciado_em,
               fc.nome AS funcionario_nome
          FROM certificados cert
          JOIN matriculas m ON m.id = cert.matricula_id
-         JOIN funcionarios_contrato fc ON fc.id = m.funcionario_id
+         JOIN funcionarios fc ON fc.id = m.funcionario_id
          JOIN treinamentos t ON t.id = m.treinamento_id
         WHERE cert.codigo_validacao = $1`,
       [codigo]
     );
 
     if (!rows[0]) return res.status(404).json({ erro: 'Certificado não encontrado.' });
-    res.json({ valido: true, ...rows[0] });
+    const periodo = calcularPeriodoTreinamentoFormatado(rows[0].iniciado_em, rows[0].carga_horaria_min);
+    res.json({ valido: true, ...rows[0], data_inicio: periodo.data_inicio, data_fim: periodo.data_fim });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao validar certificado.' });

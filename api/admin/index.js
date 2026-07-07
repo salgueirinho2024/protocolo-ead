@@ -19,10 +19,9 @@ async function handleEmpresas(req, res) {
     try {
       const { rows } = await db.query(
         `SELECT e.id, e.razao_social, e.cnpj, e.email_contato, e.ativo,
-                COUNT(DISTINCT fc.id) AS total_funcionarios
+                COUNT(DISTINCT f.id) AS total_funcionarios
            FROM empresas e
-           LEFT JOIN contratos c ON c.empresa_id = e.id
-           LEFT JOIN funcionarios_contrato fc ON fc.contrato_id = c.id
+           LEFT JOIN funcionarios f ON f.empresa_id = e.id
           GROUP BY e.id
           ORDER BY e.criado_em DESC`
       );
@@ -160,11 +159,11 @@ async function handleContratos(req, res, user) {
       const { rows } = await db.query(
         `SELECT c.id, c.vagas_contratadas, c.status, c.data_inicio, c.data_limite,
                 e.razao_social AS empresa_nome, t.titulo AS treinamento_titulo,
-                COUNT(fc.id) AS vagas_usadas
+                COUNT(m.id) AS vagas_usadas
            FROM contratos c
            JOIN empresas e ON e.id = c.empresa_id
            JOIN treinamentos t ON t.id = c.treinamento_id
-           LEFT JOIN funcionarios_contrato fc ON fc.contrato_id = c.id
+           LEFT JOIN matriculas m ON m.contrato_id = c.id
           GROUP BY c.id, e.razao_social, t.titulo
           ORDER BY c.criado_em DESC`
       );
@@ -203,11 +202,11 @@ async function handleContratos(req, res, user) {
     try {
       if (vagas_contratadas) {
         const { rows: usoRows } = await db.query(
-          `SELECT COUNT(*) AS usadas FROM funcionarios_contrato WHERE contrato_id = $1`,
+          `SELECT COUNT(*) AS usadas FROM matriculas WHERE contrato_id = $1`,
           [id]
         );
         if (parseInt(usoRows[0].usadas) > parseInt(vagas_contratadas)) {
-          return res.status(422).json({ erro: `Não é possível reduzir para ${vagas_contratadas} vagas: já existem ${usoRows[0].usadas} funcionários cadastrados.` });
+          return res.status(422).json({ erro: `Não é possível reduzir para ${vagas_contratadas} vagas: já existem ${usoRows[0].usadas} funcionários vinculados a este contrato.` });
         }
       }
 
@@ -274,45 +273,6 @@ async function handleSuspeitos(req, res) {
   }
 }
 
-async function handleConfiguracao(req, res) {
-  if (!metodoPermitido(req, res, 'GET', 'PUT')) return;
-
-  if (req.method === 'GET') {
-    try {
-      const { rows } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
-      return res.json(rows[0] || {});
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ erro: 'Erro ao buscar configuração.' });
-    }
-  }
-
-  // PUT
-  const {
-    empresa_razao_social, empresa_cnpj, empresa_endereco, empresa_email, empresa_telefone,
-    responsavel_tecnico_nome, responsavel_tecnico_documento, instrutor_nome, instrutor_documento,
-  } = req.body || {};
-  try {
-    const { rows } = await db.query(
-      `UPDATE configuracao_emissora
-          SET empresa_razao_social = $1, empresa_cnpj = $2, empresa_endereco = $3,
-              empresa_email = $4, empresa_telefone = $5,
-              responsavel_tecnico_nome = $6, responsavel_tecnico_documento = $7,
-              instrutor_nome = $8, instrutor_documento = $9
-        WHERE id = 1
-        RETURNING *`,
-      [empresa_razao_social || null, empresa_cnpj || null, empresa_endereco || null,
-       empresa_email || null, empresa_telefone || null,
-       responsavel_tecnico_nome || null, responsavel_tecnico_documento || null,
-       instrutor_nome || null, instrutor_documento || null]
-    );
-    return res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ erro: 'Erro ao salvar configuração.' });
-  }
-}
-
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
@@ -327,8 +287,6 @@ module.exports = async (req, res) => {
       return handleSuspeitos(req, res);
     case 'empresas':
       return handleEmpresas(req, res);
-    case 'configuracao':
-      return handleConfiguracao(req, res);
     default:
       return res.status(404).json({ erro: 'Recurso não encontrado.' });
   }
