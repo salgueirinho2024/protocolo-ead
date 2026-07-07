@@ -453,12 +453,14 @@
         <button class="btn btn-navy" onclick="abrirModalFuncionario()">+ Novo Funcionário</button>
       </div>
       <div id="select-contrato-func" style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin-bottom:6px">Filtrar por contrato</label>
-        <select id="contrato-select-func" onchange="carregarFuncionarios()" style="padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;min-width:260px"></select>
+        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin-bottom:6px">Vincular a um contrato (opcional)</label>
+        <select id="contrato-select-func" onchange="carregarFuncionarios()" style="padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;min-width:260px">
+          <option value="">— Nenhum contrato selecionado —</option>
+        </select>
       </div>
       <div class="card">
-        <table><thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Status</th><th></th></tr></thead>
-        <tbody id="lista-funcionarios"><tr class="loading-row"><td colspan="5">Selecione um contrato</td></tr></tbody></table>
+        <table><thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Vínculo</th><th></th></tr></thead>
+        <tbody id="lista-funcionarios"><tr class="loading-row"><td colspan="5">Carregando…</td></tr></tbody></table>
       </div>
     </div>
 
@@ -1443,8 +1445,9 @@ async function carregarSelectContratos() {
     const data = await api('GET', '/api/empresa/contratos');
     const lista = data.contratos || data || [];
     const sel = document.getElementById('contrato-select-func');
-    sel.innerHTML = lista.map(c => `<option value="${c.id}">${c.treinamento_titulo || 'Contrato '+c.id}</option>`).join('');
-    if (lista.length) carregarFuncionarios();
+    sel.innerHTML = '<option value="">— Nenhum contrato selecionado —</option>' +
+      lista.map(c => `<option value="${c.id}">${c.treinamento_titulo || 'Contrato '+c.id}</option>`).join('');
+    carregarFuncionarios();
   } catch(e) { toast(e.message, 'error'); }
 }
 
@@ -1459,26 +1462,55 @@ function statusMatriculaBadgeClass(s) {
   return 'badge-gray';
 }
 
+// Lista TODOS os funcionários da empresa (cadastro reutilizável, não
+// depende de contrato). Se um contrato estiver selecionado no filtro,
+// busca também os vínculos (matrículas) desse contrato, pra mostrar o
+// status de cada funcionário nele e permitir vincular/desvincular.
 async function carregarFuncionarios() {
   const contratoId = document.getElementById('contrato-select-func').value;
-  if (!contratoId) return;
   const tbody = document.getElementById('lista-funcionarios');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
   try {
-    const data = await api('GET', '/api/empresa/contratos/' + contratoId + '/funcionarios');
-    const lista = data.funcionarios || data || [];
-    if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum funcionário neste contrato</td></tr>'; return; }
-    tbody.innerHTML = lista.map(f => `
+    const data = await api('GET', '/api/empresa/funcionarios');
+    const funcionarios = data.funcionarios || data || [];
+
+    let matriculasPorFuncionario = {};
+    if (contratoId) {
+      const dataMat = await api('GET', '/api/empresa/contratos/' + contratoId + '/matriculas');
+      const matriculas = dataMat.matriculas || dataMat || [];
+      matriculas.forEach(m => { matriculasPorFuncionario[m.funcionario_id] = m; });
+    }
+
+    if (!funcionarios.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum funcionário cadastrado</td></tr>'; return; }
+
+    tbody.innerHTML = funcionarios.map(f => {
+      const m = matriculasPorFuncionario[f.id];
+      let vinculoCol, acoesVinculo;
+      if (!contratoId) {
+        vinculoCol = '<span class="badge badge-gray">—</span>';
+        acoesVinculo = '';
+      } else if (m) {
+        vinculoCol = `<span class="badge ${statusMatriculaBadgeClass(m.status_matricula)}">${statusMatriculaLabel(m.status_matricula)}</span>`;
+        acoesVinculo = m.status_matricula === 'nao_iniciado'
+          ? `<button class="btn btn-outline btn-sm" onclick="desvincularFuncionario('${contratoId}','${m.matricula_id}')">Desvincular</button>`
+          : '';
+      } else {
+        vinculoCol = '<span class="badge badge-gray">Não vinculado</span>';
+        acoesVinculo = `<button class="btn btn-navy btn-sm" onclick="vincularFuncionario('${contratoId}','${f.id}')">Vincular</button>`;
+      }
+      return `
       <tr>
         <td><strong>${f.nome}</strong></td>
         <td class="mono">${f.cpf || '—'}</td>
         <td>${f.email || '—'}</td>
-        <td><span class="badge ${statusMatriculaBadgeClass(f.status_matricula)}">${statusMatriculaLabel(f.status_matricula)}</span></td>
+        <td>${vinculoCol}</td>
         <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+          ${acoesVinculo}
           <button class="btn btn-outline btn-sm" onclick='editarFuncionario(${JSON.stringify(f)})'>Editar</button>
-          <button class="btn btn-red btn-sm" onclick="removerFuncionario('${contratoId}','${f.id}')">Remover</button>
+          <button class="btn btn-red btn-sm" onclick="removerFuncionario('${f.id}')">Remover</button>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
 }
 
@@ -1503,9 +1535,8 @@ function editarFuncionario(f) {
   document.getElementById('modal-funcionario').classList.add('open');
 }
 
+// Cadastro/edição do funcionário em si — não depende mais de contrato.
 async function salvarFuncionario() {
-  const contratoId = document.getElementById('contrato-select-func').value;
-  const senha = document.getElementById('func-senha').value;
   try {
     if (editingFuncionarioId) {
       const body = {
@@ -1513,17 +1544,18 @@ async function salvarFuncionario() {
         cpf: document.getElementById('func-cpf').value,
         email: document.getElementById('func-email').value,
       };
+      const senha = document.getElementById('func-senha').value;
       if (senha) body.senha = senha;
-      await api('PUT', '/api/empresa/contratos/' + contratoId + '/funcionarios/' + editingFuncionarioId, body);
+      await api('PUT', '/api/empresa/funcionarios/' + editingFuncionarioId, body);
       toast('Funcionário atualizado!', 'success');
     } else {
       const body = {
         nome: document.getElementById('func-nome').value,
         cpf: document.getElementById('func-cpf').value,
         email: document.getElementById('func-email').value,
-        senha,
+        senha: document.getElementById('func-senha').value,
       };
-      await api('POST', '/api/empresa/contratos/' + contratoId + '/funcionarios', body);
+      await api('POST', '/api/empresa/funcionarios', body);
       toast('Funcionário cadastrado!', 'success');
     }
     fecharModal('modal-funcionario');
@@ -1531,11 +1563,33 @@ async function salvarFuncionario() {
   } catch(e) { toast(e.message, 'error'); }
 }
 
-async function removerFuncionario(contratoId, funcId) {
-  if (!confirm('Remover este funcionário do contrato?')) return;
+// Remove o funcionário da empresa (cadastro inteiro). Só funciona se
+// nenhuma matrícula dele já tiver sido iniciada — o backend barra isso.
+async function removerFuncionario(funcId) {
+  if (!confirm('Remover este funcionário da empresa? Isso remove o cadastro dele por completo.')) return;
   try {
-    await api('DELETE', '/api/empresa/contratos/' + contratoId + '/funcionarios/' + funcId);
+    await api('DELETE', '/api/empresa/funcionarios/' + funcId);
     toast('Funcionário removido', 'success');
+    carregarFuncionarios();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Vincula um funcionário JÁ CADASTRADO ao contrato selecionado
+// (é aqui que a trava de vagas do contrato entra, no backend).
+async function vincularFuncionario(contratoId, funcId) {
+  try {
+    await api('POST', '/api/empresa/contratos/' + contratoId + '/matriculas', { funcionario_id: funcId });
+    toast('Funcionário vinculado ao contrato!', 'success');
+    carregarFuncionarios();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Desvincula (remove a matrícula) — só permitido se ainda não iniciou.
+async function desvincularFuncionario(contratoId, matriculaId) {
+  if (!confirm('Desvincular este funcionário deste contrato?')) return;
+  try {
+    await api('DELETE', '/api/empresa/contratos/' + contratoId + '/matriculas/' + matriculaId);
+    toast('Funcionário desvinculado do contrato', 'success');
     carregarFuncionarios();
   } catch(e) { toast(e.message, 'error'); }
 }
