@@ -28,10 +28,10 @@
 //       (funcionario_id, contrato_id) — não mais (funcionario_id,
 //       treinamento_id) pra sempre.
 const bcrypt = require('bcryptjs');
-const db = require('../../lib/db');
-const { exigirAuth } = require('../../lib/auth');
-const { aplicarCors, metodoPermitido, validarEnv } = require('../../lib/http');
-const { calcularPeriodoTreinamentoFormatado } = require('../../lib/periodoTreinamento');
+const db = require('../../../lib/db');
+const { exigirAuth } = require('../../../lib/auth');
+const { aplicarCors, metodoPermitido, validarEnv } = require('../../../lib/http');
+const { calcularPeriodoTreinamentoFormatado } = require('../../../lib/periodoTreinamento');
 
 // ─────────────────────────────────────────────────────────
 // Funcionários (cadastro da empresa, sem limite de vagas)
