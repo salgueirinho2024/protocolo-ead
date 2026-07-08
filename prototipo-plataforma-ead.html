@@ -249,8 +249,8 @@
 </style>
 <!-- html2pdf: gera PDF do certificado direto no navegador, sem servidor -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<!-- QR Code para validação do certificado -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- QR Code para validação do certificado (gera SVG/dataURL de forma síncrona, sem depender de canvas/timing — mais confiável com html2canvas) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/2.0.4/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -1817,9 +1817,14 @@ async function enviarProva(perguntas) {
     // Se aprovado e o servidor já retornou dados_certificado, abre o preview automaticamente
     if (aprovado && data.certificado && data.certificado.dados_certificado) {
       setTimeout(() => {
-        _dadosCertAtual = data.certificado.dados_certificado;
-        document.getElementById('cert-preview-html').innerHTML = htmlCertificado(data.certificado.dados_certificado);
+        const dadosCert = data.certificado.dados_certificado;
+        _dadosCertAtual = dadosCert;
+        document.getElementById('cert-preview-html').innerHTML = htmlCertificado(dadosCert);
         document.getElementById('cert-preview-wrapper').classList.add('open');
+        // Antes faltava esta chamada: o QR code nunca era desenhado quando o
+        // certificado abria automaticamente após a aprovação na prova.
+        const urlVal = dadosCert.url_validacao || (window.location.origin + '/validar/' + dadosCert.codigo_validacao);
+        _renderizarQrCertificado(urlVal);
       }, 800);
     }
   } catch(e) { toast(e.message, 'error'); }
@@ -1987,7 +1992,13 @@ function baixarCertificadoPDF() {
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' },
-      pagebreak: { mode: ['css', 'legacy'] },
+      // Usar apenas o modo 'css' (respeita só o page-break-before:always que
+      // já colocamos manualmente entre as páginas). O modo 'legacy' soma-se a
+      // ele e fica calculando quebras extras por overflow de pixel, o que
+      // nesse layout (altura da página == altura do certificado, 595px)
+      // frequentemente gerava uma 3ª página em branco entre o certificado e
+      // o conteúdo programático.
+      pagebreak: { mode: ['css'] },
     })
     .from(el)
     .save()
@@ -2085,14 +2096,32 @@ async function executarValidacaoLogin() {
   }
 }
 
-// Renderiza um QR code dentro do container retornado por htmlCertificado
+// Renderiza um QR code dentro do container retornado por htmlCertificado.
+// Usa a lib "qrcode-generator" (síncrona, gera SVG puro) em vez da antiga
+// qrcodejs (que desenhava em <canvas> via setTimeout — o canvas nem sempre
+// estava pronto a tempo do html2canvas capturar o certificado, resultando
+// em QR code em branco no PDF final).
 function _renderizarQrCertificado(urlValidacao) {
-  setTimeout(() => {
-    const target = document.querySelector('#cert-qr-target');
-    if (!target || typeof QRCode === 'undefined') return;
-    target.innerHTML = '';
-    new QRCode(target, { text: urlValidacao, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.M });
-  }, 30);
+  const target = document.querySelector('#cert-qr-target');
+  if (!target) return;
+  target.innerHTML = '';
+  if (typeof qrcode === 'undefined') return;
+  try {
+    const qr = qrcode(0, 'M'); // typeNumber 0 = automático, correctLevel M
+    qr.addData(urlValidacao);
+    qr.make();
+    // createSvgTag gera um <svg> puro (sem canvas/imagem externa), o que o
+    // html2canvas consegue capturar de forma imediata e confiável.
+    target.innerHTML = qr.createSvgTag({ scalable: true });
+    const svg = target.querySelector('svg');
+    if (svg) {
+      svg.style.width = '90px';
+      svg.style.height = '90px';
+      svg.style.display = 'block';
+    }
+  } catch (e) {
+    console.error('Erro ao gerar QR code do certificado:', e);
+  }
 }
 
 // ══════════════════════════════════════════════
