@@ -16,6 +16,8 @@ async function metadadosCertificado(req, res) {
     const { rows } = await db.query(
       `SELECT cert.id, cert.codigo_validacao, cert.arquivo_pdf_url, cert.emitido_em, cert.valido_ate,
               t.titulo AS treinamento_titulo, t.carga_horaria_min, t.conteudo_programatico,
+              t.emissora_nome, t.emissora_cnpj,
+              t.assinatura_base64, t.assinatura_nome, t.assinatura_cargo,
               m.iniciado_em,
               fc.nome AS funcionario_nome, fc.cpf
          FROM certificados cert
@@ -27,15 +29,33 @@ async function metadadosCertificado(req, res) {
       [user.id]
     );
 
-    // Busca dados da emissora para o frontend gerar o PDF
-    const { rows: emissoraRows } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
-    const emissora = emissoraRows[0] || null;
+    // Fallback global (apenas para treinamentos antigos sem emissora própria).
+    // Cada treinamento carrega seu próprio cabeçalho de emissão — não usar
+    // configuracao_emissora incondicionalmente, senão o certificado mostra
+    // sempre a mesma empresa cadastrada na tela de admin em vez da empresa
+    // configurada no treinamento específico.
+    let emissoraGlobal = null;
+    if (rows.some(c => !c.emissora_nome)) {
+      try {
+        const { rows: er } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
+        emissoraGlobal = er[0] || null;
+      } catch (_) { /* tabela pode não existir */ }
+    }
 
     // Adiciona dados_certificado em cada registro para o frontend montar o PDF
     const resultado = rows.map(c => {
       // Período (início/fim) calculado a partir de quando o funcionário
       // iniciou o treinamento + carga horária ÷ 8h por dia.
       const periodo = calcularPeriodoTreinamentoFormatado(c.iniciado_em, c.carga_horaria_min);
+      const emissora = {
+        empresa_razao_social: c.emissora_nome || (emissoraGlobal && emissoraGlobal.empresa_razao_social) || null,
+        empresa_cnpj:        c.emissora_cnpj || (emissoraGlobal && emissoraGlobal.empresa_cnpj) || null,
+        assinatura_base64:   c.assinatura_base64 || null,
+        assinatura_nome:     c.assinatura_nome || (emissoraGlobal && emissoraGlobal.instrutor_nome) || null,
+        assinatura_cargo:    c.assinatura_cargo || null,
+        instrutor_nome:      emissoraGlobal && emissoraGlobal.instrutor_nome,
+        responsavel_tecnico_nome: emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome,
+      };
       return {
       ...c,
       dados_certificado: {
