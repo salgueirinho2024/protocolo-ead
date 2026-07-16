@@ -1,16 +1,70 @@
-// api/player/matricula.js — GET /api/player/matricula — matrícula ativa do funcionário com progresso por módulo
+// api/player/matricula.js
+//   GET /api/player/matricula — matrícula ativa do funcionário com progresso por módulo
+//   PUT /api/player/matricula — "Editar Conta": o próprio funcionário atualiza
+//                                seu e-mail e/ou senha (exige a senha atual
+//                                para trocar a senha). Vive neste mesmo arquivo
+//                                pra não estourar o limite de 12 Serverless
+//                                Functions do plano Hobby da Vercel — ver
+//                                comentário em api/auth/login.js.
+const bcrypt = require('bcryptjs');
 const db = require('../../lib/db');
 const { exigirAuth } = require('../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../lib/http');
 const { calcularPeriodoTreinamentoFormatado } = require('../../lib/periodoTreinamento');
 
+async function handlePut(req, res, user) {
+  const { email, senha_atual, senha_nova } = req.body || {};
+
+  if (senha_nova && senha_nova.length < 6) {
+    return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE funcionarios SET email = $1 WHERE id = $2`,
+      [email || null, user.id]
+    );
+
+    if (senha_nova) {
+      const { rows } = await client.query(
+        `SELECT senha_hash FROM funcionario_acessos WHERE funcionario_id = $1`,
+        [user.id]
+      );
+      const senhaAtualOk = rows[0]?.senha_hash && senha_atual && await bcrypt.compare(senha_atual, rows[0].senha_hash);
+      if (!senhaAtualOk) {
+        await client.query('ROLLBACK');
+        return res.status(401).json({ erro: 'Senha atual incorreta.' });
+      }
+      const hash = await bcrypt.hash(senha_nova, 12);
+      await client.query(
+        `UPDATE funcionario_acessos SET senha_hash = $1 WHERE funcionario_id = $2`,
+        [hash, user.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    return res.json({ mensagem: 'Dados atualizados com sucesso.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao atualizar conta.' });
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
-  if (!metodoPermitido(req, res, 'GET')) return;
+  if (!metodoPermitido(req, res, 'GET', 'PUT')) return;
 
   const user = exigirAuth(req, res, 'funcionario');
   if (!user) return;
+
+  if (req.method === 'PUT') return handlePut(req, res, user);
 
   try {
     const { rows } = await db.query(

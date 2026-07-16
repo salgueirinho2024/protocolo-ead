@@ -526,6 +526,45 @@
       <div id="cert-container"></div>
     </div>
 
+    <!-- Editar Conta -->
+    <div id="page-func-conta" class="page">
+      <div class="page-header">
+        <h2>Editar Conta</h2>
+        <p>Seus dados de acesso</p>
+      </div>
+      <div class="card" style="max-width:420px">
+        <div class="card-header"><span class="card-title">Meus Dados</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" id="conta-nome" disabled>
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" id="conta-cpf" disabled>
+          </div>
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="conta-email" placeholder="seu@email.com">
+          </div>
+          <hr style="border:none;border-top:1px solid var(--surface2);margin:16px 0">
+          <div class="form-group">
+            <label>Senha atual</label>
+            <input type="password" id="conta-senha-atual" placeholder="Necessária apenas para alterar a senha">
+          </div>
+          <div class="form-group">
+            <label>Nova senha</label>
+            <input type="password" id="conta-senha-nova" placeholder="Deixe em branco para não alterar">
+          </div>
+          <div class="form-group">
+            <label>Confirmar nova senha</label>
+            <input type="password" id="conta-senha-confirma">
+          </div>
+          <button class="btn btn-navy" id="btn-salvar-conta" onclick="salvarContaFuncionario()">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -822,8 +861,10 @@ const navConfigs = {
   ],
   funcionario: [
     { section: 'EAD' },
-    { id: 'func-treinamentos', label: 'Meus Treinamentos', icon: iconBook(), onEnter: carregarMeusTrienamentos },
-    { id: 'func-certificado', label: 'Certificado', icon: iconCert(), onEnter: carregarCertificado },
+    { id: 'func-treinamentos', label: 'Meus Cursos', icon: iconGrid(), onEnter: carregarMeusTrienamentos },
+    { id: 'func-certificado', label: 'Certificados', icon: iconCert(), onEnter: carregarCertificado },
+    { section: 'Conta' },
+    { id: 'func-conta', label: 'Editar Conta', icon: iconUser(), onEnter: carregarContaFuncionario },
   ]
 };
 
@@ -1965,6 +2006,50 @@ async function carregarCertificado() {
   }
 }
 
+// ══════════════════════════════════════════════
+// EDITAR CONTA (FUNCIONÁRIO)
+// ══════════════════════════════════════════════
+function carregarContaFuncionario() {
+  document.getElementById('conta-nome').value = usuarioLogado?.nome || '';
+  const cpfBruto = usuarioLogado?.cpf || '';
+  document.getElementById('conta-cpf').value = cpfBruto.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  document.getElementById('conta-email').value = usuarioLogado?.email || '';
+  document.getElementById('conta-senha-atual').value = '';
+  document.getElementById('conta-senha-nova').value = '';
+  document.getElementById('conta-senha-confirma').value = '';
+}
+
+async function salvarContaFuncionario() {
+  const btn = document.getElementById('btn-salvar-conta');
+  const email = document.getElementById('conta-email').value.trim();
+  const senhaAtual = document.getElementById('conta-senha-atual').value;
+  const senhaNova = document.getElementById('conta-senha-nova').value;
+  const senhaConfirma = document.getElementById('conta-senha-confirma').value;
+
+  if (senhaNova || senhaConfirma) {
+    if (!senhaAtual) return toast('Informe sua senha atual para definir uma nova senha.', 'erro');
+    if (senhaNova.length < 6) return toast('A nova senha deve ter pelo menos 6 caracteres.', 'erro');
+    if (senhaNova !== senhaConfirma) return toast('A confirmação de senha não confere.', 'erro');
+  }
+
+  const body = { email: email || null };
+  if (senhaNova) { body.senha_atual = senhaAtual; body.senha_nova = senhaNova; }
+
+  btn.disabled = true;
+  try {
+    await api('PUT', '/api/player/matricula', body);
+    if (usuarioLogado) usuarioLogado.email = email;
+    toast('Dados atualizados com sucesso!', 'sucesso');
+    document.getElementById('conta-senha-atual').value = '';
+    document.getElementById('conta-senha-nova').value = '';
+    document.getElementById('conta-senha-confirma').value = '';
+  } catch (e) {
+    toast(e.message, 'erro');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 function verCertificado(idx) {
   const c = (window._certsList || [])[idx];
   if (!c || !c.dados_certificado) { toast('Dados do certificado não encontrados.', 'error'); return; }
@@ -2154,6 +2239,7 @@ function iconBook() { return `<svg width="16" height="16" fill="none" stroke="cu
 function iconShield() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; }
 function iconUsers() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`; }
 function iconCert() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
+function iconUser() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
 function iconBookLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`; }
 function iconCertLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 </script>
