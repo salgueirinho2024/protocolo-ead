@@ -538,8 +538,7 @@
         </div>
       </div>
       <div style="margin-top:20px;display:flex;gap:12px;align-items:center" id="player-actions">
-        <button class="btn btn-navy" id="btn-iniciar-sessao" onclick="iniciarSessao()">▶ Iniciar / Retomar</button>
-        <button class="btn btn-green" id="btn-concluir-modulo" onclick="encerrarSessao()" style="display:none">✓ Concluir módulo</button>
+        <button class="btn btn-green" id="btn-concluir-modulo" onclick="concluirModuloManual()">✓ Concluir módulo</button>
         <button class="btn btn-outline" onclick="navTo('func-prova')" id="btn-ir-prova" style="display:none">Fazer Prova Final →</button>
       </div>
     </div>
@@ -864,6 +863,7 @@ function iniciarApp() {
 }
 
 function logout() {
+  if (sessaoAtual) encerrarSessaoAtual(false);
   token = null; perfil = null; usuarioLogado = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -1724,6 +1724,7 @@ function abrirCursoDetalhe(matricula) {
 }
 
 function voltarParaCurso() {
+  if (sessaoAtual) encerrarSessaoAtual(false);
   if (matriculaAtual) { renderCursoDetalhe(matriculaAtual); navTo('func-curso'); }
   else navTo('func-treinamentos');
 }
@@ -1814,19 +1815,25 @@ function pdfEmbedUrl(url) {
   return url;
 }
 
-function selecionarModulo(idx) {
+async function selecionarModulo(idx) {
   if (!treinamentoAtual?.modulos) return;
+
+  // Fecha (salva) a sessão do módulo anterior antes de trocar, sem toast
+  if (sessaoAtual) await encerrarSessaoAtual(false);
+
   moduloAtual = treinamentoAtual.modulos[idx];
   document.getElementById('player-modulo-titulo').textContent = moduloAtual.titulo;
   document.getElementById('player-modulo-desc').textContent = moduloAtual.descricao || '';
 
-  // Renderiza player de vídeo
+  // Renderiza player de vídeo, retomando de onde o funcionário parou
+  // (ultima_posicao_seg), se houver.
   const videoEl = document.getElementById('player-placeholder');
   if (moduloAtual.video_provider_id) {
     const provider = moduloAtual.video_provider || 'youtube';
+    const pos = Math.max(0, parseInt(moduloAtual.ultima_posicao_seg) || 0);
     let embedUrl = '';
-    if (provider === 'youtube') embedUrl = `https://www.youtube.com/embed/${moduloAtual.video_provider_id}?rel=0`;
-    else if (provider === 'vimeo') embedUrl = `https://player.vimeo.com/video/${moduloAtual.video_provider_id}`;
+    if (provider === 'youtube') embedUrl = `https://www.youtube.com/embed/${moduloAtual.video_provider_id}?rel=0${pos > 0 ? `&start=${pos}` : ''}`;
+    else if (provider === 'vimeo') embedUrl = `https://player.vimeo.com/video/${moduloAtual.video_provider_id}${pos > 0 ? `#t=${pos}s` : ''}`;
     else embedUrl = moduloAtual.video_provider_id;
 
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
@@ -1846,25 +1853,23 @@ function selecionarModulo(idx) {
     materialEl.style.display = 'none';
   }
 
-  document.getElementById('btn-iniciar-sessao').style.display = 'inline-flex';
-  document.getElementById('btn-concluir-modulo').style.display = 'none';
+  document.getElementById('btn-ir-prova').style.display = moduloAtual.concluido ? 'inline-flex' : 'none';
+
+  // A sessão de visualização (usada pro anti-fraude e pra registrar o
+  // progresso) começa sozinha, sem precisar de um clique em "Iniciar".
+  iniciarSessaoAutomatica();
 }
 
-async function iniciarSessao() {
-  if (!moduloAtual || !matriculaAtual) { toast('Selecione um módulo primeiro', 'error'); return; }
+async function iniciarSessaoAutomatica() {
+  if (!moduloAtual || !matriculaAtual) return;
   try {
     const data = await api('POST', '/api/player/sessao/iniciar', {
       matricula_id: matriculaAtual.id,
       modulo_id: moduloAtual.id
     });
     sessaoAtual = data.sessao || data;
-    toast('Sessão iniciada! Bons estudos 📚', 'success');
-    document.getElementById('btn-iniciar-sessao').style.display = 'none';
-    document.getElementById('btn-concluir-modulo').style.display = 'inline-flex';
-
-    // Agenda checkpoints
     agendarCheckpoints();
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) { console.error(e); }
 }
 
 function agendarCheckpoints() {
@@ -1887,27 +1892,54 @@ async function responderCheckpoint() {
   } catch(e) { toast(e.message, 'error'); }
 }
 
-async function encerrarSessao() {
-  if (!sessaoAtual) return;
+// Fecha a sessão de visualização atual e salva o progresso (tempo assistido
+// e a posição pra retomar depois). Chamada automaticamente ao trocar de
+// módulo ou sair do player, e também pelo botão "Concluir módulo".
+async function encerrarSessaoAtual(mostrarToast) {
+  if (!sessaoAtual || !moduloAtual || !matriculaAtual) return null;
+  const sessaoParaFechar = sessaoAtual;
+  const moduloParaFechar = moduloAtual;
+  sessaoAtual = null;
+  if (checkpointTimer) { clearInterval(checkpointTimer); checkpointTimer = null; }
+  document.getElementById('player-checkpoint-overlay').style.display = 'none';
+
   try {
     const agora = Math.floor(Date.now() / 1000);
-    const segundos = sessaoAtual.inicio_em
-      ? Math.max(0, agora - Math.floor(new Date(sessaoAtual.inicio_em).getTime() / 1000))
+    const segundosSessao = sessaoParaFechar.inicio_em
+      ? Math.max(0, agora - Math.floor(new Date(sessaoParaFechar.inicio_em).getTime() / 1000))
       : 0;
-    await api('POST', '/api/player/sessao/encerrar', {
-      sessao_id: sessaoAtual.id,
+    // Posição pra retomar = de onde ele já estava + o que assistiu agora
+    const novaPosicao = (moduloParaFechar.ultima_posicao_seg || 0) + segundosSessao;
+
+    const resp = await api('POST', '/api/player/sessao/encerrar', {
+      sessao_id: sessaoParaFechar.id,
       matricula_id: matriculaAtual.id,
-      modulo_id: moduloAtual.id,
-      segundos_efetivos: segundos,
-      ultima_posicao_seg: segundos
+      modulo_id: moduloParaFechar.id,
+      segundos_efetivos: segundosSessao,
+      ultima_posicao_seg: novaPosicao
     });
-    if (checkpointTimer) clearInterval(checkpointTimer);
-    sessaoAtual = null;
-    toast('Módulo concluído!', 'success');
-    document.getElementById('btn-concluir-modulo').style.display = 'none';
-    document.getElementById('btn-iniciar-sessao').style.display = 'inline-flex';
-    document.getElementById('btn-ir-prova').style.display = 'inline-flex';
-  } catch(e) { toast(e.message, 'error'); }
+
+    moduloParaFechar.ultima_posicao_seg = novaPosicao;
+    if (resp.modulo_concluido) {
+      moduloParaFechar.concluido = true;
+      document.getElementById('btn-ir-prova').style.display = 'inline-flex';
+      if (mostrarToast) toast('Módulo concluído! 🎉', 'success');
+    } else if (mostrarToast) {
+      toast('Progresso salvo', 'success');
+    }
+    return resp;
+  } catch(e) {
+    if (mostrarToast) toast(e.message, 'error');
+    return null;
+  }
+}
+
+// Clique manual em "Concluir módulo": salva o progresso já acumulado e, se
+// o funcionário continuar na tela assistindo, uma nova sessão é aberta
+// automaticamente pra seguir contando o tempo.
+async function concluirModuloManual() {
+  await encerrarSessaoAtual(true);
+  iniciarSessaoAutomatica();
 }
 
 // Prova
