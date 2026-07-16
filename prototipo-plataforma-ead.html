@@ -187,6 +187,24 @@
   .material-apoio__titulo { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 2px; }
   .material-apoio__dica { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .material-apoio__seta { font-size: 18px; color: var(--navy); flex-shrink: 0; }
+  .material-apoio-wrap { margin-top: 16px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--surface2); }
+  .material-apoio-head { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface2); }
+  .material-apoio__abrir { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--navy); text-decoration: none; white-space: nowrap; }
+  .material-apoio-frame { width: 100%; height: 520px; border: none; display: block; background: #f4f4f4; }
+  .curso-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+  .curso-feature { display: flex; gap: 10px; align-items: flex-start; padding: 12px; background: var(--surface2); border-radius: 10px; }
+  .curso-feature .curso-feature-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
+  .curso-feature strong { display: block; font-size: 12px; font-weight: 700; color: var(--navy); }
+  .curso-feature span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+  .curso-aula-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--surface2); cursor: pointer; transition: background .15s; }
+  .curso-aula-item:last-child { border-bottom: none; }
+  .curso-aula-item:hover { background: var(--surface2); }
+  .curso-aula-check { width: 26px; height: 26px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; color: var(--navy); }
+  .curso-aula-check.concluida { background: var(--green); color: var(--white); }
+  .curso-aula-texto { flex: 1; min-width: 0; }
+  .curso-aula-titulo { font-size: 13px; font-weight: 600; }
+  .curso-aula-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .curso-aula-num { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
   .progress-steps { display: flex; gap: 6px; margin-top: 12px; }
   .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); flex-shrink: 0; }
   .step-dot.done { background: var(--green); }
@@ -475,9 +493,21 @@
       <div id="lista-meus-treinamentos"></div>
     </div>
 
+    <!-- Detalhe do Curso (capa) -->
+    <div id="page-func-curso" class="page">
+      <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="navTo('func-treinamentos')">← Voltar</button>
+      <div class="card">
+        <div class="card-body" id="curso-header"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Conteúdo do curso</span></div>
+        <div class="card-body" style="padding:0" id="curso-lista-aulas"></div>
+      </div>
+    </div>
+
     <!-- Player -->
     <div id="page-func-player" class="page">
-      <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="navTo('func-treinamentos')">← Voltar</button>
+      <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="voltarParaCurso()">← Voltar</button>
       <div class="player-card">
         <div class="player-video">
           <div id="player-placeholder" style="color:#fff;text-align:center">
@@ -493,15 +523,17 @@
         <div class="player-meta">
           <h3 id="player-modulo-titulo">—</h3>
           <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
-          <a id="player-material-apoio" class="material-apoio" style="display:none" target="_blank" rel="noopener">
-            <div class="material-apoio__icone">📄</div>
-            <div class="material-apoio__texto">
-              <div class="material-apoio__label">Material de apoio</div>
-              <div class="material-apoio__titulo">PDF para leitura</div>
-              <div class="material-apoio__dica">Terminou o vídeo? Leia o material complementar deste módulo.</div>
+          <div id="player-material-apoio" class="material-apoio-wrap" style="display:none">
+            <div class="material-apoio-head">
+              <div class="material-apoio__icone">📄</div>
+              <div class="material-apoio__texto">
+                <div class="material-apoio__label">Material de apoio</div>
+                <div class="material-apoio__titulo">PDF para leitura</div>
+              </div>
+              <a id="player-material-apoio-link" href="#" target="_blank" rel="noopener" class="material-apoio__abrir">Abrir em nova aba ↗</a>
             </div>
-            <div class="material-apoio__seta">→</div>
-          </a>
+            <iframe id="player-material-apoio-frame" class="material-apoio-frame" src="" title="Material de apoio em PDF"></iframe>
+          </div>
           <div id="modulos-lista" style="margin-top:16px"></div>
         </div>
       </div>
@@ -1651,7 +1683,7 @@ async function carregarMeusTrienamentos() {
     }
     container.innerHTML = lista.map(m => {
       const pct = m.progresso || 0;
-      return `<div class="card" style="margin-bottom:16px;cursor:pointer" onclick="abrirPlayer(${JSON.stringify(m).replace(/"/g,'&quot;')})">
+      return `<div class="card" style="margin-bottom:16px;cursor:pointer" onclick="abrirCursoDetalhe(${JSON.stringify(m).replace(/"/g,'&quot;')})">
         <div class="card-body" style="display:flex;align-items:center;gap:20px">
           <div style="font-size:40px">${iconBookEmoji(m.status)}</div>
           <div style="flex:1">
@@ -1681,7 +1713,70 @@ function statusLabel(s) {
   return m[s] || s || '—';
 }
 
-function abrirPlayer(matricula) {
+// ══════════════════════════════════════════════
+// DETALHE DO CURSO (capa exibida ao clicar num curso,
+// antes de entrar no player — ver print de referência)
+// ══════════════════════════════════════════════
+function abrirCursoDetalhe(matricula) {
+  matriculaAtual = matricula;
+  navTo('func-curso');
+  renderCursoDetalhe(matricula);
+}
+
+function voltarParaCurso() {
+  if (matriculaAtual) { renderCursoDetalhe(matriculaAtual); navTo('func-curso'); }
+  else navTo('func-treinamentos');
+}
+
+function renderCursoDetalhe(m) {
+  const modulos = Array.isArray(m.modulos) ? m.modulos : [];
+  const total = modulos.length + 1; // + avaliação final
+  const cargaMin = m.carga_horaria_min || 0;
+  const h = Math.floor(cargaMin / 60);
+  const min = cargaMin % 60;
+  const cargaTxt = cargaMin ? `${h}h${min > 0 ? ` ${min}min` : ''}` : '—';
+
+  document.getElementById('curso-header').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      ${m.status === 'concluido' ? '<span class="badge badge-green">Curso Completado</span>' : `<span class="badge ${m.status === 'em_andamento' ? 'badge-blue' : 'badge-gray'}">${statusLabel(m.status)}</span>`}
+    </div>
+    <h2 style="margin:0 0 8px">${m.treinamento_titulo || 'Treinamento'}</h2>
+    <p style="color:var(--text-muted);font-size:14px;line-height:1.6;margin:0">${m.descricao || ''}</p>
+    <div class="curso-features">
+      <div class="curso-feature"><span class="curso-feature-emoji">🎥</span><div><strong>Vídeos</strong><span>Aulas em vídeo do treinamento</span></div></div>
+      <div class="curso-feature"><span class="curso-feature-emoji">📄</span><div><strong>Materiais</strong><span>PDFs de apoio para leitura</span></div></div>
+      <div class="curso-feature"><span class="curso-feature-emoji">🎓</span><div><strong>Certificado</strong><span>Emitido automaticamente ao concluir</span></div></div>
+      <div class="curso-feature"><span class="curso-feature-emoji">📝</span><div><strong>Avaliação</strong><span>Prova final para validar o aprendizado</span></div></div>
+      <div class="curso-feature"><span class="curso-feature-emoji">⏱️</span><div><strong>Carga Horária</strong><span>${cargaTxt}</span></div></div>
+    </div>
+    <button class="btn btn-navy" style="margin-top:20px" onclick="abrirPlayer(matriculaAtual, ${primeiroModuloPendente(modulos)})">${m.status === 'nao_iniciado' ? 'Iniciar Curso →' : 'Continuar Curso →'}</button>
+  `;
+
+  document.getElementById('curso-lista-aulas').innerHTML = modulos.map((mod, i) => `
+    <div class="curso-aula-item" onclick="abrirPlayer(matriculaAtual, ${i})">
+      <span class="curso-aula-check ${mod.concluido ? 'concluida' : ''}">${mod.concluido ? '✓' : i + 1}</span>
+      <div class="curso-aula-texto">
+        <div class="curso-aula-titulo">Aula ${String(i + 1).padStart(2, '0')} – ${mod.titulo}</div>
+        <div class="curso-aula-sub">${mod.duracao_segundos ? Math.round(mod.duracao_segundos / 60) + ' min' : ''}</div>
+      </div>
+      <span class="curso-aula-num">${i + 1} de ${total}</span>
+    </div>`).join('') + `
+    <div class="curso-aula-item" onclick="navTo('func-prova')">
+      <span class="curso-aula-check ${m.status === 'concluido' ? 'concluida' : ''}">${m.status === 'concluido' ? '✓' : '📝'}</span>
+      <div class="curso-aula-texto">
+        <div class="curso-aula-titulo">Avaliação Final</div>
+        <div class="curso-aula-sub">Prova de múltipla escolha</div>
+      </div>
+      <span class="curso-aula-num">${total} de ${total}</span>
+    </div>`;
+}
+
+function primeiroModuloPendente(modulos) {
+  const idx = modulos.findIndex(m => !m.concluido);
+  return idx === -1 ? 0 : idx;
+}
+
+function abrirPlayer(matricula, moduloIdx) {
   matriculaAtual = matricula;
   treinamentoAtual = null;
   moduloAtual = null;
@@ -1690,10 +1785,10 @@ function abrirPlayer(matricula) {
   // Os módulos já vêm dentro do objeto matrícula retornado por /api/player/matricula
   const modulos = Array.isArray(matricula.modulos) ? matricula.modulos : [];
   treinamentoAtual = { ...matricula, modulos };
-  renderModulosPlayer(modulos);
+  renderModulosPlayer(modulos, moduloIdx || 0);
 }
 
-function renderModulosPlayer(modulos) {
+function renderModulosPlayer(modulos, startIdx) {
   const lista = document.getElementById('modulos-lista');
   if (!modulos.length) { lista.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Nenhum módulo disponível</div>'; return; }
   lista.innerHTML = '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Módulos</div>' +
@@ -1704,8 +1799,19 @@ function renderModulosPlayer(modulos) {
         <div style="flex:1"><div style="font-size:13px;font-weight:600">${m.titulo}</div><div style="font-size:11px;color:var(--text-muted)">${m.duracao_segundos ? Math.round(m.duracao_segundos/60) : '—'} min</div></div>
       </div>`).join('');
 
-  // Seleciona primeiro automaticamente
-  if (modulos.length) selecionarModulo(0);
+  // Seleciona o módulo indicado (padrão: primeiro) automaticamente
+  if (modulos.length) selecionarModulo(startIdx || 0);
+}
+
+// Converte links de compartilhamento comuns (Google Drive/Dropbox) para uma
+// URL que pode ser embutida num <iframe> e lida dentro do sistema, em vez de
+// abrir em outra aba.
+function pdfEmbedUrl(url) {
+  if (!url) return url;
+  const drive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (drive) return `https://drive.google.com/file/d/${drive[1]}/preview`;
+  if (url.includes('dropbox.com') && url.includes('dl=0')) return url.replace('dl=0', 'raw=1');
+  return url;
 }
 
 function selecionarModulo(idx) {
@@ -1726,12 +1832,17 @@ function selecionarModulo(idx) {
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
   }
 
-  // Card de material de apoio (PDF), exibido logo abaixo do vídeo
+  // Material de apoio (PDF), exibido embutido logo abaixo do vídeo — lido
+  // dentro do próprio sistema, sem precisar abrir em outra aba.
   const materialEl = document.getElementById('player-material-apoio');
+  const materialFrame = document.getElementById('player-material-apoio-frame');
+  const materialLink = document.getElementById('player-material-apoio-link');
   if (moduloAtual.pdf_url) {
-    materialEl.href = moduloAtual.pdf_url;
-    materialEl.style.display = 'flex';
+    materialFrame.src = pdfEmbedUrl(moduloAtual.pdf_url);
+    materialLink.href = moduloAtual.pdf_url;
+    materialEl.style.display = 'block';
   } else {
+    materialFrame.src = '';
     materialEl.style.display = 'none';
   }
 
