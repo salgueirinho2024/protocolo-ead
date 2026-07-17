@@ -29,18 +29,17 @@ async function metadadosCertificado(req, res) {
       [user.id]
     );
 
-    // Fallback global (apenas para treinamentos antigos sem emissora própria).
-    // Cada treinamento carrega seu próprio cabeçalho de emissão — não usar
-    // configuracao_emissora incondicionalmente, senão o certificado mostra
-    // sempre a mesma empresa cadastrada na tela de admin em vez da empresa
-    // configurada no treinamento específico.
+    // Configuração global da emissora (responsável técnico / instrutor).
+    // Antes só era buscada quando ALGUM certificado não tinha emissora_nome
+    // própria, o que fazia o nome do responsável técnico e do instrutor
+    // sumirem do certificado sempre que o treinamento tinha emissora_nome
+    // preenchido. Agora é sempre buscada; cada campo abaixo é resolvido
+    // individualmente, priorizando o que está cadastrado no treinamento.
     let emissoraGlobal = null;
-    if (rows.some(c => !c.emissora_nome)) {
-      try {
-        const { rows: er } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
-        emissoraGlobal = er[0] || null;
-      } catch (_) { /* tabela pode não existir */ }
-    }
+    try {
+      const { rows: er } = await db.query(`SELECT * FROM configuracao_emissora WHERE id = 1`);
+      emissoraGlobal = er[0] || null;
+    } catch (_) { /* tabela pode não existir */ }
 
     // Adiciona dados_certificado em cada registro para o frontend montar o PDF
     const resultado = rows.map(c => {
@@ -51,10 +50,13 @@ async function metadadosCertificado(req, res) {
         empresa_razao_social: c.emissora_nome || (emissoraGlobal && emissoraGlobal.empresa_razao_social) || null,
         empresa_cnpj:        c.emissora_cnpj || (emissoraGlobal && emissoraGlobal.empresa_cnpj) || null,
         assinatura_base64:   c.assinatura_base64 || null,
-        assinatura_nome:     c.assinatura_nome || (emissoraGlobal && emissoraGlobal.instrutor_nome) || null,
+        assinatura_nome:     c.assinatura_nome || null,
         assinatura_cargo:    c.assinatura_cargo || null,
-        instrutor_nome:      emissoraGlobal && emissoraGlobal.instrutor_nome,
-        responsavel_tecnico_nome: emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome,
+        instrutor_nome:      c.assinatura_nome || (emissoraGlobal && emissoraGlobal.instrutor_nome) || null,
+        responsavel_tecnico_nome: (emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome) || null,
+        // Nome do próprio funcionário/participante, para a 3ª linha de
+        // assinatura no certificado (ciente/participante do treinamento).
+        participante_nome: c.funcionario_nome,
       };
       return {
       ...c,
