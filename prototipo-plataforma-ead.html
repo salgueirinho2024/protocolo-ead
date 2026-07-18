@@ -4325,111 +4325,162 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     const h = Math.floor(min / 60);
     return `${h}h${min % 60 > 0 ? ` ${min % 60}min` : ''}`;
   }
-  // Monta uma coluna de assinatura (linha + nome + cargo), com imagem
-  // opcional da assinatura digitalizada em cima da linha.
-  function colunaAssinatura(nomeSignatario, cargo, imgBase64) {
-    if (!nomeSignatario) return '';
+
+  // ── Ícone de folha (usado no cabeçalho e no selo) ──────────────────────
+  const iconeFolha = `<svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C8 4.5 5 9 5 13.5 5 17.6 8.1 21 12 21s7-3.4 7-7.5C19 9 16 4.5 12 2z" fill="#1DAA4E"/>
+    <path d="M12 4v15" stroke="#0B6E2A" stroke-width="1" stroke-linecap="round"/>
+  </svg>`;
+
+  // ── Vinheta lateral (haste com folhas alternadas, espelhável) ─────────
+  // Gerada por loop em vez de desenhada folha a folha à mão: dá o efeito
+  // de moldura floral do modelo sem exigir um SVG artístico complexo.
+  function vinhetaLateral(mirror) {
+    const alturaTotal = 560;
+    const n = 12;
+    let folhas = '';
+    for (let i = 0; i < n; i++) {
+      const y = 26 + i * ((alturaTotal - 70) / (n - 1));
+      const lado = i % 2 === 0 ? 1 : -1;
+      const rot = lado === 1 ? -30 : 30;
+      const escala = 0.82 + (i % 3 === 0 ? 0.18 : 0);
+      folhas += `<g transform="translate(46,${y.toFixed(1)}) rotate(${rot}) scale(${escala})">
+        <path d="M0 0 C 13 -9 28 -7 40 0 C 28 7 13 9 0 0 Z" fill="#2D8A4E" opacity="0.88"/>
+        <path d="M2 0 L38 0" stroke="#0B6E2A" stroke-width="0.7" opacity="0.55"/>
+      </g>`;
+    }
+    return `<svg viewBox="0 0 92 ${alturaTotal}" width="58" height="${alturaTotal}" xmlns="http://www.w3.org/2000/svg" style="${mirror ? 'transform:scaleX(-1)' : ''}">
+      <path d="M46 8 C 60 90 32 190 46 280 C 60 370 32 470 46 545" fill="none" stroke="#2D8A4E" stroke-width="2" opacity="0.75"/>
+      <path d="M46 8 C 22 6 10 20 14 36 C 20 27 32 22 46 18" fill="none" stroke="#2D8A4E" stroke-width="1.3" opacity="0.7"/>
+      ${folhas}
+    </svg>`;
+  }
+
+  // ── Colunas de assinatura no rodapé (Instrutor / Resp. Técnico / Aluno) ─
+  function colunaAssinatura(rotulo, nomeSignatario, cargo, documento, imgBase64) {
+    if (!nomeSignatario) return '<div style="flex:1"></div>';
     const img = imgBase64
-      ? `<img src="${imgBase64}" alt="Assinatura" style="max-height:36px;display:block;margin:0 auto 1px">` : '';
-    return `<div style="text-align:center;min-width:150px">
+      ? `<img src="${imgBase64}" alt="Assinatura" style="max-height:26px;display:block;margin:0 auto 2px;filter:brightness(0) invert(1);opacity:.9">` : '';
+    return `<div style="flex:1;text-align:center;padding:0 10px;min-width:0">
       ${img}
-      <div style="width:150px;border-top:1px solid #2D8A4E;padding-top:3px;margin:0 auto"></div>
-      <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#5a9a6a;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px">${escHtml(nomeSignatario)}</div>
-      <div style="font-size:8.5px;color:#8abf96">${escHtml(cargo || '')}</div>
+      <div style="width:150px;max-width:88%;border-top:1px solid rgba(255,255,255,.55);margin:0 auto 5px"></div>
+      <div style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#eafff0;font-weight:700;margin-bottom:2px">${escHtml(rotulo)}</div>
+      <div style="font-size:10.5px;font-weight:600;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(nomeSignatario)}</div>
+      ${cargo ? `<div style="font-size:8.5px;color:#d7f3e0">${escHtml(cargo)}</div>` : ''}
+      ${documento ? `<div style="font-size:8px;color:#bfead0">${escHtml(documento)}</div>` : ''}
     </div>`;
   }
 
-  // Sempre 3 linhas de assinatura, quando os dados existirem:
-  // 1) Instrutor/Palestrante (assinatura própria do treinamento, com imagem
-  //    se cadastrada, ou o instrutor global cadastrado na emissora)
-  // 2) Responsável Técnico (cadastro global da emissora)
-  // 3) Participante — o próprio funcionário que concluiu o treinamento
-  const colInstrutor = emissora
-    ? colunaAssinatura(
-        emissora.assinatura_nome || emissora.instrutor_nome,
-        emissora.assinatura_cargo || (emissora.instrutor_nome ? 'Instrutor/Palestrante' : ''),
-        emissora.assinatura_base64
-      )
-    : '';
-  const colResponsavelTecnico = emissora
-    ? colunaAssinatura(emissora.responsavel_tecnico_nome, 'Responsável Técnico')
-    : '';
-  const colParticipante = colunaAssinatura(nome, 'Participante');
+  const colInstrutor = colunaAssinatura(
+    'Instrutor',
+    (emissora && (emissora.assinatura_nome || emissora.instrutor_nome)) || '',
+    emissora && (emissora.assinatura_cargo || 'Instrutor/Palestrante'),
+    emissora && emissora.instrutor_documento,
+    emissora && emissora.assinatura_base64
+  );
+  const colResponsavelTecnico = colunaAssinatura(
+    'Responsável Técnico',
+    (emissora && emissora.responsavel_tecnico_nome) || '',
+    'Responsável Técnico',
+    emissora && emissora.responsavel_tecnico_documento
+  );
+  const colParticipante = colunaAssinatura('Aluno', nome, '', null);
 
-  const rodapeExtra = (colInstrutor || colResponsavelTecnico || colParticipante) ? `
-  <div style="margin-top:12px;display:flex;gap:28px;justify-content:center;align-items:flex-end;width:100%;flex-wrap:wrap">
-    ${colInstrutor}
-    ${colResponsavelTecnico}
-    ${colParticipante}
-  </div>` : '';
-  const emissoraLinha = emissora && emissora.empresa_razao_social
-    ? `<div style="font-size:9px;color:#8abf96;margin-top:6px">Emitido por ${emissora.empresa_razao_social}${emissora.empresa_cnpj ? ' — CNPJ ' + emissora.empresa_cnpj : ''}</div>` : '';
   const appUrl = window.location.origin;
   const urlValidacao = appUrl + '/validar/' + codigo_validacao;
-  // QR code é injetado depois (precisa do DOM); container fica visível desde já
-  const qrBloco = `<div style="position:absolute;right:24px;bottom:24px;text-align:center">
-      <div id="cert-qr-target" style="width:90px;height:90px;background:#fff;padding:4px;border-radius:6px"></div>
-      <div style="font-size:8px;color:#9ca3af;margin-top:4px;max-width:98px">Escaneie para validar</div>
-    </div>`;
+
+  const brandNome = (emissora && emissora.empresa_razao_social) || 'Plataforma de Treinamentos';
+  const brandCnpj = emissora && emissora.empresa_cnpj ? `CNPJ ${emissora.empresa_cnpj}` : '';
 
   // Página 2 — Conteúdo Programático
+  const itensPrograma = (conteudo_programatico || '')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
+
   const paginaConteudo = conteudo_programatico ? `
-<div style="width:842px;height:595px;font-family:'Inter',sans-serif;background:#0B6E2A;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;page-break-before:always">
-  <div style="position:absolute;top:-80px;right:-80px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>
-  <div style="position:absolute;bottom:-80px;left:-60px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,0.04)"></div>
-  <div style="width:760px;height:535px;background:#ffffff;border-radius:16px;padding:36px 48px;display:flex;flex-direction:column;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.25);overflow:hidden">
-    <div style="position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#0B6E2A,#1DAA4E,#3EC96A);border-radius:16px 16px 0 0"></div>
-    <!-- header -->
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #e5e7eb">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#111827;margin-top:1px">Conteúdo Programático</div>
-        <div style="font-size:11px;color:#6b7280;margin-top:1px">${titulo}</div>
-      </div>
-      <div style="margin-left:auto;text-align:right">
-        <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em">Participante</div>
-        <div style="font-size:12px;font-weight:600;color:#111827">${nome}</div>
-        <div style="font-size:10px;color:#9ca3af">CPF ${formatarCPF(cpf)}</div>
+<div style="width:842px;height:595px;background:#ffffff;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
+  <div style="position:absolute;inset:16px;border:1.5px solid #111827"></div>
+  <div style="position:absolute;inset:0;padding:56px 76px 0;box-sizing:border-box">
+    <div style="font-size:26px;font-weight:800;color:#111827;letter-spacing:.02em;margin-bottom:34px">CONTEÚDO PROGRAMÁTICO</div>
+    <div style="display:flex;flex-direction:column;gap:16px;font-size:14.5px;color:#1f2937;max-width:640px">
+      ${itensPrograma.map(item => `<div>${escHtml(item)}${/[.;:]$/.test(item) ? '' : ';'}</div>`).join('')}
+    </div>
+  </div>
+  <div style="position:absolute;left:76px;right:76px;bottom:34px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:8px;background:#eafbee;display:flex;align-items:center;justify-content:center">${iconeFolha}</div>
+      <div style="font-size:9.5px;color:#374151;line-height:1.55">
+        <div style="font-weight:700;color:#111827;font-size:10.5px">${escHtml(brandNome)}${brandCnpj ? ' · ' + escHtml(brandCnpj) : ''}</div>
+        ${emissora && emissora.empresa_endereco ? `<div>${escHtml(emissora.empresa_endereco)}</div>` : ''}
+        ${emissora && emissora.empresa_telefone ? `<div>${escHtml(emissora.empresa_telefone)}${emissora.empresa_email ? ' · ' + escHtml(emissora.empresa_email) : ''}</div>` : ''}
       </div>
     </div>
-    <!-- content -->
-    <div style="flex:1;overflow:hidden;font-size:11.5px;color:#374151;line-height:1.65;white-space:pre-wrap">${conteudo_programatico}</div>
-    <!-- footer -->
-    <div style="margin-top:14px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
-      <div style="font-size:9px;color:#9ca3af">Carga horária: ${minutosParaHoras(carga_horaria_min)}${data_inicio && data_fim ? ` · Período: ${data_inicio}${data_fim !== data_inicio ? ` a ${data_fim}` : ''}` : ''} · Conclusão: ${data_conclusao}</div>
-      <div style="font-size:9px;font-family:monospace;color:#0B6E2A;letter-spacing:.08em">${codigo_validacao}</div>
+    <div style="text-align:right;font-size:8.5px;color:#9ca3af;line-height:1.6">
+      <div>Carga horária: ${minutosParaHoras(carga_horaria_min)}${data_inicio && data_fim ? ` · Período: ${data_inicio}${data_fim !== data_inicio ? ` a ${data_fim}` : ''}` : ''}</div>
+      <div>Conclusão: ${data_conclusao} · Código <span style="font-family:monospace;color:#0B6E2A">${codigo_validacao}</span></div>
     </div>
   </div>
 </div>` : '';
 
   return `<div style="width:842px;font-family:'Inter',sans-serif">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- PÁGINA 1 — CERTIFICADO -->
-<div style="width:842px;height:595px;background:#0B6E2A;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
-  <div style="position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>
-  <div style="position:absolute;bottom:-100px;left:-60px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>
-  <div style="width:760px;height:535px;background:#ffffff;border-radius:16px;padding:40px 52px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
-    <div style="position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#0B6E2A,#1DAA4E,#3EC96A);border-radius:16px 16px 0 0"></div>
-    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px">
-      <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-top:1px">Plataforma de Treinamentos</div>
+<div style="width:842px;height:595px;background:#ffffff;position:relative;overflow:hidden;box-sizing:border-box">
+  <!-- moldura dupla -->
+  <div style="position:absolute;inset:12px;border:2.5px solid #14532D"></div>
+  <div style="position:absolute;inset:18px;border:1px solid #14532D"></div>
+
+  <!-- vinhetas laterais -->
+  <div style="position:absolute;left:22px;top:16px">${vinhetaLateral(false)}</div>
+  <div style="position:absolute;right:22px;top:16px">${vinhetaLateral(true)}</div>
+
+  <!-- conteúdo -->
+  <div style="position:absolute;inset:0;padding:34px 148px 0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center">
+    <!-- marca da emissora -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      ${iconeFolha}
+      <div style="text-align:left">
+        <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#14532D">${escHtml(brandNome)}</div>
+        ${brandCnpj ? `<div style="font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#8abf96">${escHtml(brandCnpj)}</div>` : ''}
+      </div>
     </div>
-    <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#0B6E2A;font-weight:700;margin-bottom:10px;border:1px solid #1DAA4E;padding:3px 18px;border-radius:20px">Certificado de Conclusão</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:4px">Certificamos que</div>
-    <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:600;color:#111827;letter-spacing:-.01em;margin:4px 0 2px">${nome}</div>
-    <div style="font-size:11px;color:#9ca3af;letter-spacing:.04em;margin-bottom:16px">CPF ${formatarCPF(cpf)}</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:4px">concluiu com êxito o treinamento</div>
-    <div style="font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:#0B6E2A;margin-bottom:4px">${titulo}</div>
-    <div style="font-size:12px;color:#9ca3af">com carga horária de ${minutosParaHoras(carga_horaria_min)}</div>
-    ${data_inicio && data_fim ? `<div style="font-size:11px;color:#6b7280;margin-top:2px">Realizado de ${data_inicio}${data_fim !== data_inicio ? ` a ${data_fim}` : ''}</div>` : ''}
-    <div style="width:80px;height:2px;background:linear-gradient(90deg,#1DAA4E,#3EC96A);margin:16px auto;border-radius:2px"></div>
-    <div style="display:flex;gap:40px;justify-content:center">
-      <div style="text-align:center"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:3px">Conclusão</div><div style="font-size:12px;font-weight:600;color:#111827">${data_conclusao}</div></div>
-      ${valido_ate ? `<div style="text-align:center"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:3px">Válido até</div><div style="font-size:12px;font-weight:600;color:#111827">${valido_ate}</div></div>` : ''}
-      <div style="text-align:center"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;margin-bottom:3px">Código</div><div style="font-size:11px;font-weight:600;color:#0B6E2A;font-family:monospace;letter-spacing:.08em">${codigo_validacao}</div></div>
+
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:38px;font-weight:800;letter-spacing:13px;padding-left:13px;color:#111827;text-shadow:1px 1px 0 rgba(0,0,0,.1);margin-bottom:14px">CERTIFICADO</div>
+
+    <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#4b5563;margin-bottom:10px">Certificamos que</div>
+
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:27px;font-weight:800;color:#111827;letter-spacing:.01em;text-transform:uppercase;margin-bottom:2px">${escHtml(nome)}</div>
+    <div style="font-size:10.5px;color:#9ca3af;letter-spacing:.04em;margin-bottom:10px">CPF ${formatarCPF(cpf)}</div>
+
+    <div style="width:70%;max-width:460px;height:2px;background:linear-gradient(90deg,#0B6E2A,#3EC96A);margin-bottom:16px;border-radius:2px"></div>
+
+    <div style="font-size:13.5px;line-height:1.65;color:#1f2937;text-align:left;max-width:560px">
+      Participou do treinamento <strong>${escHtml(titulo).toUpperCase()}</strong>,
+      ${data_inicio && data_fim ? `realizado entre <strong>${data_inicio}</strong>${data_fim !== data_inicio ? ` e <strong>${data_fim}</strong>` : ''}, ` : ''}
+      com carga horária total de <strong>${minutosParaHoras(carga_horaria_min)}</strong>, concluído em <strong>${data_conclusao}</strong>.
+      ${valido_ate ? `Certificado válido até <strong>${valido_ate}</strong>.` : ''}
     </div>
-    ${rodapeExtra}
-    <div style="font-size:9px;color:#d1d5db;margin-top:12px">Verifique em ${urlValidacao}</div>
-    ${emissoraLinha}
-    ${qrBloco}
+
+    <div style="margin-top:14px;display:flex;align-items:center;gap:8px">
+      <div id="cert-qr-target" style="width:44px;height:44px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;flex-shrink:0"></div>
+      <div style="font-size:8.5px;color:#9ca3af;text-align:left;line-height:1.5">
+        <div>Verifique em ${urlValidacao}</div>
+        <div style="font-family:monospace;letter-spacing:.06em;color:#0B6E2A">Código ${codigo_validacao}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- faixa de assinaturas -->
+  <div style="position:absolute;left:0;right:0;bottom:0;height:92px;background:linear-gradient(90deg,#0B6E2A,#1DAA4E 55%,#3EC96A);display:flex;align-items:center;padding:0 34px;box-sizing:border-box">
+    ${colResponsavelTecnico}
+    ${colInstrutor}
+    ${colParticipante}
+  </div>
+
+  <!-- selo -->
+  <div style="position:absolute;right:30px;bottom:56px;width:72px;height:72px;border-radius:50%;background:#f4f6f5;border:2px dashed #c9d8cd;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15)">
+    ${iconeFolha}
   </div>
 </div>
 ${paginaConteudo}
@@ -4669,8 +4720,8 @@ function _renderizarQrCertificado(urlValidacao) {
     const dataUrl = qr.createDataURL(6, 4); // cellSize 6px, margin 4 módulos
     const img = document.createElement('img');
     img.alt = 'QR Code de validação';
-    img.style.width = '90px';
-    img.style.height = '90px';
+    img.style.width = '44px';
+    img.style.height = '44px';
     img.style.display = 'block';
     img.onerror = () => {
       // Fallback: se por algum motivo o PNG (canvas) falhar neste

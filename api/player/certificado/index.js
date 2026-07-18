@@ -53,7 +53,12 @@ async function metadadosCertificado(req, res) {
         assinatura_nome:     c.assinatura_nome || null,
         assinatura_cargo:    c.assinatura_cargo || null,
         instrutor_nome:      c.assinatura_nome || (emissoraGlobal && emissoraGlobal.instrutor_nome) || null,
+        instrutor_documento: (emissoraGlobal && emissoraGlobal.instrutor_documento) || null,
         responsavel_tecnico_nome: (emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome) || null,
+        responsavel_tecnico_documento: (emissoraGlobal && emissoraGlobal.responsavel_tecnico_documento) || null,
+        empresa_endereco: (emissoraGlobal && emissoraGlobal.empresa_endereco) || null,
+        empresa_telefone: (emissoraGlobal && emissoraGlobal.empresa_telefone) || null,
+        empresa_email:    (emissoraGlobal && emissoraGlobal.empresa_email) || null,
         // Nome do próprio funcionário/participante, para a 3ª linha de
         // assinatura no certificado (ciente/participante do treinamento).
         participante_nome: c.funcionario_nome,
