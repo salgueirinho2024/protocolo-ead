@@ -19,6 +19,7 @@ async function metadadosCertificado(req, res) {
               t.emissora_nome, t.emissora_cnpj,
               t.assinatura_base64, t.assinatura_nome, t.assinatura_cargo,
               t.responsavel_tecnico_nome, t.responsavel_tecnico_documento, t.instrutor_documento,
+              t.certificado_fundo_frente_base64, t.certificado_fundo_verso_base64,
               m.iniciado_em,
               fc.nome AS funcionario_nome, fc.cpf
          FROM certificados cert
@@ -63,6 +64,11 @@ async function metadadosCertificado(req, res) {
         // Nome do próprio funcionário/participante, para a 3ª linha de
         // assinatura no certificado (ciente/participante do treinamento).
         participante_nome: c.funcionario_nome,
+        // Imagens de fundo do certificado (frente = página 1, verso = página 2).
+        // Se não estiverem preenchidas, o frontend cai no desenho antigo
+        // (moldura/folhas em CSS/SVG).
+        fundo_frente_base64: c.certificado_fundo_frente_base64 || null,
+        fundo_verso_base64: c.certificado_fundo_verso_base64 || null,
       };
       return {
       ...c,
