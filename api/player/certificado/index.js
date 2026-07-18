@@ -18,6 +18,7 @@ async function metadadosCertificado(req, res) {
               t.titulo AS treinamento_titulo, t.carga_horaria_min, t.conteudo_programatico,
               t.emissora_nome, t.emissora_cnpj,
               t.assinatura_base64, t.assinatura_nome, t.assinatura_cargo,
+              t.responsavel_tecnico_nome, t.responsavel_tecnico_documento, t.instrutor_documento,
               m.iniciado_em,
               fc.nome AS funcionario_nome, fc.cpf
          FROM certificados cert
@@ -53,9 +54,9 @@ async function metadadosCertificado(req, res) {
         assinatura_nome:     c.assinatura_nome || null,
         assinatura_cargo:    c.assinatura_cargo || null,
         instrutor_nome:      c.assinatura_nome || (emissoraGlobal && emissoraGlobal.instrutor_nome) || null,
-        instrutor_documento: (emissoraGlobal && emissoraGlobal.instrutor_documento) || null,
-        responsavel_tecnico_nome: (emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome) || null,
-        responsavel_tecnico_documento: (emissoraGlobal && emissoraGlobal.responsavel_tecnico_documento) || null,
+        instrutor_documento: c.instrutor_documento || (emissoraGlobal && emissoraGlobal.instrutor_documento) || null,
+        responsavel_tecnico_nome: c.responsavel_tecnico_nome || (emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome) || null,
+        responsavel_tecnico_documento: c.responsavel_tecnico_documento || (emissoraGlobal && emissoraGlobal.responsavel_tecnico_documento) || null,
         empresa_endereco: (emissoraGlobal && emissoraGlobal.empresa_endereco) || null,
         empresa_telefone: (emissoraGlobal && emissoraGlobal.empresa_telefone) || null,
         empresa_email:    (emissoraGlobal && emissoraGlobal.empresa_email) || null,
