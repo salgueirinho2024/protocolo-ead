@@ -155,6 +155,12 @@
   .modal-overlay.open { display: flex; }
   .modal { background: var(--white); border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
   .modal h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 20px; color: var(--navy); }
+  .material-apoio-overlay { position: fixed; inset: 0; background: #111; z-index: 2000; display: none; flex-direction: column; }
+  .material-apoio-overlay.open { display: flex; }
+  .material-apoio-overlay__bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #000; color: #fff; flex-shrink: 0; }
+  .material-apoio-overlay__titulo { font-size: 13px; font-weight: 600; opacity: .85; }
+  .material-apoio-overlay__fechar { background: none; border: none; color: #fff; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 10px; }
+  .material-apoio-overlay iframe { flex: 1; width: 100%; border: none; background: #f4f4f4; }
   .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
   /* ── FORM ── */
@@ -179,7 +185,7 @@
   .checkpoint-alert { background: var(--gold); color: #1B2D24; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; }
   .player-meta { padding: 16px 20px; }
   .player-meta h3 { font-size: 16px; font-weight: 700; }
-  .material-apoio { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 10px; background: var(--surface2); border: 1.5px solid transparent; margin-top: 16px; transition: border-color .15s; text-decoration: none; }
+  .material-apoio { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 10px; background: var(--surface2); border: 1.5px solid transparent; margin-top: 16px; transition: border-color .15s; text-decoration: none; cursor: pointer; }
   .material-apoio:hover { border-color: var(--green); }
   .material-apoio__icone { width: 42px; height: 42px; border-radius: 8px; background: var(--navy); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
   .material-apoio__texto { flex: 1; min-width: 0; }
@@ -187,10 +193,6 @@
   .material-apoio__titulo { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 2px; }
   .material-apoio__dica { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .material-apoio__seta { font-size: 18px; color: var(--navy); flex-shrink: 0; }
-  .material-apoio-wrap { margin-top: 16px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--surface2); }
-  .material-apoio-head { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface2); }
-  .material-apoio__abrir { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--navy); text-decoration: none; white-space: nowrap; }
-  .material-apoio-frame { width: 100%; height: 520px; border: none; display: block; background: #f4f4f4; }
   .curso-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
   .curso-feature { display: flex; gap: 10px; align-items: flex-start; padding: 12px; background: var(--surface2); border-radius: 10px; }
   .curso-feature .curso-feature-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
@@ -2822,16 +2824,14 @@ var qrcode = function() {
         <div class="player-meta">
           <h3 id="player-modulo-titulo">—</h3>
           <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
-          <div id="player-material-apoio" class="material-apoio-wrap" style="display:none">
-            <div class="material-apoio-head">
-              <div class="material-apoio__icone">📄</div>
-              <div class="material-apoio__texto">
-                <div class="material-apoio__label">Material de apoio</div>
-                <div class="material-apoio__titulo">PDF para leitura</div>
-              </div>
-              <a id="player-material-apoio-link" href="#" target="_blank" rel="noopener" class="material-apoio__abrir">Abrir em nova aba ↗</a>
+          <div id="player-material-apoio" class="material-apoio" style="display:none" role="button" tabindex="0" onclick="abrirMaterialApoioTelaCheia()" onkeydown="if(event.key==='Enter')abrirMaterialApoioTelaCheia()">
+            <div class="material-apoio__icone">📄</div>
+            <div class="material-apoio__texto">
+              <div class="material-apoio__label">Material de apoio</div>
+              <div class="material-apoio__titulo">PDF para leitura</div>
+              <div class="material-apoio__dica">Toque para abrir em tela cheia</div>
             </div>
-            <iframe id="player-material-apoio-frame" class="material-apoio-frame" src="" title="Material de apoio em PDF"></iframe>
+            <div class="material-apoio__seta">⛶</div>
           </div>
           <div id="modulos-lista" style="margin-top:16px"></div>
         </div>
@@ -3065,6 +3065,15 @@ var qrcode = function() {
 
 <div id="toast"></div>
 
+<!-- Material de apoio em tela cheia -->
+<div class="material-apoio-overlay" id="material-apoio-overlay">
+  <div class="material-apoio-overlay__bar">
+    <span class="material-apoio-overlay__titulo">📄 Material de apoio</span>
+    <button class="material-apoio-overlay__fechar" onclick="fecharMaterialApoioTelaCheia()">✕</button>
+  </div>
+  <iframe id="material-apoio-overlay-frame" src="" title="Material de apoio em PDF"></iframe>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // CONFIG
@@ -3077,6 +3086,7 @@ let treinamentoAtual = null; // { id, titulo, modulos }
 let moduloAtual = null;
 let sessaoAtual = null;
 let matriculaAtual = null;
+let materialApoioUrlAtual = null;
 let checkpointTimer = null;
 let editingEmpresaId = null;
 let editingTreinId = null;
@@ -4161,6 +4171,34 @@ function pdfEmbedUrl(url) {
   return url;
 }
 
+// Abre o material de apoio (PDF) direto em tela cheia, sem deixar um preview
+// embutido permanente na página do player.
+function abrirMaterialApoioTelaCheia() {
+  if (!materialApoioUrlAtual) return;
+  const overlay = document.getElementById('material-apoio-overlay');
+  document.getElementById('material-apoio-overlay-frame').src = pdfEmbedUrl(materialApoioUrlAtual);
+  overlay.classList.add('open');
+  const pedirTelaCheia = overlay.requestFullscreen || overlay.webkitRequestFullscreen;
+  if (pedirTelaCheia) pedirTelaCheia.call(overlay).catch(() => {});
+}
+
+function fecharMaterialApoioTelaCheia() {
+  const overlay = document.getElementById('material-apoio-overlay');
+  if (document.fullscreenElement === overlay) document.exitFullscreen();
+  overlay.classList.remove('open');
+  document.getElementById('material-apoio-overlay-frame').src = '';
+}
+
+// Se o usuário sair da tela cheia pelo Esc/gesto do navegador, fecha o
+// overlay junto em vez de deixá-lo "preso" numa janela normal.
+document.addEventListener('fullscreenchange', () => {
+  const overlay = document.getElementById('material-apoio-overlay');
+  if (!document.fullscreenElement && overlay.classList.contains('open')) {
+    overlay.classList.remove('open');
+    document.getElementById('material-apoio-overlay-frame').src = '';
+  }
+});
+
 async function selecionarModulo(idx) {
   if (!treinamentoAtual?.modulos) return;
 
@@ -4185,17 +4223,14 @@ async function selecionarModulo(idx) {
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
   }
 
-  // Material de apoio (PDF), exibido embutido logo abaixo do vídeo — lido
-  // dentro do próprio sistema, sem precisar abrir em outra aba.
+  // Material de apoio (PDF) — não fica mais embutido em iframe abaixo do
+  // vídeo; o card só guarda a URL e abre em tela cheia quando tocado/clicado.
   const materialEl = document.getElementById('player-material-apoio');
-  const materialFrame = document.getElementById('player-material-apoio-frame');
-  const materialLink = document.getElementById('player-material-apoio-link');
   if (moduloAtual.pdf_url) {
-    materialFrame.src = pdfEmbedUrl(moduloAtual.pdf_url);
-    materialLink.href = moduloAtual.pdf_url;
-    materialEl.style.display = 'block';
+    materialApoioUrlAtual = moduloAtual.pdf_url;
+    materialEl.style.display = 'flex';
   } else {
-    materialFrame.src = '';
+    materialApoioUrlAtual = null;
     materialEl.style.display = 'none';
   }
 
@@ -4403,7 +4438,7 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     </svg>`;
   }
 
-  // ── Colunas de assinatura no rodapé (Instrutor / Resp. Técnico / Aluno) ─
+  // ── Colunas de assinatura no rodapé (Resp. Técnico / Instrutor) ─
   function colunaAssinatura(rotulo, nomeSignatario, cargo, documento, imgBase64) {
     if (!nomeSignatario) return '<div style="flex:1"></div>';
     const img = imgBase64
@@ -4431,7 +4466,6 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     'Responsável Técnico',
     emissora && emissora.responsavel_tecnico_documento
   );
-  const colParticipante = colunaAssinatura('Aluno', nome, '', null);
 
   const appUrl = window.location.origin;
   const urlValidacao = appUrl + '/validar/' + codigo_validacao;
@@ -4482,7 +4516,6 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
   <div style="position:absolute;left:0;right:0;bottom:0;height:92px;z-index:1;display:flex;align-items:center;padding:0 34px;box-sizing:border-box">
     ${colResponsavelTecnico}
     ${colInstrutor}
-    ${colParticipante}
   </div>
 </div>` : `
 <!-- PÁGINA 1 — CERTIFICADO (moldura desenhada, sem imagem de fundo cadastrada) -->
@@ -4512,7 +4545,6 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
   <div style="position:absolute;left:0;right:0;bottom:0;height:92px;background:linear-gradient(90deg,#0B6E2A,#1DAA4E 55%,#3EC96A);display:flex;align-items:center;padding:0 34px;box-sizing:border-box">
     ${colResponsavelTecnico}
     ${colInstrutor}
-    ${colParticipante}
   </div>
 
   <!-- selo -->
@@ -4532,9 +4564,32 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
 
   const mostrarPagina2 = !!(conteudo_programatico || fundoVerso);
 
+  // Escala dinâmica do conteúdo programático: com poucos itens usa 1 coluna
+  // e fonte normal; listas longas encolhem a fonte e quebram em 2 colunas
+  // pra caber inteiras na página, sem cortar no rodapé.
+  const nItens = itensPrograma.length;
+  let tituloFonte, tituloMargem, fontePrograma, gapPrograma, colunasPrograma;
+  if (nItens <= 7) {
+    tituloFonte = fundoVerso ? 24 : 26; tituloMargem = fundoVerso ? 28 : 34;
+    fontePrograma = fundoVerso ? 13.5 : 14.5; gapPrograma = fundoVerso ? 14 : 16;
+    colunasPrograma = 1;
+  } else if (nItens <= 12) {
+    tituloFonte = fundoVerso ? 21 : 23; tituloMargem = fundoVerso ? 18 : 22;
+    fontePrograma = fundoVerso ? 12 : 13; gapPrograma = fundoVerso ? 9 : 10;
+    colunasPrograma = 1;
+  } else {
+    tituloFonte = fundoVerso ? 19 : 21; tituloMargem = fundoVerso ? 14 : 18;
+    fontePrograma = fundoVerso ? 10.5 : 11.5; gapPrograma = fundoVerso ? 7 : 8;
+    colunasPrograma = 2;
+  }
+  const linhasPrograma = colunasPrograma === 2 ? Math.ceil(nItens / 2) : nItens;
+  const listaEstilo = colunasPrograma === 2
+    ? `display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(${linhasPrograma},auto);grid-auto-flow:column;column-gap:36px;row-gap:${gapPrograma}px;font-size:${fontePrograma}px;color:#1f2937;max-width:100%`
+    : `display:flex;flex-direction:column;gap:${gapPrograma}px;font-size:${fontePrograma}px;color:#1f2937;max-width:640px`;
+
   const conteudoProgramatico = conteudo_programatico ? `
-    <div style="font-size:${fundoVerso ? 24 : 26}px;font-weight:800;color:#111827;letter-spacing:.02em;margin-bottom:${fundoVerso ? 28 : 34}px">CONTEÚDO PROGRAMÁTICO</div>
-    <div style="display:flex;flex-direction:column;gap:${fundoVerso ? 14 : 16}px;font-size:${fundoVerso ? 13.5 : 14.5}px;color:#1f2937;max-width:640px">
+    <div style="font-size:${tituloFonte}px;font-weight:800;color:#111827;letter-spacing:.02em;margin-bottom:${tituloMargem}px">CONTEÚDO PROGRAMÁTICO</div>
+    <div style="${listaEstilo}">
       ${itensPrograma.map(item => `<div>${escHtml(item)}${/[.;:]$/.test(item) ? '' : ';'}</div>`).join('')}
     </div>` : '';
 
@@ -4542,12 +4597,12 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
 <!-- PÁGINA 2 — VERSO (fundo enviado pelo admin) -->
 <div style="width:842px;height:595px;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
   <img src="${fundoVerso}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0">
-  ${conteudoProgramatico ? `<div style="position:absolute;inset:0;z-index:1;padding:64px 76px 0;box-sizing:border-box">${conteudoProgramatico}</div>` : ''}
+  ${conteudoProgramatico ? `<div style="position:absolute;inset:0;z-index:1;padding:104px 76px 40px;box-sizing:border-box;overflow:hidden">${conteudoProgramatico}</div>` : ''}
 </div>` : `
 <!-- PÁGINA 2 — CONTEÚDO PROGRAMÁTICO (sem imagem de fundo cadastrada) -->
 <div style="width:842px;height:595px;background:#ffffff;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
   <div style="position:absolute;inset:16px;border:1.5px solid #111827"></div>
-  <div style="position:absolute;inset:0;padding:56px 76px 0;box-sizing:border-box">
+  <div style="position:absolute;inset:0;padding:56px 76px 96px;box-sizing:border-box;overflow:hidden">
     ${conteudoProgramatico}
   </div>
   <div style="position:absolute;left:76px;right:76px;bottom:34px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px">

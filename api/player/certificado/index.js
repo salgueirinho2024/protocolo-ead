@@ -7,6 +7,7 @@ const db = require('../../../lib/db');
 const { exigirAuth } = require('../../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../../lib/http');
 const { calcularPeriodoTreinamentoFormatado } = require('../../../lib/periodoTreinamento');
+const { FUNDO_FRENTE_PADRAO_BASE64, FUNDO_VERSO_PADRAO_BASE64 } = require('../../../lib/certificadoFundoPadrao');
 
 async function metadadosCertificado(req, res) {
   const user = exigirAuth(req, res, 'funcionario');
@@ -65,10 +66,10 @@ async function metadadosCertificado(req, res) {
         // assinatura no certificado (ciente/participante do treinamento).
         participante_nome: c.funcionario_nome,
         // Imagens de fundo do certificado (frente = página 1, verso = página 2).
-        // Se não estiverem preenchidas, o frontend cai no desenho antigo
-        // (moldura/folhas em CSS/SVG).
-        fundo_frente_base64: c.certificado_fundo_frente_base64 || null,
-        fundo_verso_base64: c.certificado_fundo_verso_base64 || null,
+        // Se o treinamento tiver a sua própria imagem cadastrada, ela tem
+        // prioridade; senão, cai no fundo padrão embutido no código.
+        fundo_frente_base64: c.certificado_fundo_frente_base64 || FUNDO_FRENTE_PADRAO_BASE64 || null,
+        fundo_verso_base64: c.certificado_fundo_verso_base64 || FUNDO_VERSO_PADRAO_BASE64 || null,
       };
       return {
       ...c,
