@@ -4753,31 +4753,46 @@ function verCertificado(idx) {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(ajustarConteudoProgramatico);
 }
 
-function baixarCertificadoPDF() {
+async function baixarCertificadoPDF() {
   if (!_dadosCertAtual) return;
-  const el = document.getElementById('cert-preview-html').firstElementChild;
-  if (!el) return;
+  const wrapper = document.getElementById('cert-preview-html').firstElementChild;
+  if (!wrapper) return;
   toast('Gerando PDF…', '');
   ajustarConteudoProgramatico();
-  html2pdf()
-    .set({
-      margin: 0,
-      filename: `certificado-${_dadosCertAtual.codigo_validacao}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' },
-      // Usar apenas o modo 'css' (respeita só o page-break-before:always que
-      // já colocamos manualmente entre as páginas). O modo 'legacy' soma-se a
-      // ele e fica calculando quebras extras por overflow de pixel, o que
-      // nesse layout (altura da página == altura do certificado, 595px)
-      // frequentemente gerava uma 3ª página em branco entre o certificado e
-      // o conteúdo programático.
-      pagebreak: { mode: ['css'] },
-    })
-    .from(el)
-    .save()
-    .then(() => toast('PDF baixado!', 'success'))
-    .catch(e => toast('Erro ao gerar PDF: ' + e.message, 'error'));
+
+  // Cada "página" do certificado (frente e, se houver, verso) é um <div>
+  // filho direto do wrapper, cada um com exatamente 842x595px.
+  //
+  // Antes, deixávamos o html2pdf.js renderizar TODO o wrapper como um único
+  // canvas gigante e depois fatiar esse canvas em páginas usando a posição
+  // (offsetTop) do elemento com page-break-before:always (modo 'css'). Esse
+  // corte é sensível a arredondamento de sub-pixel — qualquer diferença
+  // mínima entre a altura esperada (595px) e a altura realmente renderizada
+  // no canvas (por causa do scale:2, ou da fonte do Google Fonts ainda não
+  // 100% aplicada no instante da captura) fazia o html2pdf.js inserir uma
+  // 3ª página em branco entre a frente e o verso pra "absorver" a sobra.
+  //
+  // Agora capturamos cada página separadamente com html2canvas e montamos
+  // o PDF manualmente com jsPDF: não há cálculo de corte de página nenhum
+  // que possa dar errado.
+  const paginas = Array.from(wrapper.children).filter(el => el.tagName === 'DIV');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'px', format: [842, 595], orientation: 'landscape' });
+
+    for (let i = 0; i < paginas.length; i++) {
+      const canvas = await html2canvas(paginas[i], { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      if (i > 0) pdf.addPage([842, 595], 'landscape');
+      pdf.addImage(imgData, 'JPEG', 0, 0, 842, 595);
+    }
+
+    pdf.save(`certificado-${_dadosCertAtual.codigo_validacao}.pdf`);
+    toast('PDF baixado!', 'success');
+  } catch (e) {
+    toast('Erro ao gerar PDF: ' + e.message, 'error');
+  }
 }
 
 function validarPublico(codigo) {
