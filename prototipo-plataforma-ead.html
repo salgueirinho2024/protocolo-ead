@@ -4630,22 +4630,32 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     : `display:flex;flex-direction:column;gap:${gapPrograma}px;font-size:${fontePrograma}px;color:#1f2937;max-width:640px`;
 
   const conteudoProgramatico = conteudo_programatico ? `
-    <div style="font-size:${tituloFonte}px;font-weight:800;color:#111827;letter-spacing:.02em;margin-bottom:${tituloMargem}px">CONTEÚDO PROGRAMÁTICO</div>
+    <div style="font-size:${tituloFonte}px;font-weight:800;color:#111827;letter-spacing:.02em;text-align:center;margin-bottom:${tituloMargem}px">CONTEÚDO PROGRAMÁTICO</div>
     <div style="${listaEstilo}">
       ${itensPrograma.map(item => `<div>${escHtml(item)}${/[.;:]$/.test(item) ? '' : ';'}</div>`).join('')}
     </div>` : '';
 
+  // Caixa de segurança do conteúdo programático: altura fixa que termina
+  // ANTES da faixa/logo desenhado na parte de baixo da imagem de fundo do
+  // verso (o fundo oficial traz um selo/faixa decorativa nos últimos ~160px
+  // da página). O título+lista fica dentro de #cert-prog-inner e, após ser
+  // inserido no DOM, ajustarConteudoProgramatico() reduz a escala do bloco
+  // inteiro automaticamente se ele não couber na caixa — garantindo que o
+  // texto sempre caiba por inteiro, sem tampar o logo, não importa quantos
+  // itens o conteúdo programático tenha.
   const paginaConteudo = !mostrarPagina2 ? '' : (fundoVerso ? `
 <!-- PÁGINA 2 — VERSO (fundo enviado pelo admin) -->
 <div style="width:842px;height:595px;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
   <img src="${fundoVerso}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0">
-  ${conteudoProgramatico ? `<div style="position:absolute;inset:0;z-index:1;padding:104px 76px 40px;box-sizing:border-box;overflow:hidden">${conteudoProgramatico}</div>` : ''}
+  ${conteudoProgramatico ? `<div id="cert-prog-box" style="position:absolute;left:76px;right:76px;top:64px;height:365px;z-index:1;overflow:hidden">
+    <div id="cert-prog-inner" style="transform-origin:top center">${conteudoProgramatico}</div>
+  </div>` : ''}
 </div>` : `
 <!-- PÁGINA 2 — CONTEÚDO PROGRAMÁTICO (sem imagem de fundo cadastrada) -->
 <div style="width:842px;height:595px;background:#ffffff;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
   <div style="position:absolute;inset:16px;border:1.5px solid #111827"></div>
-  <div style="position:absolute;inset:0;padding:56px 76px 96px;box-sizing:border-box;overflow:hidden">
-    ${conteudoProgramatico}
+  <div id="cert-prog-box" style="position:absolute;left:76px;right:76px;top:40px;height:459px;box-sizing:border-box;overflow:hidden">
+    <div id="cert-prog-inner" style="transform-origin:top center">${conteudoProgramatico}</div>
   </div>
   <div style="position:absolute;left:76px;right:76px;bottom:34px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
     <div style="display:flex;align-items:center;gap:10px">
@@ -4748,6 +4758,23 @@ async function salvarContaFuncionario() {
   }
 }
 
+// Encolhe (via transform:scale) o bloco "CONTEÚDO PROGRAMÁTICO" + lista
+// quando ele não couber na caixa de segurança reservada no certificado,
+// garantindo que o texto sempre apareça inteiro sem invadir a área do
+// logo/faixa decorativa do fundo do verso. Se já couber, não faz nada.
+function ajustarConteudoProgramatico() {
+  const box = document.getElementById('cert-prog-box');
+  const inner = document.getElementById('cert-prog-inner');
+  if (!box || !inner) return;
+  inner.style.transform = 'scale(1)';
+  const alturaCaixa = box.clientHeight;
+  const alturaConteudo = inner.scrollHeight;
+  if (alturaConteudo > alturaCaixa && alturaConteudo > 0) {
+    const escala = Math.max(0.55, alturaCaixa / alturaConteudo);
+    inner.style.transform = `scale(${escala})`;
+  }
+}
+
 function verCertificado(idx) {
   const c = (window._certsList || [])[idx];
   if (!c || !c.dados_certificado) { toast('Dados do certificado não encontrados.', 'error'); return; }
@@ -4756,6 +4783,11 @@ function verCertificado(idx) {
   document.getElementById('cert-preview-wrapper').classList.add('open');
   const urlVal = c.dados_certificado.url_validacao || (window.location.origin + '/validar/' + c.dados_certificado.codigo_validacao);
   _renderizarQrCertificado(urlVal);
+  // Ajusta assim que o layout estiver pronto e novamente após as fontes
+  // (Fraunces/Inter) carregarem, já que a métrica do texto muda um pouco
+  // depois que a fonte real substitui a fallback.
+  requestAnimationFrame(ajustarConteudoProgramatico);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(ajustarConteudoProgramatico);
 }
 
 function baixarCertificadoPDF() {
@@ -4763,6 +4795,7 @@ function baixarCertificadoPDF() {
   const el = document.getElementById('cert-preview-html').firstElementChild;
   if (!el) return;
   toast('Gerando PDF…', '');
+  ajustarConteudoProgramatico();
   html2pdf()
     .set({
       margin: 0,
