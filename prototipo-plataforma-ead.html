@@ -4778,13 +4778,36 @@ async function baixarCertificadoPDF() {
   const paginas = Array.from(wrapper.children).filter(el => el.tagName === 'DIV');
 
   try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit: 'px', format: [842, 595], orientation: 'landscape' });
+    // Não usamos window.jspdf / window.html2canvas como globais soltos:
+    // nesta versão do bundle (html2pdf.bundle.min.js 0.10.1) eles não ficam
+    // expostos fora do html2pdf.js (causa do erro "Cannot destructure
+    // property 'jsPDF' of 'window.jspdf' as it is undefined"). Em vez disso
+    // usamos a própria API de worker do html2pdf.js — .toPdf()/.toCanvas()
+    // + .get(...) — que dá acesso ao jsPDF e ao canvas internos dele.
+    const opcoesComuns = { html2canvas: { scale: 2, useCORS: true } };
 
-    for (let i = 0; i < paginas.length; i++) {
-      const canvas = await html2canvas(paginas[i], { scale: 2, useCORS: true });
+    // 1ª página: deixa o próprio html2pdf.js criar o objeto jsPDF.
+    const pdf = await html2pdf()
+      .set({
+        ...opcoesComuns,
+        image: { type: 'jpeg', quality: 0.98 },
+        jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' },
+      })
+      .from(paginas[0])
+      .toPdf()
+      .get('pdf');
+
+    // Demais páginas: captura cada uma isoladamente em um canvas e anexa
+    // ao mesmo objeto jsPDF, sem depender de nenhum corte automático por
+    // page-break (fonte da 3ª página em branco).
+    for (let i = 1; i < paginas.length; i++) {
+      const canvas = await html2pdf()
+        .set(opcoesComuns)
+        .from(paginas[i])
+        .toCanvas()
+        .get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      if (i > 0) pdf.addPage([842, 595], 'landscape');
+      pdf.addPage([842, 595], 'landscape');
       pdf.addImage(imgData, 'JPEG', 0, 0, 842, 595);
     }
 
