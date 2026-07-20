@@ -13,7 +13,7 @@ const { aplicarCors, metodoPermitido, validarEnv } = require('../../lib/http');
 const { calcularPeriodoTreinamentoFormatado } = require('../../lib/periodoTreinamento');
 
 async function handlePut(req, res, user) {
-  const { email, senha_atual, senha_nova } = req.body || {};
+  const { email, senha_atual, senha_nova, foto_perfil_base64 } = req.body || {};
 
   if (senha_nova && senha_nova.length < 6) {
     return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
@@ -23,9 +23,16 @@ async function handlePut(req, res, user) {
   try {
     await client.query('BEGIN');
 
-    await client.query(
-      `UPDATE funcionarios SET email = $1 WHERE id = $2`,
-      [email || null, user.id]
+    // foto_perfil_base64: se não vier no body (undefined/null), mantém a
+    // foto já salva — mesma convenção usada em imagem_capa_base64 dos
+    // treinamentos (COALESCE com o valor atual da coluna).
+    const { rows: funcAtualizado } = await client.query(
+      `UPDATE funcionarios
+          SET email = $1,
+              foto_perfil_base64 = COALESCE($3, foto_perfil_base64)
+        WHERE id = $2
+        RETURNING foto_perfil_base64`,
+      [email || null, user.id, foto_perfil_base64 || null]
     );
 
     if (senha_nova) {
@@ -46,7 +53,10 @@ async function handlePut(req, res, user) {
     }
 
     await client.query('COMMIT');
-    return res.json({ mensagem: 'Dados atualizados com sucesso.' });
+    return res.json({
+      mensagem: 'Dados atualizados com sucesso.',
+      foto_perfil_base64: funcAtualizado[0]?.foto_perfil_base64 || null,
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);

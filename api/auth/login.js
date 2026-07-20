@@ -68,7 +68,7 @@ async function loginFuncionario(req, res) {
     // virar problema de verdade, a solução é pedir também o CNPJ/nome da
     // empresa na tela de login do funcionário pra desambiguar.
     const { rows } = await db.query(
-      `SELECT f.id, f.nome, f.cpf, f.email, f.empresa_id, f.ativo, fa.senha_hash, fa.id AS acesso_id
+      `SELECT f.id, f.nome, f.cpf, f.email, f.empresa_id, f.ativo, f.foto_perfil_base64, fa.senha_hash, fa.id AS acesso_id
          FROM funcionarios f
          JOIN funcionario_acessos fa ON fa.funcionario_id = f.id
         WHERE f.cpf = $1
@@ -91,7 +91,7 @@ async function loginFuncionario(req, res) {
       { expiresIn: '8h' }
     );
 
-    res.json({ token, funcionario: { id: func.id, nome: func.nome, cpf: func.cpf, email: func.email } });
+    res.json({ token, funcionario: { id: func.id, nome: func.nome, cpf: func.cpf, email: func.email, foto_perfil_base64: func.foto_perfil_base64 } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro interno ao autenticar.' });

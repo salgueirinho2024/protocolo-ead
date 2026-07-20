@@ -2675,10 +2675,13 @@ var qrcode = function() {
       </div>
       <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarPrincipal()" title="Esconder menu">‹</button>
     </div>
-    <div class="sidebar-user">
-      <div class="sidebar-user-name" id="sb-nome"></div>
-      <div class="sidebar-user-role" id="sb-role"></div>
-      <span class="role-badge" id="sb-badge"></span>
+    <div class="sidebar-user" style="display:flex;align-items:center;gap:10px">
+      <div id="sb-avatar" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;overflow:hidden"></div>
+      <div>
+        <div class="sidebar-user-name" id="sb-nome"></div>
+        <div class="sidebar-user-role" id="sb-role"></div>
+        <span class="role-badge" id="sb-badge"></span>
+      </div>
     </div>
     <nav class="sidebar-nav" id="sidebar-nav"></nav>
     <div class="sidebar-footer">
@@ -2927,6 +2930,13 @@ var qrcode = function() {
           <div class="form-group">
             <label>CPF</label>
             <input type="text" id="conta-cpf" disabled>
+          </div>
+          <div class="form-group">
+            <label>Foto de perfil</label>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div id="conta-foto-preview" style="width:56px;height:56px;border-radius:50%;background:var(--surface2,#eee);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text-muted)"></div>
+              <input type="file" id="conta-foto-file" accept="image/png,image/jpeg" onchange="lerFotoPerfilFile(event)">
+            </div>
           </div>
           <div class="form-group">
             <label>E-mail</label>
@@ -3206,6 +3216,20 @@ async function fazerLogin() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
 
+// Mostra a foto de perfil do funcionário na barra lateral (ou a inicial
+// do nome, se ele ainda não tiver uma foto cadastrada em "Editar Conta").
+function renderSidebarAvatar() {
+  const avatar = document.getElementById('sb-avatar');
+  if (!avatar) return;
+  const foto = usuarioLogado?.foto_perfil_base64;
+  if (foto) {
+    avatar.innerHTML = `<img src="${foto}" alt="Foto de perfil" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    const nome = usuarioLogado?.nome || usuarioLogado?.email || '?';
+    avatar.innerHTML = nome.trim().charAt(0).toUpperCase();
+  }
+}
+
 // ══════════════════════════════════════════════
 // APP INIT
 // ══════════════════════════════════════════════
@@ -3216,6 +3240,7 @@ function iniciarApp() {
   // Sidebar info
   const nome = usuarioLogado?.nome || usuarioLogado?.email || '—';
   document.getElementById('sb-nome').textContent = nome;
+  renderSidebarAvatar();
 
   const roleLabels = { admin: 'Super Administrador', empresa: 'Empresa Cliente', funcionario: 'Funcionário' };
   const badgeClass = { admin: 'role-admin', empresa: 'role-empresa', funcionario: 'role-funcionario' };
@@ -4709,6 +4734,31 @@ function carregarContaFuncionario() {
   document.getElementById('conta-senha-atual').value = '';
   document.getElementById('conta-senha-nova').value = '';
   document.getElementById('conta-senha-confirma').value = '';
+  window._contaFotoB64 = null; // só é preenchido se o usuário escolher um arquivo novo
+  document.getElementById('conta-foto-file').value = '';
+  atualizarPreviewFotoConta(usuarioLogado?.foto_perfil_base64);
+}
+
+function atualizarPreviewFotoConta(foto) {
+  const el = document.getElementById('conta-foto-preview');
+  if (foto) {
+    el.innerHTML = `<img src="${foto}" alt="Foto de perfil" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    const nome = usuarioLogado?.nome || '?';
+    el.innerHTML = nome.trim().charAt(0).toUpperCase();
+  }
+}
+
+function lerFotoPerfilFile(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  if (f.size > 800 * 1024) { toast('Imagem muito grande (máx 800KB).', 'error'); ev.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    window._contaFotoB64 = reader.result;
+    atualizarPreviewFotoConta(reader.result);
+  };
+  reader.readAsDataURL(f);
 }
 
 async function salvarContaFuncionario() {
@@ -4726,11 +4776,16 @@ async function salvarContaFuncionario() {
 
   const body = { email: email || null };
   if (senhaNova) { body.senha_atual = senhaAtual; body.senha_nova = senhaNova; }
+  if (window._contaFotoB64) body.foto_perfil_base64 = window._contaFotoB64;
 
   btn.disabled = true;
   try {
-    await api('PUT', '/api/player/matricula', body);
-    if (usuarioLogado) usuarioLogado.email = email;
+    const resp = await api('PUT', '/api/player/matricula', body);
+    if (usuarioLogado) {
+      usuarioLogado.email = email;
+      if (resp && resp.foto_perfil_base64 !== undefined) usuarioLogado.foto_perfil_base64 = resp.foto_perfil_base64;
+    }
+    renderSidebarAvatar();
     toast('Dados atualizados com sucesso!', 'sucesso');
     document.getElementById('conta-senha-atual').value = '';
     document.getElementById('conta-senha-nova').value = '';

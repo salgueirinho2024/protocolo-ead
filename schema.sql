@@ -150,6 +150,11 @@ CREATE TABLE IF NOT EXISTS funcionarios (
 CREATE INDEX IF NOT EXISTS idx_funcionarios_empresa ON funcionarios(empresa_id);
 CREATE INDEX IF NOT EXISTS idx_funcionarios_cpf ON funcionarios(cpf);
 
+-- Foto de perfil (PNG/JPG em base64), definida pelo próprio funcionário
+-- em "Editar Conta". Puramente visual — não afeta nenhuma regra de
+-- negócio. NULL = mostra o ícone padrão no lugar da foto.
+ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS foto_perfil_base64 TEXT;
+
 -- =========================================================
 -- 6. ACESSO/LOGIN DO FUNCIONÁRIO (CPF + senha simples ou link mágico)
 -- =========================================================
