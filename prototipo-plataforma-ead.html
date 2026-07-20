@@ -3027,19 +3027,6 @@ var qrcode = function() {
     </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
-    <div class="fields-row">
-      <div class="field">
-        <label>Fundo do certificado — frente (página 1)</label>
-        <input type="file" id="trein-fundo-frente-file" accept="image/png,image/jpeg" onchange="lerFundoCertificadoFile(event,'frente')">
-        <div id="trein-fundo-frente-preview" style="margin-top:8px"></div>
-      </div>
-      <div class="field">
-        <label>Fundo do certificado — verso (página 2)</label>
-        <input type="file" id="trein-fundo-verso-file" accept="image/png,image/jpeg" onchange="lerFundoCertificadoFile(event,'verso')">
-        <div id="trein-fundo-verso-preview" style="margin-top:8px"></div>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px">Por padrão, todo certificado já usa o fundo oficial da Ética Verde (frente e verso) — você não precisa subir nada aqui pra isso funcionar. Só preencha essas duas imagens se quiser um fundo <strong>diferente</strong> especificamente pra este treinamento; nesse caso, sua arte substitui o padrão (o nome, CPF, QR code e assinaturas continuam sendo desenhados por cima).</p>
     <div class="field">
       <label>Status</label>
       <select id="trein-status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select>
@@ -3583,12 +3570,6 @@ function abrirModalTreinamento() {
   document.getElementById('trein-instrutor-assinatura-preview').innerHTML = '';
   const rtf = document.getElementById('trein-rt-assinatura-file'); if (rtf) rtf.value = '';
   const inf = document.getElementById('trein-instrutor-assinatura-file'); if (inf) inf.value = '';
-  window._fundoFrenteB64 = null;
-  window._fundoVersoB64 = null;
-  document.getElementById('trein-fundo-frente-preview').innerHTML = '';
-  document.getElementById('trein-fundo-verso-preview').innerHTML = '';
-  const ff = document.getElementById('trein-fundo-frente-file'); if (ff) ff.value = '';
-  const fv = document.getElementById('trein-fundo-verso-file'); if (fv) fv.value = '';
   document.getElementById('trein-carga').value = 60;
   document.getElementById('trein-nota').value = 70;
   document.getElementById('trein-validade').value = 365;
@@ -3622,14 +3603,6 @@ async function editarTreinamento(id) {
     document.getElementById('trein-instrutor-assinatura-preview').innerHTML = t.assinatura_base64
       ? `<img src="${t.assinatura_base64}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
     document.getElementById('trein-instrutor-assinatura-file').value = '';
-    window._fundoFrenteB64 = t.certificado_fundo_frente_base64 || null;
-    window._fundoVersoB64 = t.certificado_fundo_verso_base64 || null;
-    document.getElementById('trein-fundo-frente-preview').innerHTML = t.certificado_fundo_frente_base64
-      ? `<img src="${t.certificado_fundo_frente_base64}" alt="Fundo frente" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
-    document.getElementById('trein-fundo-verso-preview').innerHTML = t.certificado_fundo_verso_base64
-      ? `<img src="${t.certificado_fundo_verso_base64}" alt="Fundo verso" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
-    document.getElementById('trein-fundo-frente-file').value = '';
-    document.getElementById('trein-fundo-verso-file').value = '';
     document.getElementById('modal-treinamento').classList.add('open');
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -3649,8 +3622,6 @@ async function salvarTreinamento() {
     assinatura_nome: document.getElementById('trein-instrutor-nome').value || null,
     instrutor_documento: document.getElementById('trein-instrutor-documento').value || null,
     assinatura_base64: window._instrutorAssinaturaB64 || null,
-    certificado_fundo_frente_base64: window._fundoFrenteB64 || null,
-    certificado_fundo_verso_base64: window._fundoVersoB64 || null,
   };
   try {
     if (editingTreinId) {
@@ -4874,20 +4845,6 @@ function lerAssinaturaFile(ev, tipo) {
     else window._instrutorAssinaturaB64 = reader.result;
     document.getElementById(`trein-${tipo}-assinatura-preview`).innerHTML =
       `<img src="${reader.result}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">`;
-  };
-  reader.readAsDataURL(f);
-}
-
-function lerFundoCertificadoFile(ev, lado) {
-  const f = ev.target.files && ev.target.files[0];
-  if (!f) return;
-  if (f.size > 1.5 * 1024 * 1024) { toast('Imagem muito grande (máx 1,5MB).', 'error'); ev.target.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = () => {
-    if (lado === 'frente') window._fundoFrenteB64 = reader.result;
-    else window._fundoVersoB64 = reader.result;
-    document.getElementById(`trein-fundo-${lado}-preview`).innerHTML =
-      `<img src="${reader.result}" alt="Fundo ${lado}" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">`;
   };
   reader.readAsDataURL(f);
 }

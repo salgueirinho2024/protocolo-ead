@@ -102,6 +102,13 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
   }
 
   // PUT
+  // certificado_fundo_frente/verso_base64: a tela de criar/editar treinamento
+  // não tem mais os campos de upload desses fundos (removidos — todo
+  // certificado já usa o fundo oficial por padrão), então o formulário não
+  // envia mais esses dois campos no body. Por isso usamos COALESCE($18,...)
+  // e COALESCE($19,...) abaixo: se vier undefined/null (sempre, agora),
+  // mantém o que já estava salvo, em vez de apagar um fundo customizado que
+  // porventura já existisse em treinamentos antigos.
   const {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
     conteudo_programatico, ativo,
@@ -133,8 +140,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
               responsavel_tecnico_documento = $15,
               responsavel_tecnico_assinatura_base64 = $16,
               instrutor_documento = $17,
-              certificado_fundo_frente_base64 = $18,
-              certificado_fundo_verso_base64 = $19
+              certificado_fundo_frente_base64 = COALESCE($18, certificado_fundo_frente_base64),
+              certificado_fundo_verso_base64 = COALESCE($19, certificado_fundo_verso_base64)
         WHERE id = $8
         RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
