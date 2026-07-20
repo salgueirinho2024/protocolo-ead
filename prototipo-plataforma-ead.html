@@ -3143,6 +3143,11 @@ let moduloAtual = null;
 let sessaoAtual = null;
 let matriculaAtual = null;
 let checkpointTimer = null;
+// Tempo assistido (em segundos) de cada módulo, acumulado durante esta
+// sessão do navegador — usado só pra travar a troca de módulo antes de
+// pelo menos 1 minuto assistido (ver MIN_SEGUNDOS_MODULO). Complementa
+// (não substitui) o segundos_assistidos oficial salvo no banco.
+let temposAssistidosSessao = {};
 let editingEmpresaId = null;
 let editingTreinId = null;
 let currentAdminTreinId = null;
@@ -4192,11 +4197,11 @@ function renderCursoDetalhe(m) {
       <div class="curso-feature"><span class="curso-feature-emoji">📝</span><div><strong>Avaliação</strong><span>Prova final para validar o aprendizado</span></div></div>
       <div class="curso-feature"><span class="curso-feature-emoji">⏱️</span><div><strong>Carga Horária</strong><span>${cargaTxt}</span></div></div>
     </div>
-    <button class="btn btn-navy" style="margin-top:20px" onclick="abrirPlayer(matriculaAtual, ${primeiroModuloPendente(modulos)})">${m.status === 'nao_iniciado' ? 'Iniciar Curso →' : 'Continuar Curso →'}</button>
+    <button class="btn btn-navy" style="margin-top:20px" onclick="tentarAbrirModuloCurso(${primeiroModuloPendente(modulos)})">${m.status === 'nao_iniciado' ? 'Iniciar Curso →' : 'Continuar Curso →'}</button>
   `;
 
   document.getElementById('curso-lista-aulas').innerHTML = modulos.map((mod, i) => `
-    <div class="curso-aula-item" onclick="abrirPlayer(matriculaAtual, ${i})">
+    <div class="curso-aula-item" onclick="tentarAbrirModuloCurso(${i})">
       <span class="curso-aula-check ${mod.concluido ? 'concluida' : ''}">${mod.concluido ? '✓' : i + 1}</span>
       <div class="curso-aula-texto">
         <div class="curso-aula-titulo">Aula ${String(i + 1).padStart(2, '0')} – ${mod.titulo}</div>
@@ -4236,7 +4241,7 @@ function renderModulosPlayer(modulos, startIdx) {
   if (!modulos.length) { lista.innerHTML = '<div style="font-size:13px;color:var(--text-muted)">Nenhum módulo disponível</div>'; return; }
   lista.innerHTML = '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Módulos</div>' +
     modulos.map((m, i) => `
-      <div onclick="selecionarModulo(${i})" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:6px;cursor:pointer;border:1.5px solid var(--surface2);margin-bottom:6px;transition:all .15s" 
+      <div onclick="tentarTrocarModulo(${i})" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:6px;cursor:pointer;border:1.5px solid var(--surface2);margin-bottom:6px;transition:all .15s" 
            onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--surface2)'">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${m.ordem||i+1}</div>
         <div style="flex:1"><div style="font-size:13px;font-weight:600">${m.titulo}</div><div style="font-size:11px;color:var(--text-muted)">${m.duracao_segundos ? Math.round(m.duracao_segundos/60) : '—'} min</div></div>
@@ -4257,7 +4262,68 @@ function pdfEmbedUrl(url) {
   return url;
 }
 
+// ── Trava de tempo mínimo assistido por módulo ──
+// Regra: o funcionário precisa assistir pelo menos 1 minuto do módulo
+// atual antes de poder avançar para outro módulo (evita pular direto
+// pro próximo vídeo sem assistir nada). Se o módulo já foi concluído
+// antes (95%+ assistido), ou o vídeo é mais curto que 1 minuto, a
+// trava não impede o avanço.
+const MIN_SEGUNDOS_MODULO = 60;
+
+function limiteMinimoModulo(mod) {
+  return Math.min(MIN_SEGUNDOS_MODULO, mod?.duracao_segundos || MIN_SEGUNDOS_MODULO);
+}
+
+function segundosAssistidosModulo(mod) {
+  if (!mod) return 0;
+  let total = temposAssistidosSessao[mod.id] || mod.segundos_assistidos || 0;
+  // Soma o tempo já decorrido da sessão em andamento agora mesmo, sem
+  // precisar esperar ela ser encerrada pra contar.
+  if (sessaoAtual && moduloAtual && moduloAtual.id === mod.id && sessaoAtual.inicio_em) {
+    const agora = Math.floor(Date.now() / 1000);
+    const inicio = Math.floor(new Date(sessaoAtual.inicio_em).getTime() / 1000);
+    total += Math.max(0, agora - inicio);
+  }
+  return total;
+}
+
+function podeAvancarModulo(mod) {
+  if (!mod || mod.concluido) return true;
+  return segundosAssistidosModulo(mod) >= limiteMinimoModulo(mod);
+}
+
+// Chamada pelos cliques que tentam trocar de módulo (lista lateral do
+// player e lista de aulas na tela de detalhe do curso). Só bloqueia se
+// estiver tentando ir para um módulo DIFERENTE do atual sem ter
+// cumprido o tempo mínimo — reabrir o mesmo módulo nunca é bloqueado.
+function bloqueioTrocaModulo(idxOuIdDestino, destinoEhIndiceNaTelaAtual) {
+  if (!moduloAtual) return null;
+  const idDestino = destinoEhIndiceNaTelaAtual && Array.isArray(treinamentoAtual?.modulos)
+    ? treinamentoAtual.modulos[idxOuIdDestino]?.id
+    : idxOuIdDestino;
+  if (idDestino === moduloAtual.id) return null; // reabrindo o mesmo módulo — sempre permitido
+  if (podeAvancarModulo(moduloAtual)) return null;
+  const faltam = Math.max(1, Math.ceil(limiteMinimoModulo(moduloAtual) - segundosAssistidosModulo(moduloAtual)));
+  return `Assista mais ${faltam}s deste módulo antes de avançar para outro.`;
+}
+
+// Troca de módulo a partir da lista lateral, dentro do player.
+function tentarTrocarModulo(idx) {
+  const aviso = bloqueioTrocaModulo(idx, true);
+  if (aviso) { toast(aviso, 'error'); return; }
+  selecionarModulo(idx);
+}
+
+// Troca de módulo a partir da lista de aulas na tela de detalhe do curso
+// (abre o player direto num módulo específico).
+function tentarAbrirModuloCurso(idx) {
+  const aviso = bloqueioTrocaModulo(idx, true);
+  if (aviso) { toast(aviso, 'error'); return; }
+  abrirPlayer(matriculaAtual, idx);
+}
+
 async function selecionarModulo(idx) {
+
   if (!treinamentoAtual?.modulos) return;
 
   // Fecha (salva) a sessão do módulo anterior antes de trocar, sem toast
@@ -4323,11 +4389,36 @@ function agendarCheckpoints() {
   }, intervalo);
 }
 
+// Anti-fraude: detecta quando o funcionário troca de aba/minimiza o
+// navegador enquanto está assistindo (o backend já suportava esse
+// registro via resultado 'aba_oculta' — só não estava sendo chamado
+// pelo frontend). Ao voltar pra aba, mostra o checkpoint de presença de
+// novo, pra confirmar que ele realmente está assistindo.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && sessaoAtual) {
+    api('POST', '/api/player/checkpoint', {
+      sessao_id: sessaoAtual.id,
+      tipo: 'troca_aba',
+      resultado: 'aba_oculta',
+    }).catch(() => {});
+  } else if (!document.hidden && sessaoAtual) {
+    document.getElementById('player-checkpoint-overlay').style.display = 'flex';
+  }
+});
+
 async function responderCheckpoint() {
   document.getElementById('player-checkpoint-overlay').style.display = 'none';
   if (!sessaoAtual) return;
   try {
-    await api('POST', '/api/player/checkpoint', { sessao_id: sessaoAtual.id });
+    const posicao = sessaoAtual.inicio_em
+      ? Math.max(0, Math.floor(Date.now() / 1000) - Math.floor(new Date(sessaoAtual.inicio_em).getTime() / 1000)) + (moduloAtual?.ultima_posicao_seg || 0)
+      : 0;
+    await api('POST', '/api/player/checkpoint', {
+      sessao_id: sessaoAtual.id,
+      tipo: 'clique',
+      resultado: 'respondido_ok',
+      posicao_video_seg: posicao,
+    });
     toast('Presença confirmada ✓', 'success');
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -4350,6 +4441,7 @@ async function encerrarSessaoAtual(mostrarToast) {
       : 0;
     // Posição pra retomar = de onde ele já estava + o que assistiu agora
     const novaPosicao = (moduloParaFechar.ultima_posicao_seg || 0) + segundosSessao;
+    temposAssistidosSessao[moduloParaFechar.id] = (temposAssistidosSessao[moduloParaFechar.id] || 0) + segundosSessao;
 
     const resp = await api('POST', '/api/player/sessao/encerrar', {
       sessao_id: sessaoParaFechar.id,
