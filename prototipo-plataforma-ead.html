@@ -84,7 +84,7 @@
     z-index: 100;
     border-right: 1px solid rgba(255,255,255,0.06);
   }
-  .sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
   .sidebar-header img { height: 48px; object-fit: contain; display: block; margin-bottom: 8px; filter: brightness(0) invert(1); }
   .sidebar-brand { font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #74B49B; }
   .sidebar-title { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 800; color: var(--white); margin-top: 1px; letter-spacing: .01em; }
@@ -107,17 +107,33 @@
 
   /* ── TOGGLE DA BARRA LATERAL ESQUERDA ── */
   .sidebar { transition: transform .2s ease; }
+  /* Botão de esconder: fica dentro do próprio menu (canto superior do
+     cabeçalho), não mais flutuando fora dele. */
   .sidebar-toggle-btn {
-    position: fixed; top: 18px; left: 252px; z-index: 150;
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
+    color: #95D5B2; font-size: 15px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit; transition: all .15s;
+  }
+  .sidebar-toggle-btn:hover { background: rgba(255,255,255,0.14); color: var(--white); border-color: rgba(255,255,255,0.3); }
+
+  /* Aba para reabrir o menu: só existe/aparece quando o menu está
+     escondido (body.sidebar-collapsed). É a única peça que fica fora do
+     menu, e só porque, com o menu escondido, não haveria "dentro" onde
+     colocá-la. */
+  .sidebar-reopen-btn {
+    display: none;
+    position: fixed; top: 18px; left: 18px; z-index: 150;
     width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--surface2);
     background: var(--white); color: var(--navy); font-size: 15px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: var(--shadow); transition: left .2s ease; font-family: inherit;
+    align-items: center; justify-content: center;
+    box-shadow: var(--shadow); font-family: inherit;
   }
-  .sidebar-toggle-btn:hover { border-color: var(--navy); }
+  .sidebar-reopen-btn:hover { border-color: var(--navy); }
   body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
   body.sidebar-collapsed .main { margin-left: 0; }
-  body.sidebar-collapsed .sidebar-toggle-btn { left: 18px; }
+  body.sidebar-collapsed .sidebar-reopen-btn { display: flex; }
 
   /* ── MAIN ── */
   .main { margin-left: 240px; padding: 32px; min-height: 100vh; transition: margin-left .2s ease; }
@@ -169,12 +185,6 @@
   .modal-overlay.open { display: flex; }
   .modal { background: var(--white); border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
   .modal h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 20px; color: var(--navy); }
-  .material-apoio-overlay { position: absolute; inset: 0; background: #111; z-index: 60; display: none; flex-direction: column; border-radius: 12px; overflow: hidden; }
-  .material-apoio-overlay.open { display: flex; }
-  .material-apoio-overlay__bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #000; color: #fff; flex-shrink: 0; }
-  .material-apoio-overlay__titulo { font-size: 13px; font-weight: 600; opacity: .85; }
-  .material-apoio-overlay__fechar { background: none; border: none; color: #fff; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 10px; }
-  .material-apoio-overlay iframe { flex: 1; width: 100%; border: none; background: #f4f4f4; }
   .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
   /* ── FORM ── */
@@ -207,20 +217,24 @@
     .player-sidebar { width: 100%; position: static; max-height: none; }
   }
   .player-card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; position: relative; }
+  /* Vídeo e PDF lado a lado, os dois visíveis ao mesmo tempo (o PDF só
+     aparece quando o módulo tem material de apoio cadastrado). Em telas
+     estreitas, empilha o PDF abaixo do vídeo em vez de espremer os dois. */
+  .player-media { display: flex; align-items: stretch; gap: 12px; padding: 12px; background: var(--navy); }
+  .player-media .player-video { flex: 1 1 60%; min-width: 0; border-radius: 8px; overflow: hidden; }
+  .player-pdf-inline { flex: 1 1 40%; min-width: 0; background: #f4f4f4; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+  .player-pdf-inline__bar { padding: 9px 14px; background: #000; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+  .player-pdf-inline iframe { flex: 1; width: 100%; min-height: 320px; border: none; background: #fff; }
+  @media (max-width: 900px) {
+    .player-media { flex-direction: column; }
+    .player-pdf-inline iframe { min-height: 420px; }
+  }
   .player-video { position: relative; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
   .player-video iframe { width: 100%; height: 100%; border: none; }
   .player-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
   .checkpoint-alert { background: var(--gold); color: #1B2D24; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px; text-align: center; }
   .player-meta { padding: 16px 20px; }
   .player-meta h3 { font-size: 16px; font-weight: 700; }
-  .material-apoio { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 10px; background: var(--surface2); border: 1.5px solid transparent; margin-top: 16px; transition: border-color .15s; text-decoration: none; cursor: pointer; }
-  .material-apoio:hover { border-color: var(--green); }
-  .material-apoio__icone { width: 42px; height: 42px; border-radius: 8px; background: var(--navy); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-  .material-apoio__texto { flex: 1; min-width: 0; }
-  .material-apoio__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-  .material-apoio__titulo { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 2px; }
-  .material-apoio__dica { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-  .material-apoio__seta { font-size: 18px; color: var(--navy); flex-shrink: 0; }
   .curso-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
   .curso-feature { display: flex; gap: 10px; align-items: flex-start; padding: 12px; background: var(--surface2); border-radius: 10px; }
   .curso-feature .curso-feature-emoji { font-size: 18px; line-height: 1; flex-shrink: 0; }
@@ -2655,8 +2669,11 @@ var qrcode = function() {
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-brand">Plataforma</div>
-      <div class="sidebar-title">PREVINA<span style="color:var(--blue-accent)">-</span>SE</div>
+      <div>
+        <div class="sidebar-brand">Plataforma</div>
+        <div class="sidebar-title">PREVINA<span style="color:var(--blue-accent)">-</span>SE</div>
+      </div>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarPrincipal()" title="Esconder menu">‹</button>
     </div>
     <div class="sidebar-user">
       <div class="sidebar-user-name" id="sb-nome"></div>
@@ -2669,8 +2686,10 @@ var qrcode = function() {
     </div>
   </aside>
 
-  <!-- Botão para esconder/mostrar a barra lateral esquerda -->
-  <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarPrincipal()" title="Esconder/mostrar menu">☰</button>
+  <!-- Aba para mostrar de novo a barra lateral, quando ela estiver escondida.
+       Só aparece nesse estado (ver body.sidebar-collapsed no CSS) — o botão
+       de esconder mostrado acima já fica dentro do próprio menu. -->
+  <button class="sidebar-reopen-btn" id="sidebar-reopen-btn" onclick="toggleSidebarPrincipal()" title="Mostrar menu">☰</button>
 
   <!-- MAIN CONTENT -->
   <main class="main">
@@ -2843,38 +2862,28 @@ var qrcode = function() {
       <div class="player-layout">
         <div class="player-layout__main">
           <div class="player-card">
-            <div class="player-video">
-              <div id="player-placeholder" style="color:#fff;text-align:center">
-                <div style="font-size:48px;margin-bottom:8px">▶</div>
-                <div style="font-size:14px;opacity:.7">Selecione um módulo</div>
+            <div class="player-media" id="player-media">
+              <div class="player-video">
+                <div id="player-placeholder" style="color:#fff;text-align:center">
+                  <div style="font-size:48px;margin-bottom:8px">▶</div>
+                  <div style="font-size:14px;opacity:.7">Selecione um módulo</div>
+                </div>
+                <div class="player-overlay" id="player-checkpoint-overlay" style="display:none">
+                  <div class="checkpoint-alert">⚠️ Checkpoint de Presença</div>
+                  <div style="color:#fff;font-size:14px">Confirme que você ainda está assistindo</div>
+                  <button class="btn btn-green" onclick="responderCheckpoint()">✓ Estou aqui!</button>
+                </div>
               </div>
-              <div class="player-overlay" id="player-checkpoint-overlay" style="display:none">
-                <div class="checkpoint-alert">⚠️ Checkpoint de Presença</div>
-                <div style="color:#fff;font-size:14px">Confirme que você ainda está assistindo</div>
-                <button class="btn btn-green" onclick="responderCheckpoint()">✓ Estou aqui!</button>
+              <!-- Material de apoio (PDF): fica sempre visível ao lado do vídeo,
+                   ao mesmo tempo — só aparece quando o módulo tem um PDF cadastrado. -->
+              <div class="player-pdf-inline" id="player-pdf-inline" style="display:none">
+                <div class="player-pdf-inline__bar">📄 Material de apoio — PDF para leitura</div>
+                <iframe id="player-pdf-inline-frame" src="" title="Material de apoio em PDF"></iframe>
               </div>
             </div>
             <div class="player-meta">
               <h3 id="player-modulo-titulo">—</h3>
               <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
-              <div id="player-material-apoio" class="material-apoio" style="display:none" role="button" tabindex="0" onclick="abrirMaterialApoioPainel()" onkeydown="if(event.key==='Enter')abrirMaterialApoioPainel()">
-                <div class="material-apoio__icone">📄</div>
-                <div class="material-apoio__texto">
-                  <div class="material-apoio__label">Material de apoio</div>
-                  <div class="material-apoio__titulo">PDF para leitura</div>
-                  <div class="material-apoio__dica">Toque para visualizar no painel</div>
-                </div>
-                <div class="material-apoio__seta">⛶</div>
-              </div>
-            </div>
-
-            <!-- Material de apoio: visualizado dentro do próprio painel do player, sem sair da tela -->
-            <div class="material-apoio-overlay" id="material-apoio-overlay">
-              <div class="material-apoio-overlay__bar">
-                <span class="material-apoio-overlay__titulo">📄 Material de apoio</span>
-                <button class="material-apoio-overlay__fechar" onclick="fecharMaterialApoioPainel()">✕</button>
-              </div>
-              <iframe id="material-apoio-overlay-frame" src="" title="Material de apoio em PDF"></iframe>
             </div>
           </div>
         </div>
@@ -3110,7 +3119,6 @@ let treinamentoAtual = null; // { id, titulo, modulos }
 let moduloAtual = null;
 let sessaoAtual = null;
 let matriculaAtual = null;
-let materialApoioUrlAtual = null;
 let checkpointTimer = null;
 let editingEmpresaId = null;
 let editingTreinId = null;
@@ -4195,22 +4203,6 @@ function pdfEmbedUrl(url) {
   return url;
 }
 
-// Abre o material de apoio (PDF) dentro do próprio painel do player — cobre
-// só o card do vídeo/conteúdo (não a tela toda), então o menu e o restante
-// da plataforma continuam visíveis e acessíveis.
-function abrirMaterialApoioPainel() {
-  if (!materialApoioUrlAtual) return;
-  const overlay = document.getElementById('material-apoio-overlay');
-  document.getElementById('material-apoio-overlay-frame').src = pdfEmbedUrl(materialApoioUrlAtual);
-  overlay.classList.add('open');
-}
-
-function fecharMaterialApoioPainel() {
-  const overlay = document.getElementById('material-apoio-overlay');
-  overlay.classList.remove('open');
-  document.getElementById('material-apoio-overlay-frame').src = '';
-}
-
 async function selecionarModulo(idx) {
   if (!treinamentoAtual?.modulos) return;
 
@@ -4235,16 +4227,16 @@ async function selecionarModulo(idx) {
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
   }
 
-  // Material de apoio (PDF) — não fica embutido permanentemente abaixo do
-  // vídeo; o card só guarda a URL e abre dentro do painel quando tocado/clicado.
-  fecharMaterialApoioPainel();
-  const materialEl = document.getElementById('player-material-apoio');
+  // Material de apoio (PDF) — agora fica embutido ao lado do vídeo, visível
+  // ao mesmo tempo que ele (sem precisar clicar pra abrir/fechar).
+  const pdfPainel = document.getElementById('player-pdf-inline');
+  const pdfFrame = document.getElementById('player-pdf-inline-frame');
   if (moduloAtual.pdf_url) {
-    materialApoioUrlAtual = moduloAtual.pdf_url;
-    materialEl.style.display = 'flex';
+    pdfFrame.src = pdfEmbedUrl(moduloAtual.pdf_url);
+    pdfPainel.style.display = 'flex';
   } else {
-    materialApoioUrlAtual = null;
-    materialEl.style.display = 'none';
+    pdfFrame.src = '';
+    pdfPainel.style.display = 'none';
   }
 
   document.getElementById('btn-ir-prova').style.display = moduloAtual.concluido ? 'inline-flex' : 'none';
