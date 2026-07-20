@@ -4784,29 +4784,31 @@ async function baixarCertificadoPDF() {
     // property 'jsPDF' of 'window.jspdf' as it is undefined"). Em vez disso
     // usamos a própria API de worker do html2pdf.js — .toPdf()/.toCanvas()
     // + .get(...) — que dá acesso ao jsPDF e ao canvas internos dele.
-    const opcoesComuns = { html2canvas: { scale: 2, useCORS: true } };
+    //
+    // IMPORTANTE: as MESMAS opções de jsPDF (formato 842x595 landscape)
+    // precisam ir em toda chamada ao html2pdf.js, inclusive nas páginas que
+    // só usamos pra tirar um canvas (.toCanvas()). Isso porque o
+    // html2pdf.js monta um contêiner temporário cuja largura é calculada a
+    // partir de opt.jsPDF (toContainer() -> setPageSize()); sem passar o
+    // mesmo formato, ele cai no padrão dele (A4 retrato) só pra essa
+    // captura, o que fazia o verso sair com proporção/tamanho diferente da
+    // frente (conteúdo encolhido e deslocado no canto).
+    const opcoesComuns = {
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' },
+    };
 
     // 1ª página: deixa o próprio html2pdf.js criar o objeto jsPDF.
     const pdf = await html2pdf()
-      .set({
-        ...opcoesComuns,
-        image: { type: 'jpeg', quality: 0.98 },
-        jsPDF: { unit: 'px', format: [842, 595], orientation: 'landscape' },
-      })
+      .set({ ...opcoesComuns, image: { type: 'jpeg', quality: 0.98 } })
       .from(paginas[0])
       .toPdf()
       .get('pdf');
 
-    // Lê o tamanho REAL que a página 1 acabou ficando (em vez de assumir
-    // que "842x595" bate com a unidade interna do jsPDF — foi essa suposição
-    // errada que fez addPage() cair num tamanho de página padrão diferente
-    // do da página 1, encolhendo o verso dentro de uma folha errada).
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    // Demais páginas: captura cada uma isoladamente em um canvas e anexa
-    // ao mesmo objeto jsPDF, sem depender de nenhum corte automático por
-    // page-break (fonte da 3ª página em branco).
+    // Demais páginas: captura cada uma isoladamente em um canvas (com o
+    // mesmo formato de página da frente) e anexa ao mesmo objeto jsPDF, sem
+    // depender de nenhum corte automático por page-break (fonte da 3ª
+    // página em branco na primeira tentativa).
     for (let i = 1; i < paginas.length; i++) {
       const canvas = await html2pdf()
         .set(opcoesComuns)
@@ -4814,8 +4816,8 @@ async function baixarCertificadoPDF() {
         .toCanvas()
         .get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      pdf.addPage([pageWidth, pageHeight], pageWidth > pageHeight ? 'l' : 'p');
-      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, 842, 595);
     }
 
     pdf.save(`certificado-${_dadosCertAtual.codigo_validacao}.pdf`);
