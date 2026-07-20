@@ -4807,7 +4807,11 @@ async function baixarCertificadoPDF() {
         .toCanvas()
         .get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      pdf.addPage([842, 595], 'landscape');
+      // Sem argumentos: reaproveita o mesmo tamanho/orientação de página já
+      // definidos na criação do documento (842x595 landscape). Passar o
+      // formato de novo aqui já causou uma página com tamanho diferente da
+      // primeira, fazendo a imagem do verso aparecer encolhida num canto.
+      pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, 0, 842, 595);
     }
 
