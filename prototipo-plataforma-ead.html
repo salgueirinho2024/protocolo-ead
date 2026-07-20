@@ -4608,14 +4608,14 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
   // itens o conteúdo programático tenha.
   const paginaConteudo = !mostrarPagina2 ? '' : (fundoVerso ? `
 <!-- PÁGINA 2 — VERSO (fundo enviado pelo admin) -->
-<div style="width:842px;height:595px;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
+<div style="width:842px;height:595px;position:relative;overflow:hidden;font-family:'Inter',sans-serif;box-sizing:border-box">
   <img src="${fundoVerso}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0">
   ${conteudoProgramatico ? `<div id="cert-prog-box" style="position:absolute;left:76px;right:76px;top:64px;height:365px;z-index:1;overflow:hidden">
     <div id="cert-prog-inner" style="transform-origin:top center">${conteudoProgramatico}</div>
   </div>` : ''}
 </div>` : `
 <!-- PÁGINA 2 — CONTEÚDO PROGRAMÁTICO (sem imagem de fundo cadastrada) -->
-<div style="width:842px;height:595px;background:#ffffff;position:relative;overflow:hidden;font-family:'Inter',sans-serif;page-break-before:always;box-sizing:border-box">
+<div style="width:842px;height:595px;background:#ffffff;position:relative;overflow:hidden;font-family:'Inter',sans-serif;box-sizing:border-box">
   <div style="position:absolute;inset:16px;border:1.5px solid #111827"></div>
   <div id="cert-prog-box" style="position:absolute;left:76px;right:76px;top:40px;height:459px;box-sizing:border-box;overflow:hidden">
     <div id="cert-prog-inner" style="transform-origin:top center">${conteudoProgramatico}</div>
@@ -4775,6 +4775,16 @@ async function baixarCertificadoPDF() {
   // Agora capturamos cada página separadamente com html2canvas e montamos
   // o PDF manualmente com jsPDF: não há cálculo de corte de página nenhum
   // que possa dar errado.
+  //
+  // IMPORTANTE: por causa disso, os <div> de cada página NÃO podem ter
+  // `page-break-before:always` no style (o verso tinha, sobra do modo
+  // antigo). Por padrão o html2pdf.js roda com pagebreak.mode incluindo
+  // 'css', ou seja, ele respeita esse CSS mesmo dentro de um .toCanvas()
+  // de um único <div> isolado — inserindo uma página em branco ANTES do
+  // próprio conteúdo dentro do mesmo canvas. O canvas então sai com o
+  // dobro da altura (branco + conteúdo empilhados) e, ao ser esticado pro
+  // tamanho fixo de 842x595 no addImage(), o conteúdo real aparece
+  // encolhido e centralizado com margens em branco enormes.
   const paginas = Array.from(wrapper.children).filter(el => el.tagName === 'DIV');
 
   try {
