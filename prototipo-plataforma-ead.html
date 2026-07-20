@@ -105,8 +105,22 @@
   .btn-logout { width: 100%; padding: 9px; background: transparent; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #74B49B; font-size: 13px; cursor: pointer; font-family: inherit; transition: all .15s; }
   .btn-logout:hover { background: rgba(255,255,255,0.07); color: var(--white); }
 
+  /* ── TOGGLE DA BARRA LATERAL ESQUERDA ── */
+  .sidebar { transition: transform .2s ease; }
+  .sidebar-toggle-btn {
+    position: fixed; top: 18px; left: 252px; z-index: 150;
+    width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--surface2);
+    background: var(--white); color: var(--navy); font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow); transition: left .2s ease; font-family: inherit;
+  }
+  .sidebar-toggle-btn:hover { border-color: var(--navy); }
+  body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+  body.sidebar-collapsed .main { margin-left: 0; }
+  body.sidebar-collapsed .sidebar-toggle-btn { left: 18px; }
+
   /* ── MAIN ── */
-  .main { margin-left: 240px; padding: 32px; min-height: 100vh; }
+  .main { margin-left: 240px; padding: 32px; min-height: 100vh; transition: margin-left .2s ease; }
   .page { display: none; }
   .page.active { display: block; }
   .page-header { margin-bottom: 28px; }
@@ -155,7 +169,7 @@
   .modal-overlay.open { display: flex; }
   .modal { background: var(--white); border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
   .modal h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 20px; color: var(--navy); }
-  .material-apoio-overlay { position: fixed; inset: 0; background: #111; z-index: 2000; display: none; flex-direction: column; }
+  .material-apoio-overlay { position: absolute; inset: 0; background: #111; z-index: 60; display: none; flex-direction: column; border-radius: 12px; overflow: hidden; }
   .material-apoio-overlay.open { display: flex; }
   .material-apoio-overlay__bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #000; color: #fff; flex-shrink: 0; }
   .material-apoio-overlay__titulo { font-size: 13px; font-weight: 600; opacity: .85; }
@@ -178,7 +192,21 @@
   .vagas-fill.danger { background: var(--red); }
 
   /* ── PLAYER ── */
-  .player-card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .player-layout { display: flex; align-items: flex-start; gap: 20px; }
+  .player-layout__main { flex: 1; min-width: 0; }
+  .player-sidebar {
+    width: 300px; flex-shrink: 0; background: var(--white); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 18px; position: sticky; top: 20px;
+    max-height: calc(100vh - 40px); overflow-y: auto;
+  }
+  .player-sidebar-titulo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 10px; }
+  .player-sidebar #player-actions { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--surface2); display: flex; flex-direction: column; gap: 10px; }
+  .player-sidebar #player-actions .btn { width: 100%; justify-content: center; }
+  @media (max-width: 900px) {
+    .player-layout { flex-direction: column; }
+    .player-sidebar { width: 100%; position: static; max-height: none; }
+  }
+  .player-card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; position: relative; }
   .player-video { position: relative; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
   .player-video iframe { width: 100%; height: 100%; border: none; }
   .player-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
@@ -2641,6 +2669,9 @@ var qrcode = function() {
     </div>
   </aside>
 
+  <!-- Botão para esconder/mostrar a barra lateral esquerda -->
+  <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebarPrincipal()" title="Esconder/mostrar menu">☰</button>
+
   <!-- MAIN CONTENT -->
   <main class="main">
 
@@ -2809,36 +2840,51 @@ var qrcode = function() {
     <!-- Player -->
     <div id="page-func-player" class="page">
       <button class="btn btn-outline btn-sm" style="margin-bottom:16px" onclick="voltarParaCurso()">← Voltar</button>
-      <div class="player-card">
-        <div class="player-video">
-          <div id="player-placeholder" style="color:#fff;text-align:center">
-            <div style="font-size:48px;margin-bottom:8px">▶</div>
-            <div style="font-size:14px;opacity:.7">Selecione um módulo</div>
-          </div>
-          <div class="player-overlay" id="player-checkpoint-overlay" style="display:none">
-            <div class="checkpoint-alert">⚠️ Checkpoint de Presença</div>
-            <div style="color:#fff;font-size:14px">Confirme que você ainda está assistindo</div>
-            <button class="btn btn-green" onclick="responderCheckpoint()">✓ Estou aqui!</button>
-          </div>
-        </div>
-        <div class="player-meta">
-          <h3 id="player-modulo-titulo">—</h3>
-          <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
-          <div id="player-material-apoio" class="material-apoio" style="display:none" role="button" tabindex="0" onclick="abrirMaterialApoioTelaCheia()" onkeydown="if(event.key==='Enter')abrirMaterialApoioTelaCheia()">
-            <div class="material-apoio__icone">📄</div>
-            <div class="material-apoio__texto">
-              <div class="material-apoio__label">Material de apoio</div>
-              <div class="material-apoio__titulo">PDF para leitura</div>
-              <div class="material-apoio__dica">Toque para abrir em tela cheia</div>
+      <div class="player-layout">
+        <div class="player-layout__main">
+          <div class="player-card">
+            <div class="player-video">
+              <div id="player-placeholder" style="color:#fff;text-align:center">
+                <div style="font-size:48px;margin-bottom:8px">▶</div>
+                <div style="font-size:14px;opacity:.7">Selecione um módulo</div>
+              </div>
+              <div class="player-overlay" id="player-checkpoint-overlay" style="display:none">
+                <div class="checkpoint-alert">⚠️ Checkpoint de Presença</div>
+                <div style="color:#fff;font-size:14px">Confirme que você ainda está assistindo</div>
+                <button class="btn btn-green" onclick="responderCheckpoint()">✓ Estou aqui!</button>
+              </div>
             </div>
-            <div class="material-apoio__seta">⛶</div>
+            <div class="player-meta">
+              <h3 id="player-modulo-titulo">—</h3>
+              <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="player-modulo-desc"></div>
+              <div id="player-material-apoio" class="material-apoio" style="display:none" role="button" tabindex="0" onclick="abrirMaterialApoioPainel()" onkeydown="if(event.key==='Enter')abrirMaterialApoioPainel()">
+                <div class="material-apoio__icone">📄</div>
+                <div class="material-apoio__texto">
+                  <div class="material-apoio__label">Material de apoio</div>
+                  <div class="material-apoio__titulo">PDF para leitura</div>
+                  <div class="material-apoio__dica">Toque para visualizar no painel</div>
+                </div>
+                <div class="material-apoio__seta">⛶</div>
+              </div>
+            </div>
+
+            <!-- Material de apoio: visualizado dentro do próprio painel do player, sem sair da tela -->
+            <div class="material-apoio-overlay" id="material-apoio-overlay">
+              <div class="material-apoio-overlay__bar">
+                <span class="material-apoio-overlay__titulo">📄 Material de apoio</span>
+                <button class="material-apoio-overlay__fechar" onclick="fecharMaterialApoioPainel()">✕</button>
+              </div>
+              <iframe id="material-apoio-overlay-frame" src="" title="Material de apoio em PDF"></iframe>
+            </div>
           </div>
-          <div id="modulos-lista" style="margin-top:16px"></div>
         </div>
-      </div>
-      <div style="margin-top:20px;display:flex;gap:12px;align-items:center" id="player-actions">
-        <button class="btn btn-green" id="btn-concluir-modulo" onclick="concluirModuloManual()">✓ Concluir módulo</button>
-        <button class="btn btn-outline" onclick="navTo('func-prova')" id="btn-ir-prova" style="display:none">Fazer Prova Final →</button>
+        <aside class="player-sidebar" id="player-sidebar">
+          <div id="modulos-lista"></div>
+          <div id="player-actions">
+            <button class="btn btn-green" id="btn-concluir-modulo" onclick="concluirModuloManual()">✓ Concluir módulo</button>
+            <button class="btn btn-outline" onclick="navTo('func-prova')" id="btn-ir-prova" style="display:none">Fazer Prova Final →</button>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -3065,15 +3111,6 @@ var qrcode = function() {
 
 <div id="toast"></div>
 
-<!-- Material de apoio em tela cheia -->
-<div class="material-apoio-overlay" id="material-apoio-overlay">
-  <div class="material-apoio-overlay__bar">
-    <span class="material-apoio-overlay__titulo">📄 Material de apoio</span>
-    <button class="material-apoio-overlay__fechar" onclick="fecharMaterialApoioTelaCheia()">✕</button>
-  </div>
-  <iframe id="material-apoio-overlay-frame" src="" title="Material de apoio em PDF"></iframe>
-</div>
-
 <script>
 // ══════════════════════════════════════════════
 // CONFIG
@@ -3201,6 +3238,22 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   if (checkpointTimer) clearInterval(checkpointTimer);
 }
+
+// Esconde/mostra a barra lateral esquerda (menu principal). A preferência
+// fica salva no navegador, então o usuário não precisa repetir o clique
+// toda vez que abrir a plataforma.
+function toggleSidebarPrincipal() {
+  const escondida = document.body.classList.toggle('sidebar-collapsed');
+  try { localStorage.setItem('sidebarPrincipalEscondida', escondida ? '1' : '0'); } catch (e) {}
+}
+
+(function restaurarPreferenciaSidebar() {
+  try {
+    if (localStorage.getItem('sidebarPrincipalEscondida') === '1') {
+      document.body.classList.add('sidebar-collapsed');
+    }
+  } catch (e) {}
+})();
 
 // ══════════════════════════════════════════════
 // NAVEGAÇÃO
@@ -4171,33 +4224,21 @@ function pdfEmbedUrl(url) {
   return url;
 }
 
-// Abre o material de apoio (PDF) direto em tela cheia, sem deixar um preview
-// embutido permanente na página do player.
-function abrirMaterialApoioTelaCheia() {
+// Abre o material de apoio (PDF) dentro do próprio painel do player — cobre
+// só o card do vídeo/conteúdo (não a tela toda), então o menu e o restante
+// da plataforma continuam visíveis e acessíveis.
+function abrirMaterialApoioPainel() {
   if (!materialApoioUrlAtual) return;
   const overlay = document.getElementById('material-apoio-overlay');
   document.getElementById('material-apoio-overlay-frame').src = pdfEmbedUrl(materialApoioUrlAtual);
   overlay.classList.add('open');
-  const pedirTelaCheia = overlay.requestFullscreen || overlay.webkitRequestFullscreen;
-  if (pedirTelaCheia) pedirTelaCheia.call(overlay).catch(() => {});
 }
 
-function fecharMaterialApoioTelaCheia() {
+function fecharMaterialApoioPainel() {
   const overlay = document.getElementById('material-apoio-overlay');
-  if (document.fullscreenElement === overlay) document.exitFullscreen();
   overlay.classList.remove('open');
   document.getElementById('material-apoio-overlay-frame').src = '';
 }
-
-// Se o usuário sair da tela cheia pelo Esc/gesto do navegador, fecha o
-// overlay junto em vez de deixá-lo "preso" numa janela normal.
-document.addEventListener('fullscreenchange', () => {
-  const overlay = document.getElementById('material-apoio-overlay');
-  if (!document.fullscreenElement && overlay.classList.contains('open')) {
-    overlay.classList.remove('open');
-    document.getElementById('material-apoio-overlay-frame').src = '';
-  }
-});
 
 async function selecionarModulo(idx) {
   if (!treinamentoAtual?.modulos) return;
@@ -4223,8 +4264,9 @@ async function selecionarModulo(idx) {
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
   }
 
-  // Material de apoio (PDF) — não fica mais embutido em iframe abaixo do
-  // vídeo; o card só guarda a URL e abre em tela cheia quando tocado/clicado.
+  // Material de apoio (PDF) — não fica embutido permanentemente abaixo do
+  // vídeo; o card só guarda a URL e abre dentro do painel quando tocado/clicado.
+  fecharMaterialApoioPainel();
   const materialEl = document.getElementById('player-material-apoio');
   if (moduloAtual.pdf_url) {
     materialApoioUrlAtual = moduloAtual.pdf_url;
