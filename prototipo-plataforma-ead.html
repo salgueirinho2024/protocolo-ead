@@ -4797,6 +4797,13 @@ async function baixarCertificadoPDF() {
       .toPdf()
       .get('pdf');
 
+    // Lê o tamanho REAL que a página 1 acabou ficando (em vez de assumir
+    // que "842x595" bate com a unidade interna do jsPDF — foi essa suposição
+    // errada que fez addPage() cair num tamanho de página padrão diferente
+    // do da página 1, encolhendo o verso dentro de uma folha errada).
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
     // Demais páginas: captura cada uma isoladamente em um canvas e anexa
     // ao mesmo objeto jsPDF, sem depender de nenhum corte automático por
     // page-break (fonte da 3ª página em branco).
@@ -4807,12 +4814,8 @@ async function baixarCertificadoPDF() {
         .toCanvas()
         .get('canvas');
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      // Sem argumentos: reaproveita o mesmo tamanho/orientação de página já
-      // definidos na criação do documento (842x595 landscape). Passar o
-      // formato de novo aqui já causou uma página com tamanho diferente da
-      // primeira, fazendo a imagem do verso aparecer encolhida num canto.
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, 0, 842, 595);
+      pdf.addPage([pageWidth, pageHeight], pageWidth > pageHeight ? 'l' : 'p');
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
     }
 
     pdf.save(`certificado-${_dadosCertAtual.codigo_validacao}.pdf`);
