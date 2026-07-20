@@ -50,7 +50,8 @@ async function handleTreinamentos(req, res) {
     conteudo_programatico, ativo,
     emissora_nome, emissora_cnpj,
     assinatura_base64, assinatura_nome, assinatura_cargo,
-    responsavel_tecnico_nome, responsavel_tecnico_documento, instrutor_documento,
+    responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
+    instrutor_documento,
     certificado_fundo_frente_base64, certificado_fundo_verso_base64,
   } = req.body || {};
   if (!titulo || !carga_horaria_min) {
@@ -62,16 +63,18 @@ async function handleTreinamentos(req, res) {
          (titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
           conteudo_programatico, ativo,
           emissora_nome, emissora_cnpj, assinatura_base64, assinatura_nome, assinatura_cargo,
-          responsavel_tecnico_nome, responsavel_tecnico_documento, instrutor_documento,
+          responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
+          instrutor_documento,
           certificado_fundo_frente_base64, certificado_fundo_verso_base64)
-       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
        RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
        conteudo_programatico || null,
        typeof ativo === 'boolean' ? ativo : null,
        emissora_nome || null, emissora_cnpj || null,
        assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null,
-       responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, instrutor_documento || null,
+       responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, responsavel_tecnico_assinatura_base64 || null,
+       instrutor_documento || null,
        certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null]
     );
     return res.status(201).json(rows[0]);
@@ -104,7 +107,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
     conteudo_programatico, ativo,
     emissora_nome, emissora_cnpj,
     assinatura_base64, assinatura_nome, assinatura_cargo,
-    responsavel_tecnico_nome, responsavel_tecnico_documento, instrutor_documento,
+    responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
+    instrutor_documento,
     certificado_fundo_frente_base64, certificado_fundo_verso_base64,
   } = req.body || {};
   if (!titulo || !carga_horaria_min) {
@@ -127,9 +131,10 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
               assinatura_cargo = $13,
               responsavel_tecnico_nome = $14,
               responsavel_tecnico_documento = $15,
-              instrutor_documento = $16,
-              certificado_fundo_frente_base64 = $17,
-              certificado_fundo_verso_base64 = $18
+              responsavel_tecnico_assinatura_base64 = $16,
+              instrutor_documento = $17,
+              certificado_fundo_frente_base64 = $18,
+              certificado_fundo_verso_base64 = $19
         WHERE id = $8
         RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
@@ -137,7 +142,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
        typeof ativo === 'boolean' ? ativo : null, treinamentoId,
        emissora_nome || null, emissora_cnpj || null,
        assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null,
-       responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, instrutor_documento || null,
+       responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, responsavel_tecnico_assinatura_base64 || null,
+       instrutor_documento || null,
        certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null]
     );
     if (!rows[0]) {

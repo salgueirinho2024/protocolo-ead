@@ -357,6 +357,26 @@ ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS data_inicio DATE;
 ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS data_fim DATE;
 
 -- =========================================================
+-- 13. DADOS DO CERTIFICADO POR TREINAMENTO
+-- =========================================================
+-- Cabeçalho de emissão do certificado, resolvido por treinamento (cada
+-- treinamento pode ter seu próprio Responsável Técnico e Instrutor).
+-- emissora_nome/emissora_cnpj continuam existindo só por compatibilidade
+-- com treinamentos antigos — não ficam mais visíveis na tela de admin.
+ALTER TABLE treinamentos
+  ADD COLUMN IF NOT EXISTS emissora_nome        VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS emissora_cnpj        VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS assinatura_base64    TEXT,   -- assinatura do Instrutor (PNG/JPG em data:URL)
+  ADD COLUMN IF NOT EXISTS assinatura_nome      VARCHAR(150), -- nome do Instrutor
+  ADD COLUMN IF NOT EXISTS assinatura_cargo     VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS responsavel_tecnico_nome                VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS responsavel_tecnico_documento           VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS responsavel_tecnico_assinatura_base64   TEXT, -- assinatura do Responsável Técnico
+  ADD COLUMN IF NOT EXISTS instrutor_documento                     VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS certificado_fundo_frente_base64  TEXT, -- fundo do certificado, página 1
+  ADD COLUMN IF NOT EXISTS certificado_fundo_verso_base64   TEXT; -- fundo do certificado, página 2
+
+-- =========================================================
 -- TRIGGER GENÉRICO: atualizado_em automático
 -- =========================================================
 

@@ -2957,20 +2957,30 @@ var qrcode = function() {
     <div class="field"><label>Validade do certificado (meses)</label><input type="number" id="trein-validade" value="12" min="1"></div>
     <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 12px">Este treinamento não tem data fixa de início/fim: fica pronto e pode ser disponibilizado para várias empresas em datas diferentes. A data de início de cada funcionário é calculada automaticamente a partir de quando ele começa a assistir.</p>
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
-    <div style="font-weight:600;font-size:14px;margin-bottom:8px">Dados do certificado (emissora & assinatura)</div>
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px">Dados do certificado — Responsável Técnico</div>
     <div class="fields-row">
-      <div class="field"><label>Empresa emissora</label><input type="text" id="trein-emissora-nome" placeholder="Razão social"></div>
-      <div class="field"><label>CNPJ</label><input type="text" id="trein-emissora-cnpj" placeholder="00.000.000/0000-00"></div>
-    </div>
-    <div class="fields-row">
-      <div class="field"><label>Nome do signatário</label><input type="text" id="trein-assinatura-nome" placeholder="Ex: Maria Silva"></div>
-      <div class="field"><label>Cargo</label><input type="text" id="trein-assinatura-cargo" placeholder="Ex: Instrutora Responsável"></div>
+      <div class="field"><label>Nome</label><input type="text" id="trein-rt-nome" placeholder="Ex: João Carlos Pereira"></div>
+      <div class="field"><label>Número de registro</label><input type="text" id="trein-rt-documento" placeholder="Ex: CREA 123456-SP"></div>
     </div>
     <div class="field">
       <label>Assinatura digital (PNG / JPG, fundo transparente recomendado)</label>
-      <input type="file" id="trein-assinatura-file" accept="image/png,image/jpeg" onchange="lerAssinaturaFile(event)">
-      <div id="trein-assinatura-preview" style="margin-top:8px"></div>
+      <input type="file" id="trein-rt-assinatura-file" accept="image/png,image/jpeg" onchange="lerAssinaturaFile(event,'rt')">
+      <div id="trein-rt-assinatura-preview" style="margin-top:8px"></div>
     </div>
+
+    <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px">Dados do certificado — Instrutor</div>
+    <div class="fields-row">
+      <div class="field"><label>Nome</label><input type="text" id="trein-instrutor-nome" placeholder="Ex: Ana Beatriz Costa"></div>
+      <div class="field"><label>Número de registro</label><input type="text" id="trein-instrutor-documento" placeholder="Ex: Registro 654321"></div>
+    </div>
+    <div class="field">
+      <label>Assinatura digital (PNG / JPG, fundo transparente recomendado)</label>
+      <input type="file" id="trein-instrutor-assinatura-file" accept="image/png,image/jpeg" onchange="lerAssinaturaFile(event,'instrutor')">
+      <div id="trein-instrutor-assinatura-preview" style="margin-top:8px"></div>
+    </div>
+
+    <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
     <div class="fields-row">
       <div class="field">
         <label>Fundo do certificado — frente (página 1)</label>
@@ -3503,10 +3513,13 @@ async function carregarTreinamentos() {
 function abrirModalTreinamento() {
   editingTreinId = null;
   document.getElementById('modal-trein-titulo').textContent = 'Novo Treinamento';
-  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-emissora-nome','trein-emissora-cnpj','trein-assinatura-nome','trein-assinatura-cargo'].forEach(id => document.getElementById(id).value = '');
-  window._assinaturaB64 = null;
-  document.getElementById('trein-assinatura-preview').innerHTML = '';
-  const af = document.getElementById('trein-assinatura-file'); if (af) af.value = '';
+  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-rt-nome','trein-rt-documento','trein-instrutor-nome','trein-instrutor-documento'].forEach(id => document.getElementById(id).value = '');
+  window._rtAssinaturaB64 = null;
+  window._instrutorAssinaturaB64 = null;
+  document.getElementById('trein-rt-assinatura-preview').innerHTML = '';
+  document.getElementById('trein-instrutor-assinatura-preview').innerHTML = '';
+  const rtf = document.getElementById('trein-rt-assinatura-file'); if (rtf) rtf.value = '';
+  const inf = document.getElementById('trein-instrutor-assinatura-file'); if (inf) inf.value = '';
   window._fundoFrenteB64 = null;
   window._fundoVersoB64 = null;
   document.getElementById('trein-fundo-frente-preview').innerHTML = '';
@@ -3534,14 +3547,18 @@ async function editarTreinamento(id) {
     document.getElementById('trein-nota').value = t.nota_minima_prova || 70;
     document.getElementById('trein-validade').value = t.validade_certificado_meses || 365;
     document.getElementById('trein-status').value = t.ativo === false ? 'inativo' : 'ativo';
-    document.getElementById('trein-emissora-nome').value = t.emissora_nome || '';
-    document.getElementById('trein-emissora-cnpj').value = t.emissora_cnpj || '';
-    document.getElementById('trein-assinatura-nome').value = t.assinatura_nome || '';
-    document.getElementById('trein-assinatura-cargo').value = t.assinatura_cargo || '';
-    window._assinaturaB64 = t.assinatura_base64 || null;
-    document.getElementById('trein-assinatura-preview').innerHTML = t.assinatura_base64
+    document.getElementById('trein-rt-nome').value = t.responsavel_tecnico_nome || '';
+    document.getElementById('trein-rt-documento').value = t.responsavel_tecnico_documento || '';
+    window._rtAssinaturaB64 = t.responsavel_tecnico_assinatura_base64 || null;
+    document.getElementById('trein-rt-assinatura-preview').innerHTML = t.responsavel_tecnico_assinatura_base64
+      ? `<img src="${t.responsavel_tecnico_assinatura_base64}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
+    document.getElementById('trein-rt-assinatura-file').value = '';
+    document.getElementById('trein-instrutor-nome').value = t.assinatura_nome || '';
+    document.getElementById('trein-instrutor-documento').value = t.instrutor_documento || '';
+    window._instrutorAssinaturaB64 = t.assinatura_base64 || null;
+    document.getElementById('trein-instrutor-assinatura-preview').innerHTML = t.assinatura_base64
       ? `<img src="${t.assinatura_base64}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
-    document.getElementById('trein-assinatura-file').value = '';
+    document.getElementById('trein-instrutor-assinatura-file').value = '';
     window._fundoFrenteB64 = t.certificado_fundo_frente_base64 || null;
     window._fundoVersoB64 = t.certificado_fundo_verso_base64 || null;
     document.getElementById('trein-fundo-frente-preview').innerHTML = t.certificado_fundo_frente_base64
@@ -3563,11 +3580,12 @@ async function salvarTreinamento() {
     nota_minima_prova: +document.getElementById('trein-nota').value,
     validade_certificado_meses: +document.getElementById('trein-validade').value,
     ativo: document.getElementById('trein-status').value === 'ativo',
-    emissora_nome: document.getElementById('trein-emissora-nome').value || null,
-    emissora_cnpj: document.getElementById('trein-emissora-cnpj').value || null,
-    assinatura_nome: document.getElementById('trein-assinatura-nome').value || null,
-    assinatura_cargo: document.getElementById('trein-assinatura-cargo').value || null,
-    assinatura_base64: window._assinaturaB64 || null,
+    responsavel_tecnico_nome: document.getElementById('trein-rt-nome').value || null,
+    responsavel_tecnico_documento: document.getElementById('trein-rt-documento').value || null,
+    responsavel_tecnico_assinatura_base64: window._rtAssinaturaB64 || null,
+    assinatura_nome: document.getElementById('trein-instrutor-nome').value || null,
+    instrutor_documento: document.getElementById('trein-instrutor-documento').value || null,
+    assinatura_base64: window._instrutorAssinaturaB64 || null,
     certificado_fundo_frente_base64: window._fundoFrenteB64 || null,
     certificado_fundo_verso_base64: window._fundoVersoB64 || null,
   };
@@ -4715,14 +4733,16 @@ document.addEventListener('keydown', e => {
 
 
 // ── Helpers extras: assinatura, validação no login, QR no certificado ──
-function lerAssinaturaFile(ev) {
+// tipo: 'rt' (Responsável Técnico) ou 'instrutor'
+function lerAssinaturaFile(ev, tipo) {
   const f = ev.target.files && ev.target.files[0];
   if (!f) return;
   if (f.size > 800 * 1024) { toast('Imagem muito grande (máx 800KB).', 'error'); ev.target.value=''; return; }
   const reader = new FileReader();
   reader.onload = () => {
-    window._assinaturaB64 = reader.result;
-    document.getElementById('trein-assinatura-preview').innerHTML =
+    if (tipo === 'rt') window._rtAssinaturaB64 = reader.result;
+    else window._instrutorAssinaturaB64 = reader.result;
+    document.getElementById(`trein-${tipo}-assinatura-preview`).innerHTML =
       `<img src="${reader.result}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">`;
   };
   reader.readAsDataURL(f);
