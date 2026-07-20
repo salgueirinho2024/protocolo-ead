@@ -377,6 +377,15 @@ ALTER TABLE treinamentos
   ADD COLUMN IF NOT EXISTS certificado_fundo_verso_base64   TEXT; -- fundo do certificado, página 2
 
 -- =========================================================
+-- 14. IMAGEM DE CAPA DO TREINAMENTO (exibida para o funcionário)
+-- =========================================================
+-- Imagem (PNG/JPG em base64) que ilustra o curso na lista "Meus
+-- Treinamentos" e no topo da tela de detalhe do curso. Puramente
+-- visual — não afeta a lógica de negócio. NULL = mostra o ícone
+-- padrão no lugar da imagem.
+ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS imagem_capa_base64 TEXT;
+
+-- =========================================================
 -- TRIGGER GENÉRICO: atualizado_em automático
 -- =========================================================
 

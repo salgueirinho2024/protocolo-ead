@@ -53,6 +53,7 @@ async function handleTreinamentos(req, res) {
     responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
     instrutor_documento,
     certificado_fundo_frente_base64, certificado_fundo_verso_base64,
+    imagem_capa_base64,
   } = req.body || {};
   if (!titulo || !carga_horaria_min) {
     return res.status(400).json({ erro: 'Título e carga horária são obrigatórios.' });
@@ -65,8 +66,9 @@ async function handleTreinamentos(req, res) {
           emissora_nome, emissora_cnpj, assinatura_base64, assinatura_nome, assinatura_cargo,
           responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
           instrutor_documento,
-          certificado_fundo_frente_base64, certificado_fundo_verso_base64)
-       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+          certificado_fundo_frente_base64, certificado_fundo_verso_base64,
+          imagem_capa_base64)
+       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
        conteudo_programatico || null,
@@ -75,7 +77,8 @@ async function handleTreinamentos(req, res) {
        assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null,
        responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, responsavel_tecnico_assinatura_base64 || null,
        instrutor_documento || null,
-       certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null]
+       certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null,
+       imagem_capa_base64 || null]
     );
     return res.status(201).json(rows[0]);
   } catch (err) {
@@ -117,6 +120,7 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
     responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
     instrutor_documento,
     certificado_fundo_frente_base64, certificado_fundo_verso_base64,
+    imagem_capa_base64,
   } = req.body || {};
   if (!titulo || !carga_horaria_min) {
     return res.status(400).json({ erro: 'Título e carga horária são obrigatórios.' });
@@ -141,7 +145,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
               responsavel_tecnico_assinatura_base64 = $16,
               instrutor_documento = $17,
               certificado_fundo_frente_base64 = COALESCE($18, certificado_fundo_frente_base64),
-              certificado_fundo_verso_base64 = COALESCE($19, certificado_fundo_verso_base64)
+              certificado_fundo_verso_base64 = COALESCE($19, certificado_fundo_verso_base64),
+              imagem_capa_base64 = COALESCE($20, imagem_capa_base64)
         WHERE id = $8
         RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
@@ -151,7 +156,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
        assinatura_base64 || null, assinatura_nome || null, assinatura_cargo || null,
        responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, responsavel_tecnico_assinatura_base64 || null,
        instrutor_documento || null,
-       certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null]
+       certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null,
+       imagem_capa_base64 || null]
     );
     if (!rows[0]) {
       return res.status(404).json({ erro: 'Treinamento não encontrado.' });
