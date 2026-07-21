@@ -477,6 +477,13 @@
 </style>
 <!-- html2pdf: gera PDF do certificado direto no navegador, sem servidor -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- APIs oficiais de player do YouTube e Vimeo — usadas só pra poder chamar
+     pauseVideo()/pause() quando o funcionário sai da aba enquanto assiste
+     (ver listener de visibilitychange mais abaixo). Carregam em paralelo com
+     o resto da página e não bloqueiam nada se o vídeo do módulo atual for de
+     outro provedor. -->
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://player.vimeo.com/api/player.js"></script>
 <!-- QR Code para validação do certificado — biblioteca "qrcode-generator" embutida diretamente aqui (em vez de carregada de um CDN externo). Antes, se o cdnjs.cloudflare.com estivesse bloqueado/lento na rede do usuário, a variável global `qrcode` nunca existia e o QR code do certificado ficava sempre em branco, tanto na pré-visualização quanto no PDF baixado. Embutindo o código-fonte da lib aqui, o QR passa a funcionar sempre, independente de rede/CDN. -->
 <script>
 //---------------------------------------------------------------------
@@ -3367,7 +3374,24 @@ var qrcode = function() {
   <div class="modal">
     <h3 id="modal-contrato-titulo">Novo Contrato</h3>
     <div class="field"><label>Empresa</label><select id="contrato-empresa-id"></select></div>
-    <div class="field"><label>Treinamento</label><select id="contrato-treinamento-id"></select></div>
+
+    <!-- Edição: contrato já existente é ligado a UM treinamento (não muda). -->
+    <div class="field" id="contrato-treinamento-single-wrap" style="display:none">
+      <label>Treinamento</label>
+      <input type="text" id="contrato-treinamento-nome" disabled>
+    </div>
+
+    <!-- Criação: seleciona um ou vários treinamentos de uma vez — um
+         contrato é criado pra cada um, com as mesmas vagas/validade/status. -->
+    <div class="field" id="contrato-treinamentos-multi-wrap">
+      <label>Treinamentos <span style="font-weight:400;color:var(--text-muted)">(um contrato é criado pra cada um selecionado)</span></label>
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px;font-weight:600">
+        <input type="checkbox" id="contrato-treinamentos-todos" onchange="toggleTodosTreinamentosContrato(this.checked)">
+        Selecionar todos
+      </label>
+      <div id="contrato-treinamentos-lista" style="max-height:160px;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px;padding:8px 10px"></div>
+    </div>
+
     <div class="fields-row">
       <div class="field"><label>Vagas</label><input type="number" id="contrato-vagas" min="1" value="10"></div>
       <div class="field"><label>Válido até</label><input type="date" id="contrato-validade"></div>
@@ -3522,6 +3546,8 @@ let moduloAtual = null;
 let sessaoAtual = null;
 let matriculaAtual = null;
 let checkpointTimer = null;
+let playerVideoAtual = null;     // instância do YT.Player ou Vimeo.Player do módulo atual (null se o provedor não suporta controle programático)
+let playerVideoAtualTipo = null; // 'youtube' | 'vimeo' | null
 // Tempo assistido (em segundos) de cada módulo, acumulado durante esta
 // sessão do navegador — usado só pra travar a troca de módulo antes de
 // pelo menos 1 minuto assistido (ver MIN_SEGUNDOS_MODULO). Complementa
@@ -3979,7 +4005,9 @@ async function abrirModalContrato() {
   document.getElementById('contrato-validade').value = '';
   document.getElementById('contrato-status').value = 'ativo';
   document.getElementById('contrato-empresa-id').disabled = false;
-  document.getElementById('contrato-treinamento-id').disabled = false;
+  document.getElementById('contrato-treinamento-single-wrap').style.display = 'none';
+  document.getElementById('contrato-treinamentos-multi-wrap').style.display = 'block';
+  document.getElementById('contrato-treinamentos-todos').checked = false;
   try {
     const [emps, treins] = await Promise.all([
       api('GET', '/api/admin/empresas'),
@@ -3988,18 +4016,40 @@ async function abrirModalContrato() {
     const empresas = emps.empresas || emps || [];
     const treinamentos = treins.treinamentos || treins || [];
     document.getElementById('contrato-empresa-id').innerHTML = empresas.map(e => `<option value="${e.id}">${e.razao_social}</option>`).join('');
-    document.getElementById('contrato-treinamento-id').innerHTML = treinamentos.map(t => `<option value="${t.id}">${t.titulo}</option>`).join('');
+    const lista = document.getElementById('contrato-treinamentos-lista');
+    if (!treinamentos.length) {
+      lista.innerHTML = '<span style="color:var(--text-muted);font-size:13px">Nenhum treinamento cadastrado ainda.</span>';
+    } else {
+      lista.innerHTML = treinamentos.map(t => `
+        <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
+          <input type="checkbox" class="contrato-treinamento-check" value="${t.id}" onchange="atualizarCheckboxTodosContrato()">
+          ${t.titulo}
+        </label>`).join('');
+    }
     document.getElementById('modal-contrato').classList.add('open');
   } catch(e) { toast(e.message, 'error'); }
+}
+
+// Marca/desmarca todos os checkboxes de treinamento de uma vez.
+function toggleTodosTreinamentosContrato(marcado) {
+  document.querySelectorAll('.contrato-treinamento-check').forEach(el => { el.checked = marcado; });
+}
+
+// Mantém o checkbox "Selecionar todos" sincronizado quando o usuário marca/
+// desmarca um treinamento individualmente.
+function atualizarCheckboxTodosContrato() {
+  const checks = [...document.querySelectorAll('.contrato-treinamento-check')];
+  document.getElementById('contrato-treinamentos-todos').checked = checks.length > 0 && checks.every(c => c.checked);
 }
 
 function editarContrato(c) {
   editingContratoId = c.id;
   document.getElementById('modal-contrato-titulo').textContent = 'Editar Contrato';
   document.getElementById('contrato-empresa-id').innerHTML = `<option>${c.empresa_nome}</option>`;
-  document.getElementById('contrato-treinamento-id').innerHTML = `<option>${c.treinamento_titulo}</option>`;
   document.getElementById('contrato-empresa-id').disabled = true;
-  document.getElementById('contrato-treinamento-id').disabled = true;
+  document.getElementById('contrato-treinamentos-multi-wrap').style.display = 'none';
+  document.getElementById('contrato-treinamento-single-wrap').style.display = 'block';
+  document.getElementById('contrato-treinamento-nome').value = c.treinamento_titulo || '';
   document.getElementById('contrato-vagas').value = c.vagas_contratadas;
   document.getElementById('contrato-validade').value = c.data_limite ? c.data_limite.slice(0,10) : '';
   document.getElementById('contrato-status').value = c.status;
@@ -4007,6 +4057,7 @@ function editarContrato(c) {
 }
 
 async function salvarContrato() {
+  const btn = document.getElementById('btn-salvar-contrato');
   try {
     if (editingContratoId) {
       const body = {
@@ -4016,20 +4067,55 @@ async function salvarContrato() {
       };
       await api('PUT', '/api/admin/contratos/' + editingContratoId, body);
       toast('Contrato atualizado!', 'success');
+      fecharModal('modal-contrato');
+      carregarContratosAdmin();
+      return;
+    }
+
+    // Criação: um contrato por treinamento selecionado, todos com as mesmas
+    // vagas/validade/status — é o que permite escolher vários treinamentos
+    // (ou todos, via "Selecionar todos") pra um cliente de uma vez só, sem
+    // precisar repetir o formulário pra cada um.
+    const treinamentoIds = [...document.querySelectorAll('.contrato-treinamento-check:checked')].map(el => el.value);
+    if (!treinamentoIds.length) { toast('Selecione ao menos um treinamento.', 'error'); return; }
+
+    const empresaId = document.getElementById('contrato-empresa-id').value;
+    const vagas = +document.getElementById('contrato-vagas').value;
+    const dataLimite = document.getElementById('contrato-validade').value || null;
+    const status = document.getElementById('contrato-status').value;
+
+    btn.disabled = true;
+    let sucesso = 0;
+    const falhas = [];
+    for (const treinamentoId of treinamentoIds) {
+      try {
+        await api('POST', '/api/admin/contratos', {
+          empresa_id: empresaId,
+          treinamento_id: treinamentoId,
+          vagas_contratadas: vagas,
+          data_limite: dataLimite,
+          status,
+        });
+        sucesso++;
+      } catch (e) {
+        falhas.push(e.message);
+      }
+    }
+
+    if (sucesso && !falhas.length) {
+      toast(sucesso === 1 ? 'Contrato criado!' : `${sucesso} contratos criados!`, 'success');
+    } else if (sucesso && falhas.length) {
+      toast(`${sucesso} contrato(s) criado(s), ${falhas.length} falharam: ${falhas[0]}`, 'error');
     } else {
-      const body = {
-        empresa_id: document.getElementById('contrato-empresa-id').value,
-        treinamento_id: document.getElementById('contrato-treinamento-id').value,
-        vagas_contratadas: +document.getElementById('contrato-vagas').value,
-        data_limite: document.getElementById('contrato-validade').value || null,
-        status: document.getElementById('contrato-status').value,
-      };
-      await api('POST', '/api/admin/contratos', body);
-      toast('Contrato criado!', 'success');
+      toast('Não foi possível criar os contratos: ' + falhas[0], 'error');
     }
     fecharModal('modal-contrato');
     carregarContratosAdmin();
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // Treinamentos
@@ -5190,15 +5276,27 @@ async function selecionarModulo(idx) {
   // Renderiza player de vídeo, retomando de onde o funcionário parou
   // (ultima_posicao_seg), se houver.
   const videoEl = document.getElementById('player-placeholder');
+  playerVideoAtual = null;
+  playerVideoAtualTipo = null;
   if (moduloAtual.video_provider_id) {
     const provider = moduloAtual.video_provider || 'youtube';
     const pos = Math.max(0, parseInt(moduloAtual.ultima_posicao_seg) || 0);
     let embedUrl = '';
-    if (provider === 'youtube') embedUrl = `https://www.youtube.com/embed/${moduloAtual.video_provider_id}?rel=0${pos > 0 ? `&start=${pos}` : ''}`;
+    // enablejsapi=1 + origin: necessários pra API do YouTube (YT.Player)
+    // conseguir controlar esse iframe específico via postMessage.
+    if (provider === 'youtube') embedUrl = `https://www.youtube.com/embed/${moduloAtual.video_provider_id}?rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}${pos > 0 ? `&start=${pos}` : ''}`;
     else if (provider === 'vimeo') embedUrl = `https://player.vimeo.com/video/${moduloAtual.video_provider_id}${pos > 0 ? `#t=${pos}s` : ''}`;
     else embedUrl = moduloAtual.video_provider_id;
 
     videoEl.outerHTML = `<iframe id="player-placeholder" src="${embedUrl}" allowfullscreen allow="autoplay"></iframe>`;
+
+    // Conecta a API de player correspondente, pra podermos pausar o vídeo
+    // sozinhos se o funcionário trocar de aba (ver pausarVideoAtual() e o
+    // listener de visibilitychange mais abaixo). Provedores "outro" (URL
+    // genérica) não têm API padrão — o vídeo simplesmente não é pausado
+    // automaticamente nesse caso.
+    if (provider === 'youtube') conectarPlayerYoutube();
+    else if (provider === 'vimeo') conectarPlayerVimeo();
   }
 
   // Material de apoio (PDF) — agora fica embutido ao lado do vídeo, visível
@@ -5232,6 +5330,56 @@ async function iniciarSessaoAutomatica() {
   } catch(e) { console.error(e); }
 }
 
+// Conecta a instância do YT.Player ao iframe recém-criado (id
+// "player-placeholder"), pra permitir chamar pauseVideo() depois. A API do
+// YouTube carrega de forma assíncrona (script no <head>), então tenta de
+// novo a cada 300ms até o objeto global `YT` existir — na prática isso só
+// acontece na primeira vez que a pessoa abre um vídeo, o script já vem
+// carregado nas trocas seguintes de módulo.
+function conectarPlayerYoutube() {
+  const tentar = () => {
+    if (moduloAtual?.video_provider !== 'youtube') return; // módulo já trocou de novo
+    if (typeof YT === 'undefined' || !YT.Player) { setTimeout(tentar, 300); return; }
+    try {
+      playerVideoAtual = new YT.Player('player-placeholder', {});
+      playerVideoAtualTipo = 'youtube';
+    } catch (e) { console.error('Não foi possível conectar ao player do YouTube:', e); }
+  };
+  tentar();
+}
+
+// Mesma ideia acima, mas pra API do Vimeo (player.js), que expõe o objeto
+// global `Vimeo.Player` e recebe o iframe diretamente (sem precisar de
+// enablejsapi na URL).
+function conectarPlayerVimeo() {
+  const tentar = () => {
+    if (moduloAtual?.video_provider !== 'vimeo') return; // módulo já trocou de novo
+    if (typeof Vimeo === 'undefined' || !Vimeo.Player) { setTimeout(tentar, 300); return; }
+    const el = document.getElementById('player-placeholder');
+    if (!el) return;
+    try {
+      playerVideoAtual = new Vimeo.Player(el);
+      playerVideoAtualTipo = 'vimeo';
+    } catch (e) { console.error('Não foi possível conectar ao player do Vimeo:', e); }
+  };
+  tentar();
+}
+
+// Pausa o vídeo do módulo atual, se a API do provedor estiver conectada.
+// Chamada quando o funcionário troca de aba/minimiza o navegador — evita que
+// o vídeo continue rodando (e "contando" tempo assistido) enquanto ele não
+// está de fato olhando pra tela.
+function pausarVideoAtual() {
+  if (!playerVideoAtual) return;
+  try {
+    if (playerVideoAtualTipo === 'youtube' && typeof playerVideoAtual.pauseVideo === 'function') {
+      playerVideoAtual.pauseVideo();
+    } else if (playerVideoAtualTipo === 'vimeo' && typeof playerVideoAtual.pause === 'function') {
+      playerVideoAtual.pause();
+    }
+  } catch (e) { console.error('Não foi possível pausar o vídeo automaticamente:', e); }
+}
+
 function agendarCheckpoints() {
   // Checkpoint anti-fraude por intervalo fixo (não é configurável por módulo
   // no backend — checkpoints_antifraude registra qualquer evento disparado
@@ -5250,6 +5398,7 @@ function agendarCheckpoints() {
 // novo, pra confirmar que ele realmente está assistindo.
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && sessaoAtual) {
+    pausarVideoAtual();
     api('POST', '/api/player/checkpoint', {
       sessao_id: sessaoAtual.id,
       tipo: 'troca_aba',
