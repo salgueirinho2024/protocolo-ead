@@ -18,7 +18,7 @@ async function loginAdminOuEmpresa(req, res) {
 
   try {
     const { rows } = await db.query(
-      `SELECT u.id, u.nome, u.email, u.senha_hash, u.role, u.ativo, eu.empresa_id, e.ativo AS empresa_ativo
+      `SELECT u.id, u.nome, u.email, u.senha_hash, u.role, u.ativo, u.foto_perfil_base64, eu.empresa_id, e.ativo AS empresa_ativo
          FROM usuarios u
          LEFT JOIN empresa_usuarios eu ON eu.usuario_id = u.id
          LEFT JOIN empresas e ON e.id = eu.empresa_id
@@ -44,7 +44,7 @@ async function loginAdminOuEmpresa(req, res) {
 
     res.json({
       token,
-      usuario: { id: user.id, nome: user.nome, email: user.email, role: user.role },
+      usuario: { id: user.id, nome: user.nome, email: user.email, role: user.role, foto_perfil_base64: user.foto_perfil_base64 || null },
     });
   } catch (err) {
     console.error(err);

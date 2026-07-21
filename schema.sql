@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
     atualizado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Foto de perfil do usuário (super_admin ou empresa_admin), no mesmo
+-- formato usado em funcionarios.foto_perfil_base64 (data URL base64).
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil_base64 TEXT;
+
 -- =========================================================
 -- 2. EMPRESAS CLIENTES
 -- =========================================================

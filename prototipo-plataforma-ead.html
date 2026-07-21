@@ -2969,6 +2969,56 @@ var qrcode = function() {
       </div>
     </div>
 
+    <!-- Editar Conta (Admin) -->
+    <div id="page-admin-conta" class="page">
+      <div class="page-header" style="margin-bottom:16px">
+        <h2>Editar Conta</h2>
+        <p>Seus dados de acesso como administrador</p>
+      </div>
+      <div class="conta-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><span class="card-title">Meus Dados</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+              <div id="admin-conta-foto-preview" style="width:56px;height:56px;border-radius:50%;background:var(--surface2,#eee);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text-muted)"></div>
+              <div style="flex:1">
+                <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Foto de perfil</label>
+                <input type="file" id="admin-conta-foto-file" accept="image/png,image/jpeg" onchange="lerFotoPerfilAdminFile(event)" style="max-width:100%">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Nome</label>
+              <input type="text" id="admin-conta-nome">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>E-mail</label>
+              <input type="email" id="admin-conta-email" placeholder="seu@email.com">
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><span class="card-title">Alterar Senha</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Senha atual</label>
+              <input type="password" id="admin-conta-senha-atual" placeholder="Necessária apenas para alterar a senha">
+            </div>
+            <div class="form-group">
+              <label>Nova senha</label>
+              <input type="password" id="admin-conta-senha-nova" placeholder="Deixe em branco para não alterar">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Confirmar nova senha</label>
+              <input type="password" id="admin-conta-senha-confirma">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:900px;margin-top:20px">
+        <button class="btn btn-navy" id="btn-salvar-conta-admin" onclick="salvarContaAdmin()">Salvar Alterações</button>
+      </div>
+    </div>
+
     <!-- ══ EMPRESA PAGES ══ -->
 
     <!-- Dashboard Empresa -->
@@ -3688,6 +3738,8 @@ const navConfigs = {
     { id: 'admin-treinamentos', label: 'Treinamentos', icon: iconBook(), onEnter: carregarTreinamentos },
     { section: 'Segurança' },
     { id: 'admin-fraude', label: 'Anti-Fraude', icon: iconShield(), onEnter: carregarSuspeitos },
+    { section: 'Conta' },
+    { id: 'admin-conta', label: 'Editar Conta', icon: iconUser(), onEnter: carregarContaAdmin },
   ],
   empresa: [
     { section: 'Painel' },
@@ -4300,6 +4352,82 @@ async function carregarSuspeitos() {
         <td>${s.ultima_sessao ? new Date(s.ultima_sessao).toLocaleString('pt-BR') : '—'}</td>
       </tr>`).join('');
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">${e.message}</td></tr>`; }
+}
+
+// ══════════════════════════════════════════════
+// EDITAR CONTA (ADMIN)
+// ══════════════════════════════════════════════
+function carregarContaAdmin() {
+  document.getElementById('admin-conta-nome').value = usuarioLogado?.nome || '';
+  document.getElementById('admin-conta-email').value = usuarioLogado?.email || '';
+  document.getElementById('admin-conta-senha-atual').value = '';
+  document.getElementById('admin-conta-senha-nova').value = '';
+  document.getElementById('admin-conta-senha-confirma').value = '';
+  window._adminContaFotoB64 = null; // só é preenchido se o usuário escolher um arquivo novo
+  document.getElementById('admin-conta-foto-file').value = '';
+  atualizarPreviewFotoContaAdmin(usuarioLogado?.foto_perfil_base64);
+}
+
+function atualizarPreviewFotoContaAdmin(foto) {
+  const el = document.getElementById('admin-conta-foto-preview');
+  if (foto) {
+    el.innerHTML = `<img src="${foto}" alt="Foto de perfil" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    const nome = usuarioLogado?.nome || '?';
+    el.innerHTML = nome.trim().charAt(0).toUpperCase();
+  }
+}
+
+function lerFotoPerfilAdminFile(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  if (f.size > 800 * 1024) { toast('Imagem muito grande (máx 800KB).', 'error'); ev.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    window._adminContaFotoB64 = reader.result;
+    atualizarPreviewFotoContaAdmin(reader.result);
+  };
+  reader.readAsDataURL(f);
+}
+
+async function salvarContaAdmin() {
+  const btn = document.getElementById('btn-salvar-conta-admin');
+  const nome = document.getElementById('admin-conta-nome').value.trim();
+  const email = document.getElementById('admin-conta-email').value.trim();
+  const senhaAtual = document.getElementById('admin-conta-senha-atual').value;
+  const senhaNova = document.getElementById('admin-conta-senha-nova').value;
+  const senhaConfirma = document.getElementById('admin-conta-senha-confirma').value;
+
+  if (!nome || !email) return toast('Nome e e-mail são obrigatórios.', 'erro');
+  if (senhaNova || senhaConfirma) {
+    if (!senhaAtual) return toast('Informe sua senha atual para definir uma nova senha.', 'erro');
+    if (senhaNova.length < 6) return toast('A nova senha deve ter pelo menos 6 caracteres.', 'erro');
+    if (senhaNova !== senhaConfirma) return toast('A confirmação de senha não confere.', 'erro');
+  }
+
+  const body = { nome, email };
+  if (senhaNova) { body.senha_atual = senhaAtual; body.senha_nova = senhaNova; }
+  if (window._adminContaFotoB64) body.foto_perfil_base64 = window._adminContaFotoB64;
+
+  btn.disabled = true;
+  try {
+    const resp = await api('PUT', '/api/admin/conta', body);
+    if (usuarioLogado) {
+      usuarioLogado.nome = resp?.nome ?? nome;
+      usuarioLogado.email = resp?.email ?? email;
+      if (resp && resp.foto_perfil_base64 !== undefined) usuarioLogado.foto_perfil_base64 = resp.foto_perfil_base64;
+    }
+    document.getElementById('sb-nome').textContent = usuarioLogado.nome;
+    renderSidebarAvatar();
+    toast('Dados atualizados com sucesso!', 'sucesso');
+    document.getElementById('admin-conta-senha-atual').value = '';
+    document.getElementById('admin-conta-senha-nova').value = '';
+    document.getElementById('admin-conta-senha-confirma').value = '';
+  } catch (e) {
+    toast(e.message, 'erro');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ══════════════════════════════════════════════

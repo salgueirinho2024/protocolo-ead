@@ -261,6 +261,81 @@ async function handleContratos(req, res, user) {
   }
 }
 
+// GET/PUT /api/admin/conta — o próprio super_admin edita seus dados
+// (nome, e-mail, senha e foto de perfil). Mesmo padrão de "Editar Conta"
+// já usado pelo funcionário em api/player/matricula.js, adaptado para a
+// tabela `usuarios`. Vive neste mesmo arquivo pra não estourar o limite
+// de 12 Serverless Functions do plano Hobby da Vercel (ver comentário
+// no topo deste arquivo).
+async function handleContaAdmin(req, res, user) {
+  if (!metodoPermitido(req, res, 'GET', 'PUT')) return;
+
+  if (req.method === 'GET') {
+    try {
+      const { rows } = await db.query(
+        `SELECT id, nome, email, foto_perfil_base64 FROM usuarios WHERE id = $1`,
+        [user.id]
+      );
+      if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+      return res.json(rows[0]);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao carregar conta.' });
+    }
+  }
+
+  // PUT
+  const { nome, email, senha_atual, senha_nova, foto_perfil_base64 } = req.body || {};
+  if (!nome || !email) {
+    return res.status(400).json({ erro: 'Nome e e-mail são obrigatórios.' });
+  }
+  if (senha_nova && senha_nova.length < 6) {
+    return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    if (senha_nova) {
+      const { rows } = await client.query(`SELECT senha_hash FROM usuarios WHERE id = $1`, [user.id]);
+      const senhaAtualOk = rows[0]?.senha_hash && senha_atual && await bcrypt.compare(senha_atual, rows[0].senha_hash);
+      if (!senhaAtualOk) {
+        await client.query('ROLLBACK');
+        return res.status(401).json({ erro: 'Senha atual incorreta.' });
+      }
+      const hash = await bcrypt.hash(senha_nova, 12);
+      await client.query(`UPDATE usuarios SET senha_hash = $1 WHERE id = $2`, [hash, user.id]);
+    }
+
+    // foto_perfil_base64: se não vier no body (undefined/null), mantém a
+    // foto já salva — mesma convenção usada em funcionarios.
+    const { rows: atualizado } = await client.query(
+      `UPDATE usuarios
+          SET nome = $1, email = $2,
+              foto_perfil_base64 = COALESCE($3, foto_perfil_base64)
+        WHERE id = $4
+        RETURNING nome, email, foto_perfil_base64`,
+      [nome.trim(), email.toLowerCase().trim(), foto_perfil_base64 || null, user.id]
+    );
+
+    await client.query('COMMIT');
+    return res.json({
+      mensagem: 'Dados atualizados com sucesso.',
+      nome: atualizado[0]?.nome,
+      email: atualizado[0]?.email,
+      foto_perfil_base64: atualizado[0]?.foto_perfil_base64 || null,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.code === '23505') return res.status(409).json({ erro: 'E-mail já cadastrado.' });
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao atualizar conta.' });
+  } finally {
+    client.release();
+  }
+}
+
 async function handleSuspeitos(req, res) {
   if (!metodoPermitido(req, res, 'GET')) return;
 
@@ -287,6 +362,8 @@ module.exports = async (req, res) => {
       return handleSuspeitos(req, res);
     case 'empresas':
       return handleEmpresas(req, res);
+    case 'conta':
+      return handleContaAdmin(req, res, user);
     default:
       return res.status(404).json({ erro: 'Recurso não encontrado.' });
   }
