@@ -83,7 +83,11 @@ async function encerrarSessao(req, res, user) {
     );
 
     const totalSegsMod = mpRows[0].segundos_assistidos;
-    const moduloConcluido = totalSegsMod >= duracaoModulo * 0.95; // 95% = concluído
+    // Conclusão do módulo: 60 segundos assistidos (ou a duração toda do
+    // vídeo, se ele for mais curto que 60s) — mesmo limite mínimo usado no
+    // front-end pra liberar a troca de módulo (MIN_SEGUNDOS_MODULO).
+    const LIMITE_CONCLUSAO_SEGS = Math.min(60, duracaoModulo);
+    const moduloConcluido = totalSegsMod >= LIMITE_CONCLUSAO_SEGS;
 
     if (moduloConcluido && !mpRows[0].concluido) {
       await client.query(

@@ -25,6 +25,31 @@ async function minhaMatricula(matriculaId, funcionarioId) {
   return rows[0] || null;
 }
 
+// BUG CORRIGIDO #5: a liberação da prova comparava segundos_assistidos_total
+// (soma bruta de tempo assistido) com carga_horaria_min * 60 — mas
+// carga_horaria_min é um número digitado manualmente pelo admin no cadastro
+// do treinamento (padrão 60min), sem nenhuma relação com a duração real dos
+// vídeos dos módulos. Resultado: o aluno assistia 100% de todos os módulos
+// (cada um marcado concluido=true), mas a prova continuava bloqueada porque
+// o total assistido nunca batia com aquele número solto da carga horária.
+// Agora a liberação é feita checando se TODOS os módulos do treinamento
+// estão com concluido=true em matricula_modulo_progresso, que é o dado que
+// realmente reflete o progresso do aluno.
+async function todosModulosConcluidos(treinamentoId, matriculaId) {
+  const { rows } = await db.query(
+    `SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE mp.concluido) AS concluidos
+       FROM treinamento_modulos mod
+       LEFT JOIN matricula_modulo_progresso mp
+              ON mp.modulo_id = mod.id AND mp.matricula_id = $2
+      WHERE mod.treinamento_id = $1`,
+    [treinamentoId, matriculaId]
+  );
+  const { total, concluidos } = rows[0] || { total: 0, concluidos: 0 };
+  return Number(total) > 0 && Number(total) === Number(concluidos);
+}
+
 async function handleGet(req, res, user) {
   const matriculaId = (req.query.matricula_id || '').toString().trim();
   if (!matriculaId) {
@@ -34,9 +59,8 @@ async function handleGet(req, res, user) {
   const mat = await minhaMatricula(matriculaId, user.id);
   if (!mat) return res.status(403).json({ erro: 'Matrícula não encontrada.' });
 
-  const cargaExigidaSegs = mat.carga_horaria_min * 60;
-  if (mat.segundos_assistidos_total < cargaExigidaSegs * 0.95) {
-    return res.status(422).json({ erro: 'Carga horária não completada. Assista todos os módulos antes de realizar a prova.' });
+  if (!(await todosModulosConcluidos(mat.treinamento_id, mat.id))) {
+    return res.status(422).json({ erro: 'Assista todos os módulos até o fim antes de realizar a prova.' });
   }
 
   const { rows: perguntas } = await db.query(
@@ -86,9 +110,8 @@ async function handlePost(req, res, user) {
     });
   }
 
-  const cargaExigidaSegs = mat.carga_horaria_min * 60;
-  if (mat.segundos_assistidos_total < cargaExigidaSegs * 0.95) {
-    return res.status(422).json({ erro: 'Carga horária não completada. Assista todos os módulos antes de realizar a prova.' });
+  if (!(await todosModulosConcluidos(mat.treinamento_id, mat.id))) {
+    return res.status(422).json({ erro: 'Assista todos os módulos até o fim antes de realizar a prova.' });
   }
 
   const { rows: perguntas } = await db.query(

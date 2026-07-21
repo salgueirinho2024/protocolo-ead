@@ -3597,10 +3597,10 @@ async function carregarTreinamentos() {
     if (!lista.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum treinamento</td></tr>'; return; }
     tbody.innerHTML = lista.map(t => `
       <tr>
-        <td style="display:flex;align-items:center;gap:10px">
+        <td style="display:flex;align-items:center;gap:12px">
           ${t.imagem_capa_base64
-            ? `<img src="${t.imagem_capa_base64}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0">`
-            : `<div style="width:44px;height:44px;border-radius:6px;background:var(--bg-soft,#f1f3f5);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">📘</div>`}
+            ? `<img src="${t.imagem_capa_base64}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;display:block">`
+            : `<div style="width:64px;height:64px;border-radius:8px;background:var(--bg-soft,#f1f3f5);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:24px">📘</div>`}
           <div><strong>${t.titulo}</strong><div style="font-size:12px;color:var(--text-muted)">${t.descricao||''}</div></div>
         </td>
         <td>${t.total_modulos || 0}</td>
@@ -4130,7 +4130,7 @@ async function carregarMeusTrienamentos() {
       return `<div class="card" style="margin-bottom:16px;cursor:pointer" onclick="abrirCursoDetalhe(${JSON.stringify(m).replace(/"/g,'&quot;')})">
         <div class="card-body" style="display:flex;align-items:center;gap:20px">
           ${m.imagem_capa_base64
-            ? `<img src="${m.imagem_capa_base64}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex-shrink:0">`
+            ? `<img src="${m.imagem_capa_base64}" alt="" style="width:96px;height:96px;object-fit:cover;border-radius:10px;flex-shrink:0;display:block">`
             : `<div style="font-size:40px">${iconBookEmoji(m.status)}</div>`}
           <div style="flex:1">
             <div style="font-weight:700;font-size:15px">${m.treinamento_titulo || 'Treinamento'}</div>
@@ -4184,7 +4184,7 @@ function renderCursoDetalhe(m) {
   const cargaTxt = cargaMin ? `${h}h${min > 0 ? ` ${min}min` : ''}` : '—';
 
   document.getElementById('curso-header').innerHTML = `
-    ${m.imagem_capa_base64 ? `<img src="${m.imagem_capa_base64}" alt="Capa do curso" style="width:100%;max-height:260px;object-fit:cover;border-radius:10px;margin-bottom:16px">` : ''}
+    ${m.imagem_capa_base64 ? `<img src="${m.imagem_capa_base64}" alt="Capa do curso" style="display:block;width:100%;height:280px;object-fit:cover;object-position:center;border-radius:10px;margin-bottom:16px">` : ''}
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
       ${m.status === 'concluido' ? '<span class="badge badge-green">Curso Completado</span>' : `<span class="badge ${m.status === 'em_andamento' ? 'badge-blue' : 'badge-gray'}">${statusLabel(m.status)}</span>`}
     </div>
@@ -4222,6 +4222,22 @@ function renderCursoDetalhe(m) {
 function primeiroModuloPendente(modulos) {
   const idx = modulos.findIndex(m => !m.concluido);
   return idx === -1 ? 0 : idx;
+}
+
+// BUG CORRIGIDO: o botão "Fazer Prova Final" era mostrado/escondido com
+// base apenas no módulo que estava sendo exibido no momento (moduloAtual
+// .concluido) — então ele aparecia cedo demais (bastava concluir UM módulo
+// e ficar nele) e sumia de novo ao abrir outro módulo ainda não concluído,
+// mesmo que os outros já estivessem 100% assistidos. A liberação da prova
+// tem que depender de TODOS os módulos do treinamento estarem concluídos.
+function todosModulosConcluidosLocal(modulos) {
+  return Array.isArray(modulos) && modulos.length > 0 && modulos.every(m => m.concluido);
+}
+
+function atualizarBotaoProva() {
+  const btn = document.getElementById('btn-ir-prova');
+  if (!btn) return;
+  btn.style.display = todosModulosConcluidosLocal(treinamentoAtual?.modulos) ? 'inline-flex' : 'none';
 }
 
 function abrirPlayer(matricula, moduloIdx) {
@@ -4359,7 +4375,7 @@ async function selecionarModulo(idx) {
     pdfPainel.style.display = 'none';
   }
 
-  document.getElementById('btn-ir-prova').style.display = moduloAtual.concluido ? 'inline-flex' : 'none';
+  atualizarBotaoProva();
 
   // A sessão de visualização (usada pro anti-fraude e pra registrar o
   // progresso) começa sozinha, sem precisar de um clique em "Iniciar".
@@ -4454,7 +4470,7 @@ async function encerrarSessaoAtual(mostrarToast) {
     moduloParaFechar.ultima_posicao_seg = novaPosicao;
     if (resp.modulo_concluido) {
       moduloParaFechar.concluido = true;
-      document.getElementById('btn-ir-prova').style.display = 'inline-flex';
+      atualizarBotaoProva();
       if (mostrarToast) toast('Módulo concluído! 🎉', 'success');
     } else if (mostrarToast) {
       toast('Progresso salvo', 'success');
@@ -4648,9 +4664,9 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
       ${valido_ate ? `Certificado válido até <strong>${valido_ate}</strong>.` : ''}
     </div>
 
-    <div style="margin-top:14px;display:flex;align-items:center;gap:8px">
-      <div id="cert-qr-target" style="width:44px;height:44px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;flex-shrink:0"></div>
-      <div style="font-size:8.5px;color:#9ca3af;text-align:left;line-height:1.5">
+    <div style="margin-top:14px;display:flex;align-items:center;gap:12px">
+      <div id="cert-qr-target" style="width:100px;height:100px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;flex-shrink:0"></div>
+      <div style="font-size:9.5px;color:#9ca3af;text-align:left;line-height:1.6">
         <div>Verifique em ${urlValidacao}</div>
         <div style="font-family:monospace;letter-spacing:.06em;color:#0B6E2A">Código ${codigo_validacao}</div>
       </div>
@@ -5146,17 +5162,19 @@ function _renderizarQrCertificado(urlValidacao) {
     qr.make();
     // createDataURL desenha o QR em um <canvas> interno da própria lib e
     // devolve um PNG em base64 — não depende de <svg> nem de timers.
-    const dataUrl = qr.createDataURL(6, 4); // cellSize 6px, margin 4 módulos
+    // cellSize aumentado de 6 para 10 (canvas com mais resolução) para o
+    // QR não ficar borrado ao ser exibido maior (100px em vez de 44px).
+    const dataUrl = qr.createDataURL(10, 4); // cellSize 10px, margin 4 módulos
     const img = document.createElement('img');
     img.alt = 'QR Code de validação';
-    img.style.width = '44px';
-    img.style.height = '44px';
+    img.style.width = '100px';
+    img.style.height = '100px';
     img.style.display = 'block';
     img.onerror = () => {
       // Fallback: se por algum motivo o PNG (canvas) falhar neste
       // navegador, tenta ao menos desenhar o SVG na pré-visualização.
       console.error('PNG do QR code falhou, tentando fallback em SVG.');
-      target.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2 });
+      target.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2 });
     };
     img.src = dataUrl;
     target.appendChild(img);
