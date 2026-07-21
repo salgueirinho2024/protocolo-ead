@@ -368,6 +368,55 @@
     box-shadow: 0 24px 80px rgba(0,0,0,0.5);
   }
   #cert-preview-actions { display: flex; gap: 12px; }
+
+  /* ══════════════════════════════════════════════
+     ── MOBILE ──
+     A barra lateral era fixa (240px) e empurrava o conteúdo (.main
+     com margin-left:240px) em qualquer largura de tela — em um celular
+     isso sobrava quase nada de espaço útil. Abaixo de 900px o menu
+     passa a se comportar como uma gaveta: fica escondido por padrão
+     (ver JS: inicializarSidebarResponsiva/navTo), some do fluxo da
+     página (.main sempre com margin-left:0) e, quando aberto, flutua
+     por cima do conteúdo com um fundo escurecido (.sidebar-backdrop)
+     que fecha o menu ao ser tocado.
+  ═══════════════════════════════════════════════ */
+  .sidebar-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 95; /* abaixo do .sidebar (100), acima do .main */
+  }
+  @media (max-width: 900px) {
+    .sidebar { width: min(82vw, 300px); box-shadow: 4px 0 24px rgba(0,0,0,.25); }
+    .main { margin-left: 0 !important; padding: 20px 16px; }
+    body:not(.sidebar-collapsed) .sidebar-backdrop { display: block; }
+    .sidebar-reopen-btn { top: 14px; left: 14px; }
+
+    /* Áreas de toque um pouco maiores no menu */
+    .nav-item { padding: 12px 10px; font-size: 14px; }
+
+    /* Cabeçalhos de card com botão de ação: permite quebrar linha em
+       vez de espremer título + botão numa faixa muito estreita */
+    .card-header { flex-wrap: wrap; gap: 10px; }
+    .page-header { margin-bottom: 20px; }
+    .page-header h2 { font-size: 19px; }
+
+    /* Formulários de duas colunas viram uma coluna só */
+    .fields-row { grid-template-columns: 1fr; }
+    .conta-grid, .cert-result-grid { grid-template-columns: 1fr !important; }
+
+    /* Tabelas: em vez de espremer colunas até ficar ilegível, o
+       cartão que contém a tabela ganha rolagem horizontal própria */
+    .card-body:has(table) { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -20px; padding: 0 20px 20px; }
+    .card-body:has(table) table { min-width: 640px; }
+
+    .modal { padding: 20px; border-radius: 12px; max-width: calc(100vw - 32px); }
+    .modal-footer { flex-wrap: wrap; }
+    .modal-footer .btn { flex: 1; justify-content: center; }
+  }
+  @media (max-width: 480px) {
+    .login-card { padding: 32px 22px; border-radius: 16px; }
+    #login-screen { padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
 </style>
 <!-- html2pdf: gera PDF do certificado direto no navegador, sem servidor -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -2755,6 +2804,10 @@ var qrcode = function() {
        de esconder mostrado acima já fica dentro do próprio menu. -->
   <button class="sidebar-reopen-btn" id="sidebar-reopen-btn" onclick="toggleSidebarPrincipal()" title="Mostrar menu">☰</button>
 
+  <!-- Fundo escurecido atrás do menu quando ele está aberto no mobile;
+       tocar nele fecha o menu (só aparece em telas estreitas, ver CSS). -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebarPrincipal()"></div>
+
   <!-- MAIN CONTENT -->
   <main class="main">
 
@@ -3015,7 +3068,7 @@ var qrcode = function() {
         <h2>Editar Conta</h2>
         <p>Seus dados de acesso</p>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+      <div class="conta-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
         <div class="card" style="margin-bottom:0">
           <div class="card-header"><span class="card-title">Meus Dados</span></div>
           <div class="card-body">
@@ -3380,13 +3433,39 @@ function toggleSidebarPrincipal() {
   try { localStorage.setItem('sidebarPrincipalEscondida', escondida ? '1' : '0'); } catch (e) {}
 }
 
-(function restaurarPreferenciaSidebar() {
+const MOBILE_BREAKPOINT = 900;
+function ehMobile() { return window.innerWidth <= MOBILE_BREAKPOINT; }
+
+// No desktop, respeita a preferência salva (menu aberto ou escondido,
+// do jeito que a pessoa deixou da última vez). No mobile o menu sempre
+// começa fechado — vira uma gaveta que se abre por cima do conteúdo em
+// vez de empurrá-lo (ver .sidebar-backdrop e o bloco @media no CSS).
+(function inicializarSidebarResponsiva() {
   try {
-    if (localStorage.getItem('sidebarPrincipalEscondida') === '1') {
+    if (ehMobile()) {
+      document.body.classList.add('sidebar-collapsed');
+    } else if (localStorage.getItem('sidebarPrincipalEscondida') === '1') {
       document.body.classList.add('sidebar-collapsed');
     }
   } catch (e) {}
 })();
+
+// Ao redimensionar a janela cruzando o ponto de quebra (ex.: girar o
+// celular para paisagem numa tela maior, ou um desktop encolher a
+// janela), realinha o menu para o comportamento correto do novo modo.
+let sidebarEraMobile = ehMobile();
+window.addEventListener('resize', () => {
+  const agoraMobile = ehMobile();
+  if (agoraMobile === sidebarEraMobile) return;
+  sidebarEraMobile = agoraMobile;
+  if (agoraMobile) {
+    document.body.classList.add('sidebar-collapsed');
+  } else {
+    try {
+      document.body.classList.toggle('sidebar-collapsed', localStorage.getItem('sidebarPrincipalEscondida') === '1');
+    } catch (e) { document.body.classList.remove('sidebar-collapsed'); }
+  }
+});
 
 // ══════════════════════════════════════════════
 // NAVEGAÇÃO
@@ -3448,6 +3527,12 @@ function navTo(id) {
   if (page) page.classList.add('active');
   const nav = document.getElementById('nav-' + id);
   if (nav) nav.classList.add('active');
+
+  // No mobile, o menu abre por cima do conteúdo (gaveta) — depois de
+  // escolher a página, fecha sozinho para não ficar tampando a tela.
+  if (typeof ehMobile === 'function' && ehMobile()) {
+    document.body.classList.add('sidebar-collapsed');
+  }
 
   // Trigger on-enter
   const items = navConfigs[perfil] || [];
@@ -5267,7 +5352,7 @@ async function executarValidacao() {
               <div style="font-size:13px;color:var(--text-muted)">Código: <span class="mono">${data.codigo_validacao}</span></div>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+          <div class="cert-result-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
             <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Participante</span><br><strong>${data.funcionario_nome || '—'}</strong></div>
             <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Treinamento</span><br><strong>${data.treinamento_titulo || '—'}</strong></div>
             <div><span style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em">Emitido em</span><br>${data.emitido_em ? new Date(data.emitido_em).toLocaleDateString('pt-BR') : '—'}</div>
