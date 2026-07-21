@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     const { rows } = await db.query(
       `SELECT c.id, c.vagas_contratadas, c.status,
               t.titulo AS treinamento_titulo, t.carga_horaria_min,
-              COUNT(m.id) AS vagas_usadas
+              COUNT(m.id)::int AS vagas_usadas
          FROM contratos c
          JOIN treinamentos t ON t.id = c.treinamento_id
          LEFT JOIN matriculas m ON m.contrato_id = c.id

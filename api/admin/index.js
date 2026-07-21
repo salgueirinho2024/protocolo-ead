@@ -159,7 +159,7 @@ async function handleContratos(req, res, user) {
       const { rows } = await db.query(
         `SELECT c.id, c.vagas_contratadas, c.status, c.data_inicio, c.data_limite,
                 e.razao_social AS empresa_nome, t.titulo AS treinamento_titulo,
-                COUNT(m.id) AS vagas_usadas
+                COUNT(m.id)::int AS vagas_usadas
            FROM contratos c
            JOIN empresas e ON e.id = c.empresa_id
            JOIN treinamentos t ON t.id = c.treinamento_id

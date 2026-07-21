@@ -4275,8 +4275,8 @@ async function carregarDashboardEmpresa() {
       api('GET', '/api/empresa/estatisticas').catch(() => ({ funcionarios_ativos: 0, cursos_disponiveis: 0, horas_treinadas: 0 })),
     ]);
     const contratos = dataContratos.contratos || dataContratos || [];
-    const totalVagas = contratos.reduce((a,c) => a + (c.vagas_contratadas||0), 0);
-    const usadas = contratos.reduce((a,c) => a + (c.vagas_usadas||0), 0);
+    const totalVagas = contratos.reduce((a,c) => a + (Number(c.vagas_contratadas)||0), 0);
+    const usadas = contratos.reduce((a,c) => a + (Number(c.vagas_usadas)||0), 0);
     document.getElementById('empresa-stats').innerHTML = `
       <div class="stat-card"><div class="stat-label">Funcionários Ativos</div><div class="stat-value">${dataEstatisticas.funcionarios_ativos || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Cursos Disponíveis</div><div class="stat-value">${dataEstatisticas.cursos_disponiveis || 0}</div></div>
