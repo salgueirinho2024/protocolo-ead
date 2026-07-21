@@ -3546,17 +3546,44 @@ async function fazerLogin() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
 
-// Mostra a foto de perfil do funcionário na barra lateral (ou a inicial
-// do nome, se ele ainda não tiver uma foto cadastrada em "Editar Conta").
+// Mostra a foto de perfil do funcionário (ou a logo da empresa, no caso do
+// perfil 'empresa') na barra lateral — ou a inicial do nome, se não houver
+// nada cadastrado ainda.
 function renderSidebarAvatar() {
   const avatar = document.getElementById('sb-avatar');
   if (!avatar) return;
+
+  if (perfil === 'empresa') {
+    const logo = window._sobreLogoAtual;
+    if (logo) {
+      avatar.innerHTML = `<img src="${logo}" alt="Logo da empresa" style="width:100%;height:100%;object-fit:contain;padding:4px;box-sizing:border-box">`;
+    } else {
+      const nome = usuarioLogado?.nome || usuarioLogado?.email || '?';
+      avatar.innerHTML = nome.trim().charAt(0).toUpperCase();
+    }
+    return;
+  }
+
   const foto = usuarioLogado?.foto_perfil_base64;
   if (foto) {
     avatar.innerHTML = `<img src="${foto}" alt="Foto de perfil" style="width:100%;height:100%;object-fit:cover">`;
   } else {
     const nome = usuarioLogado?.nome || usuarioLogado?.email || '?';
     avatar.innerHTML = nome.trim().charAt(0).toUpperCase();
+  }
+}
+
+// Busca só a logo da empresa (endpoint /api/empresa/perfil) pra alimentar a
+// sidebar assim que a pessoa loga — sem exigir que ela abra a aba "Sobre a
+// Empresa" antes. Falha em silêncio (só loga no console) pra não incomodar
+// o resto do app com um toast de erro logo na entrada.
+async function carregarLogoEmpresaSidebar() {
+  try {
+    const dados = await api('GET', '/api/empresa/perfil');
+    window._sobreLogoAtual = dados.logo_base64 || null;
+    renderSidebarAvatar();
+  } catch (e) {
+    console.error('Não foi possível carregar a logo da empresa para a sidebar:', e);
   }
 }
 
@@ -3582,7 +3609,7 @@ function iniciarApp() {
   montarNav();
 
   if (perfil === 'admin') { navTo('admin-dashboard'); carregarDashboardAdmin(); }
-  else if (perfil === 'empresa') { navTo('empresa-dashboard'); carregarDashboardEmpresa(); }
+  else if (perfil === 'empresa') { navTo('empresa-dashboard'); carregarDashboardEmpresa(); carregarLogoEmpresaSidebar(); }
   else { navTo('func-treinamentos'); carregarMeusTrienamentos(); }
 }
 
@@ -4358,6 +4385,7 @@ async function salvarPerfilEmpresa() {
     const resp = await api('PUT', '/api/empresa/perfil', body);
     window._sobreLogoAtual = resp.logo_base64 || null;
     atualizarPreviewLogoEmpresa(resp.logo_base64);
+    renderSidebarAvatar();
     toast('Dados da empresa atualizados com sucesso!', 'sucesso');
   } catch (e) {
     toast(e.message, 'erro');
