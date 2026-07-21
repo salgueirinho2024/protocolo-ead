@@ -274,6 +274,7 @@ perfeitamente assim também.
 | `GET /api/admin/suspeitos` | super admin | matrículas com sinais de fraude |
 | `GET /api/empresa/contratos` | empresa | contratos ativos da empresa |
 | `GET/POST /api/empresa/contratos/:id/funcionarios` | empresa | cadastro de funcionários (trava de vagas) |
+| `GET /api/empresa/estatisticas` | empresa | estatísticas simples do dashboard (funcionários ativos, cursos disponíveis, horas treinadas) |
 | `DELETE /api/empresa/contratos/:id/funcionarios/:fId` | empresa | remove funcionário não iniciado |
 | `GET /api/player/matricula` | funcionário | progresso do treinamento |
 | `POST /api/player/sessao/iniciar` | funcionário | abre sessão de visualização |

@@ -14,6 +14,26 @@
 //                                                          (é AQUI que a trava de vagas entra)
 //   DELETE /api/empresa/contratos/:id/matriculas/:mId  — desvincula (só se ainda não iniciou)
 //
+//   GET    /api/empresa/calendario?mes=YYYY-MM          — treinamentos concluídos no mês
+//                                                          (default: mês atual), para o
+//                                                          calendário do portal da empresa
+//
+//   GET    /api/empresa/certificados                    — total de certificados emitidos
+//                                                          para funcionários da empresa,
+//                                                          + os mais recentes (painel)
+//
+//   GET    /api/empresa/estatisticas                    — estatísticas simples do dashboard:
+//                                                          funcionários ativos, cursos
+//                                                          disponíveis (treinamentos com
+//                                                          contrato ativo) e horas treinadas
+//                                                          (soma do tempo assistido)
+//
+//   GET    /api/empresa/perfil                          — dados institucionais da empresa
+//                                                          (logo, missão, razão social, CNPJ,
+//                                                          e-mail/telefone de contato) para a
+//                                                          tela "Sobre a Empresa" do portal
+//   PUT    /api/empresa/perfil                          — edita logo/missão/contatos
+//
 // (chega aqui via rewrites no vercel.json, que traduzem essas URLs "bonitas"
 //  em query string — ver vercel.json)
 //
@@ -178,6 +198,172 @@ async function handleFuncionarios(req, res, user, fId) {
 }
 
 // ─────────────────────────────────────────────────────────
+// Painel de certificados emitidos (empresa) — total + os mais
+// recentes, para o card "Certificados Emitidos" do dashboard.
+// ─────────────────────────────────────────────────────────
+
+async function handleCertificados(req, res, user) {
+  if (!metodoPermitido(req, res, 'GET')) return;
+
+  try {
+    const { rows: totalRows } = await db.query(
+      `SELECT COUNT(cert.id) AS total
+         FROM certificados cert
+         JOIN matriculas m ON m.id = cert.matricula_id
+         JOIN funcionarios f ON f.id = m.funcionario_id
+        WHERE f.empresa_id = $1`,
+      [user.empresaId]
+    );
+
+    const { rows: recentes } = await db.query(
+      `SELECT cert.id, cert.codigo_validacao, cert.emitido_em,
+              f.nome AS funcionario_nome, t.titulo AS treinamento_titulo
+         FROM certificados cert
+         JOIN matriculas m ON m.id = cert.matricula_id
+         JOIN funcionarios f ON f.id = m.funcionario_id
+         JOIN treinamentos t ON t.id = m.treinamento_id
+        WHERE f.empresa_id = $1
+        ORDER BY cert.emitido_em DESC
+        LIMIT 5`,
+      [user.empresaId]
+    );
+
+    return res.json({ total: parseInt(totalRows[0].total) || 0, recentes });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao carregar o painel de certificados.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Estatísticas simples (empresa) — funcionários ativos, cursos
+// disponíveis (treinamentos com contrato ativo) e horas treinadas
+// (soma do tempo assistido por todos os funcionários da empresa).
+// Alimenta os cards do topo do dashboard da empresa.
+// ─────────────────────────────────────────────────────────
+
+async function handleEstatisticas(req, res, user) {
+  if (!metodoPermitido(req, res, 'GET')) return;
+
+  try {
+    const { rows } = await db.query(
+      `SELECT
+          (SELECT COUNT(*) FROM funcionarios
+            WHERE empresa_id = $1 AND ativo = TRUE)              AS funcionarios_ativos,
+          (SELECT COUNT(DISTINCT treinamento_id) FROM contratos
+            WHERE empresa_id = $1 AND status = 'ativo')          AS cursos_disponiveis,
+          (SELECT COALESCE(SUM(m.segundos_assistidos_total), 0)
+             FROM matriculas m
+             JOIN funcionarios f ON f.id = m.funcionario_id
+            WHERE f.empresa_id = $1)                              AS segundos_treinados`,
+      [user.empresaId]
+    );
+
+    const r = rows[0];
+    return res.json({
+      funcionarios_ativos: parseInt(r.funcionarios_ativos) || 0,
+      cursos_disponiveis: parseInt(r.cursos_disponiveis) || 0,
+      horas_treinadas: Math.round(((parseInt(r.segundos_treinados) || 0) / 3600) * 10) / 10,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao carregar as estatísticas da empresa.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Perfil institucional (empresa) — logo, missão e contatos,
+
+// exibidos na tela "Sobre a Empresa" do portal do cliente.
+// ─────────────────────────────────────────────────────────
+
+async function handlePerfil(req, res, user) {
+  if (!metodoPermitido(req, res, 'GET', 'PUT')) return;
+
+  if (req.method === 'GET') {
+    try {
+      const { rows } = await db.query(
+        `SELECT razao_social, cnpj, email_contato, telefone, logo_base64, missao
+           FROM empresas
+          WHERE id = $1`,
+        [user.empresaId]
+      );
+      if (!rows[0]) return res.status(404).json({ erro: 'Empresa não encontrada.' });
+      return res.json(rows[0]);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao carregar o perfil da empresa.' });
+    }
+  }
+
+  // PUT — edita logo (base64), missão e contatos. Todos os campos são
+  // opcionais: só atualiza o que veio no corpo da requisição.
+  const { logo_base64, missao, email_contato, telefone } = req.body || {};
+
+  if (logo_base64 && logo_base64.length > 900 * 1024) {
+    return res.status(400).json({ erro: 'Logo muito grande (máx ~800KB).' });
+  }
+  if (missao && missao.length > 4000) {
+    return res.status(400).json({ erro: 'Missão muito longa (máx 4000 caracteres).' });
+  }
+
+  try {
+    const { rows } = await db.query(
+      `UPDATE empresas
+          SET logo_base64 = COALESCE($1, logo_base64),
+              missao = COALESCE($2, missao),
+              email_contato = COALESCE($3, email_contato),
+              telefone = COALESCE($4, telefone),
+              atualizado_em = now()
+        WHERE id = $5
+      RETURNING razao_social, cnpj, email_contato, telefone, logo_base64, missao`,
+      [logo_base64 || null, missao !== undefined ? missao : null, email_contato || null, telefone || null, user.empresaId]
+    );
+    if (!rows[0]) return res.status(404).json({ erro: 'Empresa não encontrada.' });
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao salvar o perfil da empresa.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Calendário de treinamentos concluídos (empresa) — devolve,
+// para um mês (YYYY-MM), cada conclusão de treinamento com a
+// data e o funcionário/treinamento envolvidos. Alimenta a tela
+// "Calendário" do portal da empresa (um marcador por dia com
+// conclusão, detalhando ao clicar).
+// ─────────────────────────────────────────────────────────
+
+async function handleCalendario(req, res, user) {
+  if (!metodoPermitido(req, res, 'GET')) return;
+
+  const mesParam = req.query.mes;
+  const mesRaw = Array.isArray(mesParam) ? mesParam[0] : mesParam;
+  const mes = mesRaw && /^\d{4}-\d{2}$/.test(mesRaw) ? mesRaw : null;
+
+  try {
+    const { rows } = await db.query(
+      `SELECT m.id AS matricula_id, m.concluido_em, f.id AS funcionario_id,
+              f.nome AS funcionario_nome, t.titulo AS treinamento_titulo
+         FROM matriculas m
+         JOIN funcionarios f ON f.id = m.funcionario_id
+         JOIN treinamentos t ON t.id = m.treinamento_id
+        WHERE f.empresa_id = $1
+          AND m.status = 'concluido'
+          AND m.concluido_em IS NOT NULL
+          AND to_char(m.concluido_em, 'YYYY-MM') = COALESCE($2, to_char(now(), 'YYYY-MM'))
+        ORDER BY m.concluido_em ASC`,
+      [user.empresaId, mes]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao carregar o calendário de treinamentos concluídos.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────
 // Matrículas (vincular um funcionário já cadastrado a um
 // contrato — é AQUI que a trava de vagas do contrato entra)
 // ─────────────────────────────────────────────────────────
@@ -305,6 +491,22 @@ module.exports = async (req, res) => {
   const fId = Array.isArray(fIdParam) ? fIdParam[0] : fIdParam;
   const contratoId = Array.isArray(contratoIdParam) ? contratoIdParam[0] : contratoIdParam;
   const mId = Array.isArray(mIdParam) ? mIdParam[0] : mIdParam;
+
+  if (sub === 'perfil') {
+    return handlePerfil(req, res, user);
+  }
+
+  if (sub === 'certificados') {
+    return handleCertificados(req, res, user);
+  }
+
+  if (sub === 'estatisticas') {
+    return handleEstatisticas(req, res, user);
+  }
+
+  if (sub === 'calendario') {
+    return handleCalendario(req, res, user);
+  }
 
   if (sub === 'matriculas') {
     if (!contratoId) return res.status(400).json({ erro: 'contratoId é obrigatório.' });

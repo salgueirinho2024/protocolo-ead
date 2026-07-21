@@ -210,6 +210,63 @@
   .stat-value { font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 800; color: var(--navy); margin-top: 4px; }
   .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+  /* ── PESQUISA RÁPIDA DE FUNCIONÁRIOS ── */
+  .busca-funcionario-wrap { position: relative; display: flex; align-items: center; }
+  .busca-funcionario-wrap svg { position: absolute; left: 12px; color: var(--text-muted); pointer-events: none; }
+  .busca-funcionario-wrap input { width: 100%; padding: 8px 12px 8px 36px; border: 1.5px solid var(--surface2); border-radius: var(--radius); font-size: 14px; font-family: inherit; outline: none; background: var(--surface-card); color: var(--text); }
+  .busca-funcionario-wrap input:focus { border-color: var(--green); }
+
+  /* ── CERTIFICADOS RECENTES (dashboard empresa) ── */
+  .certificado-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--surface); }
+  .certificado-item:last-child { border-bottom: none; }
+  .certificado-item .funcionario-nome { font-weight: 600; font-size: 13px; }
+  .certificado-item .treinamento-titulo { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .certificado-item .certificado-data { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  /* ── RANKING (empresa) ── */
+  .ranking-item { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--surface); }
+  .ranking-item:last-child { border-bottom: none; }
+  .ranking-pos { flex: 0 0 32px; height: 32px; border-radius: 50%; background: var(--surface2); color: var(--navy); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .ranking-item.top1 .ranking-pos { background: #E9C46A; color: #5A4A15; }
+  .ranking-item.top2 .ranking-pos { background: #D9D9D9; color: #4A4A4A; }
+  .ranking-item.top3 .ranking-pos { background: #E0B084; color: #5A3A1D; }
+  .ranking-info { flex: 1; min-width: 0; }
+  .ranking-nome { font-weight: 600; font-size: 14px; }
+  .ranking-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .ranking-bar-wrap { flex: 0 0 140px; }
+  .ranking-bar-track { height: 8px; border-radius: 4px; background: var(--surface2); overflow: hidden; }
+  .ranking-bar-fill { height: 100%; background: var(--green); border-radius: 4px; }
+  .ranking-count { flex: 0 0 auto; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 18px; color: var(--navy); min-width: 34px; text-align: right; }
+  @media (max-width: 640px) {
+    .ranking-bar-wrap { display: none; }
+  }
+
+  /* ── CALENDÁRIO (empresa) ── */
+  .calendario-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--surface2); }
+  .calendario-mes-label { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); text-transform: capitalize; min-width: 160px; text-align: center; }
+  .calendario-nav-btns { display: flex; align-items: center; gap: 8px; }
+  .calendario-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .calendario-dow { padding: 8px 4px; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); border-bottom: 2px solid var(--surface2); }
+  .calendario-day { min-height: 84px; padding: 8px; border-right: 1px solid var(--surface); border-bottom: 1px solid var(--surface); cursor: default; transition: background .15s; }
+  .calendario-day:nth-child(7n) { border-right: none; }
+  .calendario-day.fora-do-mes { background: var(--surface); opacity: .45; }
+  .calendario-day.tem-evento { cursor: pointer; background: rgba(64,145,108,.07); }
+  .calendario-day.tem-evento:hover { background: rgba(64,145,108,.15); }
+  .calendario-day.selecionado { outline: 2px solid var(--green); outline-offset: -2px; }
+  .calendario-day-num { font-size: 12px; font-weight: 600; color: var(--text); }
+  .calendario-day.hoje .calendario-day-num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--navy); color: var(--white); }
+  .calendario-day-badge { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--green-dim); background: #D8F3DC; padding: 2px 7px; border-radius: 20px; }
+  .calendario-evento-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--surface); }
+  .calendario-evento-item:last-child { border-bottom: none; }
+  .calendario-evento-item .funcionario-nome { font-weight: 600; font-size: 13px; }
+  .calendario-evento-item .treinamento-titulo { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  html[data-theme="dark"] .calendario-day.tem-evento { background: rgba(82,183,136,.1); }
+  html[data-theme="dark"] .calendario-day-badge { background: rgba(82,183,136,.18); color: #95D5B2; }
+  @media (max-width: 640px) {
+    .calendario-day { min-height: 56px; padding: 5px; }
+    .calendario-day-badge { font-size: 0; padding: 4px; width: 8px; height: 8px; border-radius: 50%; }
+  }
+
   /* ── TABLE ── */
   .card { background: var(--surface-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
   .card-header { padding: 16px 20px; border-bottom: 1px solid var(--surface2); display: flex; align-items: center; justify-content: space-between; background: var(--surface-card); }
@@ -2921,6 +2978,109 @@ var qrcode = function() {
         <p>Resumo dos contratos ativos</p>
       </div>
       <div class="stats-grid" id="empresa-stats"></div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Certificados emitidos recentemente</span></div>
+        <div id="empresa-certificados-recentes"></div>
+      </div>
+    </div>
+
+    <!-- Sobre a Empresa -->
+    <div id="page-empresa-sobre" class="page">
+      <div class="page-header">
+        <h2>Sobre a Empresa</h2>
+        <p>Logo, missão e contatos exibidos para os seus funcionários</p>
+      </div>
+      <div class="conta-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><span class="card-title">Identidade</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+              <div id="sobre-logo-preview" style="width:64px;height:64px;border-radius:12px;background:var(--surface2,#eee);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-muted)"></div>
+              <div style="flex:1">
+                <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Logo da empresa</label>
+                <input type="file" id="sobre-logo-file" accept="image/png,image/jpeg" onchange="lerLogoEmpresaFile(event)" style="max-width:100%">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Razão Social</label>
+              <input type="text" id="sobre-razao-social" disabled>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>CNPJ</label>
+              <input type="text" id="sobre-cnpj" disabled>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><span class="card-title">Contatos</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>E-mail de contato</label>
+              <input type="email" id="sobre-email-contato" placeholder="contato@empresa.com">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Telefone</label>
+              <input type="text" id="sobre-telefone" placeholder="(00) 00000-0000">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="max-width:900px">
+        <div class="card-header"><span class="card-title">Missão</span></div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Descreva a missão da empresa</label>
+            <textarea id="sobre-missao" rows="5" maxlength="4000" placeholder="Ex.: Formar e capacitar nossos colaboradores com segurança e excelência." style="width:100%;padding:10px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:900px">
+        <button class="btn btn-navy" id="btn-salvar-sobre" onclick="salvarPerfilEmpresa()">Salvar Alterações</button>
+      </div>
+    </div>
+
+    <!-- Calendário de Treinamentos Concluídos -->
+    <div id="page-empresa-calendario" class="page">
+      <div class="page-header">
+        <h2>Calendário</h2>
+        <p>Treinamentos concluídos pelos seus funcionários</p>
+      </div>
+      <div class="card">
+        <div class="calendario-toolbar">
+          <div class="calendario-nav-btns">
+            <button class="btn btn-outline btn-sm" onclick="mudarMesCalendarioEmpresa(-1)">← Anterior</button>
+          </div>
+          <div class="calendario-mes-label" id="calendario-mes-label">—</div>
+          <div class="calendario-nav-btns">
+            <button class="btn btn-outline btn-sm" onclick="mudarMesCalendarioEmpresa(0)">Hoje</button>
+            <button class="btn btn-outline btn-sm" onclick="mudarMesCalendarioEmpresa(1)">Próximo →</button>
+          </div>
+        </div>
+        <div class="calendario-grid" id="calendario-grid-dow">
+          <div class="calendario-dow">Dom</div><div class="calendario-dow">Seg</div><div class="calendario-dow">Ter</div>
+          <div class="calendario-dow">Qua</div><div class="calendario-dow">Qui</div><div class="calendario-dow">Sex</div>
+          <div class="calendario-dow">Sáb</div>
+        </div>
+        <div class="calendario-grid" id="calendario-grid-dias">
+          <div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text-muted)">Carregando…</div>
+        </div>
+      </div>
+      <div class="card" id="calendario-detalhe-card" style="display:none">
+        <div class="card-header"><span class="card-title" id="calendario-detalhe-titulo">Conclusões do dia</span></div>
+        <div id="calendario-detalhe-lista"></div>
+      </div>
+    </div>
+
+    <!-- Ranking de Funcionários -->
+    <div id="page-empresa-ranking" class="page">
+      <div class="page-header">
+        <h2>Ranking</h2>
+        <p>Funcionários que mais concluíram treinamentos</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Top funcionários</span></div>
+        <div id="ranking-lista"></div>
+      </div>
     </div>
 
     <!-- Contratos Empresa -->
@@ -2938,11 +3098,20 @@ var qrcode = function() {
         <div><h2>Funcionários</h2><p>Gerencie os colaboradores cadastrados</p></div>
         <button class="btn btn-navy" onclick="abrirModalFuncionario()">+ Novo Funcionário</button>
       </div>
-      <div id="select-contrato-func" style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin-bottom:6px">Vincular a um contrato (opcional)</label>
-        <select id="contrato-select-func" onchange="carregarFuncionarios()" style="padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;min-width:260px">
-          <option value="">— Nenhum contrato selecionado —</option>
-        </select>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px">
+        <div id="select-contrato-func">
+          <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin-bottom:6px">Vincular a um contrato (opcional)</label>
+          <select id="contrato-select-func" onchange="carregarFuncionarios()" style="padding:8px 12px;border:1.5px solid var(--surface2);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;min-width:260px">
+            <option value="">— Nenhum contrato selecionado —</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:220px">
+          <label style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);display:block;margin-bottom:6px">Pesquisar funcionário</label>
+          <div class="busca-funcionario-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input id="busca-funcionario" type="text" placeholder="Nome, CPF ou e-mail…" oninput="filtrarFuncionarios()" autocomplete="off">
+          </div>
+        </div>
       </div>
       <div class="card">
         <table><thead><tr><th>Nome</th><th>CPF</th><th>E-mail</th><th>Vínculo</th><th></th></tr></thead>
@@ -3484,6 +3653,9 @@ const navConfigs = {
   empresa: [
     { section: 'Painel' },
     { id: 'empresa-dashboard', label: 'Visão Geral', icon: iconGrid() },
+    { id: 'empresa-sobre', label: 'Sobre a Empresa', icon: iconInfo(), onEnter: carregarPerfilEmpresa },
+    { id: 'empresa-calendario', label: 'Calendário', icon: iconCalendar(), onEnter: carregarCalendarioEmpresa },
+    { id: 'empresa-ranking', label: 'Ranking', icon: iconTrophy(), onEnter: carregarRankingEmpresa },
     { section: 'Gestão' },
     { id: 'empresa-contratos', label: 'Contratos', icon: iconDoc(), onEnter: carregarContratosEmpresa },
     { id: 'empresa-funcionarios', label: 'Funcionários', icon: iconUsers(), onEnter: carregarSelectContratos },
@@ -4097,16 +4269,240 @@ async function carregarSuspeitos() {
 
 async function carregarDashboardEmpresa() {
   try {
-    const data = await api('GET', '/api/empresa/contratos');
-    const contratos = data.contratos || data || [];
+    const [dataContratos, dataCertificados, dataEstatisticas] = await Promise.all([
+      api('GET', '/api/empresa/contratos'),
+      api('GET', '/api/empresa/certificados').catch(() => ({ total: 0, recentes: [] })),
+      api('GET', '/api/empresa/estatisticas').catch(() => ({ funcionarios_ativos: 0, cursos_disponiveis: 0, horas_treinadas: 0 })),
+    ]);
+    const contratos = dataContratos.contratos || dataContratos || [];
     const totalVagas = contratos.reduce((a,c) => a + (c.vagas_contratadas||0), 0);
     const usadas = contratos.reduce((a,c) => a + (c.vagas_usadas||0), 0);
     document.getElementById('empresa-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Funcionários Ativos</div><div class="stat-value">${dataEstatisticas.funcionarios_ativos || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Cursos Disponíveis</div><div class="stat-value">${dataEstatisticas.cursos_disponiveis || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Horas Treinadas</div><div class="stat-value">${dataEstatisticas.horas_treinadas || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Contratos Ativos</div><div class="stat-value">${contratos.filter(c=>c.status==='ativo').length}</div></div>
       <div class="stat-card"><div class="stat-label">Vagas Totais</div><div class="stat-value">${totalVagas}</div></div>
       <div class="stat-card"><div class="stat-label">Vagas Usadas</div><div class="stat-value">${usadas}</div><div class="stat-sub">de ${totalVagas} disponíveis</div></div>
+      <div class="stat-card"><div class="stat-label">Certificados Emitidos</div><div class="stat-value">${dataCertificados.total || 0}</div></div>
     `;
+
+    const recentes = dataCertificados.recentes || [];
+    const container = document.getElementById('empresa-certificados-recentes');
+    if (!recentes.length) {
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Nenhum certificado emitido ainda</div>';
+    } else {
+      container.innerHTML = recentes.map(c => `
+        <div class="certificado-item">
+          <div>
+            <div class="funcionario-nome">${c.funcionario_nome || '—'}</div>
+            <div class="treinamento-titulo">${c.treinamento_titulo || '—'}</div>
+          </div>
+          <div class="certificado-data">${c.emitido_em ? new Date(c.emitido_em).toLocaleDateString('pt-BR') : '—'}</div>
+        </div>`).join('');
+    }
   } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Sobre a Empresa (logo, missão, contatos) ──
+async function carregarPerfilEmpresa() {
+  window._sobreLogoB64 = null; // só é preenchido se o usuário escolher um arquivo novo
+  document.getElementById('sobre-logo-file').value = '';
+  try {
+    const dados = await api('GET', '/api/empresa/perfil');
+    document.getElementById('sobre-razao-social').value = dados.razao_social || '';
+    document.getElementById('sobre-cnpj').value = dados.cnpj || '';
+    document.getElementById('sobre-email-contato').value = dados.email_contato || '';
+    document.getElementById('sobre-telefone').value = dados.telefone || '';
+    document.getElementById('sobre-missao').value = dados.missao || '';
+    window._sobreLogoAtual = dados.logo_base64 || null;
+    atualizarPreviewLogoEmpresa(dados.logo_base64);
+  } catch (e) {
+    toast(e.message, 'erro');
+  }
+}
+
+function atualizarPreviewLogoEmpresa(logo) {
+  const el = document.getElementById('sobre-logo-preview');
+  if (logo) {
+    el.innerHTML = `<img src="${logo}" alt="Logo da empresa" style="width:100%;height:100%;object-fit:contain">`;
+  } else {
+    const nome = document.getElementById('sobre-razao-social').value || '?';
+    el.innerHTML = nome.trim().charAt(0).toUpperCase();
+  }
+}
+
+function lerLogoEmpresaFile(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  if (f.size > 800 * 1024) { toast('Imagem muito grande (máx 800KB).', 'error'); ev.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    window._sobreLogoB64 = reader.result;
+    atualizarPreviewLogoEmpresa(reader.result);
+  };
+  reader.readAsDataURL(f);
+}
+
+async function salvarPerfilEmpresa() {
+  const btn = document.getElementById('btn-salvar-sobre');
+  const body = {
+    missao: document.getElementById('sobre-missao').value.trim(),
+    email_contato: document.getElementById('sobre-email-contato').value.trim(),
+    telefone: document.getElementById('sobre-telefone').value.trim(),
+  };
+  if (window._sobreLogoB64) body.logo_base64 = window._sobreLogoB64;
+
+  btn.disabled = true;
+  try {
+    const resp = await api('PUT', '/api/empresa/perfil', body);
+    window._sobreLogoAtual = resp.logo_base64 || null;
+    atualizarPreviewLogoEmpresa(resp.logo_base64);
+    toast('Dados da empresa atualizados com sucesso!', 'sucesso');
+  } catch (e) {
+    toast(e.message, 'erro');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Calendário de treinamentos concluídos ──
+let calendarioMesRef = new Date(); // dia 1 do mês em exibição
+let calendarioEventosPorDia = {};  // 'YYYY-MM-DD' -> [eventos]
+let calendarioDiaSelecionado = null;
+
+function mudarMesCalendarioEmpresa(delta) {
+  if (delta === 0) {
+    calendarioMesRef = new Date();
+  } else {
+    calendarioMesRef = new Date(calendarioMesRef.getFullYear(), calendarioMesRef.getMonth() + delta, 1);
+  }
+  carregarCalendarioEmpresa();
+}
+
+async function carregarCalendarioEmpresa() {
+  const grid = document.getElementById('calendario-grid-dias');
+  const ano = calendarioMesRef.getFullYear();
+  const mes = calendarioMesRef.getMonth(); // 0-based
+  const mesStr = ano + '-' + String(mes + 1).padStart(2, '0');
+  document.getElementById('calendario-mes-label').textContent =
+    calendarioMesRef.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  grid.innerHTML = '<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text-muted)">Carregando…</div>';
+  document.getElementById('calendario-detalhe-card').style.display = 'none';
+  calendarioDiaSelecionado = null;
+
+  try {
+    const data = await api('GET', '/api/empresa/calendario?mes=' + mesStr);
+    const eventos = data.eventos || data || [];
+    calendarioEventosPorDia = {};
+    eventos.forEach(ev => {
+      if (!ev.concluido_em) return;
+      const dia = ev.concluido_em.slice(0, 10); // 'YYYY-MM-DD'
+      (calendarioEventosPorDia[dia] = calendarioEventosPorDia[dia] || []).push(ev);
+    });
+    renderCalendarioEmpresa(ano, mes);
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function renderCalendarioEmpresa(ano, mes) {
+  const grid = document.getElementById('calendario-grid-dias');
+  const hojeStr = new Date().toISOString().slice(0, 10);
+  const primeiroDiaSemana = new Date(ano, mes, 1).getDay(); // 0=domingo
+  const totalDiasMes = new Date(ano, mes + 1, 0).getDate();
+  const totalDiasMesAnterior = new Date(ano, mes, 0).getDate();
+
+  const celulas = [];
+  // dias do mês anterior (preenchimento)
+  for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
+    celulas.push({ num: totalDiasMesAnterior - i, foraDoMes: true, dataStr: null });
+  }
+  // dias do mês atual
+  for (let d = 1; d <= totalDiasMes; d++) {
+    const dataStr = ano + '-' + String(mes + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    celulas.push({ num: d, foraDoMes: false, dataStr });
+  }
+  // completa até fechar múltiplo de 7
+  while (celulas.length % 7 !== 0) {
+    celulas.push({ num: celulas.length, foraDoMes: true, dataStr: null });
+  }
+
+  grid.innerHTML = celulas.map(c => {
+    if (c.foraDoMes) {
+      return `<div class="calendario-day fora-do-mes"><div class="calendario-day-num">${c.num}</div></div>`;
+    }
+    const eventosDoDia = calendarioEventosPorDia[c.dataStr] || [];
+    const temEvento = eventosDoDia.length > 0;
+    const classes = ['calendario-day'];
+    if (c.dataStr === hojeStr) classes.push('hoje');
+    if (temEvento) classes.push('tem-evento');
+    return `<div class="${classes.join(' ')}" ${temEvento ? `onclick="mostrarDetalheDiaCalendario('${c.dataStr}')"` : ''}>
+      <div class="calendario-day-num">${c.num}</div>
+      ${temEvento ? `<div class="calendario-day-badge">✓ ${eventosDoDia.length}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function mostrarDetalheDiaCalendario(dataStr) {
+  calendarioDiaSelecionado = dataStr;
+  document.querySelectorAll('#calendario-grid-dias .calendario-day').forEach(el => el.classList.remove('selecionado'));
+  const eventos = calendarioEventosPorDia[dataStr] || [];
+  const card = document.getElementById('calendario-detalhe-card');
+  const dataFormatada = new Date(dataStr + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  document.getElementById('calendario-detalhe-titulo').textContent = `Concluídos em ${dataFormatada}`;
+  document.getElementById('calendario-detalhe-lista').innerHTML = eventos.map(ev => `
+    <div class="calendario-evento-item">
+      <div>
+        <div class="funcionario-nome">${ev.funcionario_nome || '—'}</div>
+        <div class="treinamento-titulo">${ev.treinamento_titulo || '—'}</div>
+      </div>
+      <span class="badge badge-green">✓ Concluído</span>
+    </div>`).join('');
+  card.style.display = '';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Ranking de funcionários por treinamentos concluídos ──
+async function carregarRankingEmpresa() {
+  const container = document.getElementById('ranking-lista');
+  container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Carregando…</div>';
+  try {
+    const data = await api('GET', '/api/empresa/funcionarios');
+    const funcionarios = data.funcionarios || data || [];
+
+    const comContagem = funcionarios.map(f => ({
+      ...f,
+      concluidos: parseInt(f.treinamentos_concluidos) || 0,
+      total: parseInt(f.total_treinamentos) || 0,
+    }));
+    comContagem.sort((a, b) => b.concluidos - a.concluidos || a.nome.localeCompare(b.nome, 'pt-BR'));
+
+    if (!comContagem.length) {
+      container.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted)">Nenhum funcionário cadastrado</div>';
+      return;
+    }
+
+    const maiorContagem = Math.max(1, comContagem[0].concluidos);
+    container.innerHTML = comContagem.map((f, i) => {
+      const pos = i + 1;
+      const topClass = pos <= 3 ? 'top' + pos : '';
+      const pct = Math.round((f.concluidos / maiorContagem) * 100);
+      return `<div class="ranking-item ${topClass}">
+        <div class="ranking-pos">${pos}</div>
+        <div class="ranking-info">
+          <div class="ranking-nome">${f.nome}</div>
+          <div class="ranking-sub">${f.total} treinamento${f.total === 1 ? '' : 's'} vinculado${f.total === 1 ? '' : 's'}</div>
+        </div>
+        <div class="ranking-bar-wrap">
+          <div class="ranking-bar-track"><div class="ranking-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="ranking-count">${f.concluidos}</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = `<div style="padding:32px;text-align:center;color:var(--red)">${e.message}</div>`;
+  }
 }
 
 async function carregarContratosEmpresa() {
@@ -4165,52 +4561,87 @@ function statusMatriculaBadgeClass(s) {
 // depende de contrato). Se um contrato estiver selecionado no filtro,
 // busca também os vínculos (matrículas) desse contrato, pra mostrar o
 // status de cada funcionário nele e permitir vincular/desvincular.
+let funcionariosCacheEmpresa = [];
+let matriculasPorFuncionarioCache = {};
+
 async function carregarFuncionarios() {
   const contratoId = document.getElementById('contrato-select-func').value;
   const tbody = document.getElementById('lista-funcionarios');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Carregando…</td></tr>';
   try {
     const data = await api('GET', '/api/empresa/funcionarios');
-    const funcionarios = data.funcionarios || data || [];
+    funcionariosCacheEmpresa = data.funcionarios || data || [];
 
-    let matriculasPorFuncionario = {};
+    matriculasPorFuncionarioCache = {};
     if (contratoId) {
       const dataMat = await api('GET', '/api/empresa/contratos/' + contratoId + '/matriculas');
       const matriculas = dataMat.matriculas || dataMat || [];
-      matriculas.forEach(m => { matriculasPorFuncionario[m.funcionario_id] = m; });
+      matriculas.forEach(m => { matriculasPorFuncionarioCache[m.funcionario_id] = m; });
     }
 
-    if (!funcionarios.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">Nenhum funcionário cadastrado</td></tr>'; return; }
-
-    tbody.innerHTML = funcionarios.map(f => {
-      const m = matriculasPorFuncionario[f.id];
-      let vinculoCol, acoesVinculo;
-      if (!contratoId) {
-        vinculoCol = '<span class="badge badge-gray">—</span>';
-        acoesVinculo = '';
-      } else if (m) {
-        vinculoCol = `<span class="badge ${statusMatriculaBadgeClass(m.status_matricula)}">${statusMatriculaLabel(m.status_matricula)}</span>`;
-        acoesVinculo = m.status_matricula === 'nao_iniciado'
-          ? `<button class="btn btn-outline btn-sm" onclick="desvincularFuncionario('${contratoId}','${m.matricula_id}')">Desvincular</button>`
-          : '';
-      } else {
-        vinculoCol = '<span class="badge badge-gray">Não vinculado</span>';
-        acoesVinculo = `<button class="btn btn-navy btn-sm" onclick="vincularFuncionario('${contratoId}','${f.id}')">Vincular</button>`;
-      }
-      return `
-      <tr>
-        <td><strong>${f.nome}</strong></td>
-        <td class="mono">${f.cpf || '—'}</td>
-        <td>${f.email || '—'}</td>
-        <td>${vinculoCol}</td>
-        <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
-          ${acoesVinculo}
-          <button class="btn btn-outline btn-sm" onclick='editarFuncionario(${JSON.stringify(f)})'>Editar</button>
-          <button class="btn btn-red btn-sm" onclick="removerFuncionario('${f.id}')">Remover</button>
-        </td>
-      </tr>`;
-    }).join('');
+    filtrarFuncionarios();
   } catch(e) { tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${e.message}</td></tr>`; }
+}
+
+// Pesquisa rápida: filtra o cache já carregado (sem nova chamada à API)
+// por nome, e-mail ou CPF (aceita CPF com ou sem pontuação).
+function filtrarFuncionarios() {
+  const campoBusca = document.getElementById('busca-funcionario');
+  const termo = ((campoBusca && campoBusca.value) || '').trim().toLowerCase();
+  const termoDigitos = termo.replace(/\D/g, '');
+
+  if (!termo) {
+    renderFuncionarios(funcionariosCacheEmpresa);
+    return;
+  }
+
+  const filtrados = funcionariosCacheEmpresa.filter(f => {
+    const nomeMatch = (f.nome || '').toLowerCase().includes(termo);
+    const emailMatch = (f.email || '').toLowerCase().includes(termo);
+    const cpfMatch = termoDigitos.length > 0 && (f.cpf || '').includes(termoDigitos);
+    return nomeMatch || emailMatch || cpfMatch;
+  });
+  renderFuncionarios(filtrados);
+}
+
+function renderFuncionarios(funcionarios) {
+  const contratoId = document.getElementById('contrato-select-func').value;
+  const tbody = document.getElementById('lista-funcionarios');
+
+  if (!funcionarios.length) {
+    const mensagem = funcionariosCacheEmpresa.length ? 'Nenhum funcionário encontrado para a busca' : 'Nenhum funcionário cadastrado';
+    tbody.innerHTML = `<tr class="loading-row"><td colspan="5">${mensagem}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = funcionarios.map(f => {
+    const m = matriculasPorFuncionarioCache[f.id];
+    let vinculoCol, acoesVinculo;
+    if (!contratoId) {
+      vinculoCol = '<span class="badge badge-gray">—</span>';
+      acoesVinculo = '';
+    } else if (m) {
+      vinculoCol = `<span class="badge ${statusMatriculaBadgeClass(m.status_matricula)}">${statusMatriculaLabel(m.status_matricula)}</span>`;
+      acoesVinculo = m.status_matricula === 'nao_iniciado'
+        ? `<button class="btn btn-outline btn-sm" onclick="desvincularFuncionario('${contratoId}','${m.matricula_id}')">Desvincular</button>`
+        : '';
+    } else {
+      vinculoCol = '<span class="badge badge-gray">Não vinculado</span>';
+      acoesVinculo = `<button class="btn btn-navy btn-sm" onclick="vincularFuncionario('${contratoId}','${f.id}')">Vincular</button>`;
+    }
+    return `
+    <tr>
+      <td><strong>${f.nome}</strong></td>
+      <td class="mono">${f.cpf || '—'}</td>
+      <td>${f.email || '—'}</td>
+      <td>${vinculoCol}</td>
+      <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+        ${acoesVinculo}
+        <button class="btn btn-outline btn-sm" onclick='editarFuncionario(${JSON.stringify(f)})'>Editar</button>
+        <button class="btn btn-red btn-sm" onclick="removerFuncionario('${f.id}')">Remover</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function abrirModalFuncionario() {
@@ -5537,7 +5968,9 @@ function iconUsers() { return `<svg width="16" height="16" fill="none" stroke="c
 function iconCert() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 function iconUser() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
 function iconHistory() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>`; }
+function iconCalendar() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`; }
 function iconTrophy() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/></svg>`; }
+function iconInfo() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`; }
 function iconBookLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`; }
 function iconCertLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 </script>

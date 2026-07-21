@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS empresas (
     atualizado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Perfil institucional exibido na tela "Sobre a Empresa" do portal
+ALTER TABLE empresas ADD COLUMN IF NOT EXISTS logo_base64 TEXT;
+ALTER TABLE empresas ADD COLUMN IF NOT EXISTS missao TEXT;
+
 -- Vínculo do usuário admin com a empresa que ele administra
 CREATE TABLE IF NOT EXISTS empresa_usuarios (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
