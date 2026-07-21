@@ -107,10 +107,27 @@ module.exports = async (req, res) => {
     // Período previsto (início/fim), calculado a partir de quando o
     // funcionário iniciou este treinamento + carga horária ÷ 8h por dia.
     // Substitui a antiga data_inicio/data_fim fixa do treinamento.
-    const comPeriodo = rows.map(m => ({
-      ...m,
-      periodo_previsto: calcularPeriodoTreinamentoFormatado(m.iniciado_em, m.carga_horaria_min),
-    }));
+    //
+    // "progresso" (%): o front-end (barra de progresso na lista "Meus
+    // Treinamentos") sempre esperou esse campo, mas ele nunca era calculado
+    // aqui — por isso a barra ficava sempre em 0%. Usamos o mesmo critério
+    // já usado em api/player/prova.js (todosModulosConcluidos): proporção de
+    // módulos com concluido=true em matricula_modulo_progresso. Se o
+    // treinamento já foi concluído (prova aprovada), forçamos 100% mesmo que
+    // algum módulo tenha ficado sem o flag marcado, para nunca mostrar uma
+    // barra incompleta num curso já certificado.
+    const comPeriodo = rows.map(m => {
+      const totalModulos = m.modulos.length;
+      const modulosConcluidos = m.modulos.filter(mod => mod.concluido).length;
+      const progresso = m.status === 'concluido'
+        ? 100
+        : (totalModulos > 0 ? Math.round((modulosConcluidos / totalModulos) * 100) : 0);
+      return {
+        ...m,
+        progresso,
+        periodo_previsto: calcularPeriodoTreinamentoFormatado(m.iniciado_em, m.carga_horaria_min),
+      };
+    });
     res.json(comPeriodo);
   } catch (err) {
     console.error(err);

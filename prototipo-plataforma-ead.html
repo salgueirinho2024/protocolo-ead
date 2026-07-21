@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PREVINA-SE — Plataforma EAD</title>
+<script>
+  // Aplica o tema salvo (claro/escuro) o quanto antes, antes do <style>
+  // ser processado — evita o "flash" de tela clara e depois escura que
+  // aconteceria se isso rodasse só no fim do <body>.
+  (function () {
+    try {
+      var tema = localStorage.getItem('previna_tema');
+      if (tema === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    } catch (e) { /* localStorage indisponível (modo privado etc.) — mantém tema claro */ }
+  })();
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Montserrat:wght@600;700;800&display=swap');
 
@@ -12,6 +23,7 @@
     --navy-light: #2D6A4F;
     --navy-border: #2D6A4F;
     --white: #FFFFFF;
+    --surface-card: #FFFFFF;
     --surface: #F0F7F4;
     --surface2: #D8EDE4;
     --text: #1B2D24;
@@ -28,7 +40,47 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; }
+  body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--text); min-height: 100vh; transition: background .2s ease, color .2s ease; }
+
+  /* ── MODO ESCURO ──
+     Quase todo componente do app (cards, tabelas, botões, sidebar) já usa
+     as variáveis de cor do :root, então trocar essas variáveis quando
+     html[data-theme="dark"] já reveste a maior parte da tela. O resto
+     (badges com cor fixa, inputs sem background explícito) é ajustado
+     à parte, logo abaixo. */
+  html[data-theme="dark"] {
+    --surface-card: #1B2A21;  /* fundo dos cards/modais (era branco) */
+    --surface: #0E1712;       /* fundo da página */
+    --surface2: #24382C;      /* bordas, preenchimentos e hover sutil */
+    --text: #E7F1EA;          /* texto principal */
+    --text-muted: #8FAC9C;    /* texto secundário */
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+  html[data-theme="dark"] .form-group input,
+  html[data-theme="dark"] .field input,
+  html[data-theme="dark"] .field select,
+  html[data-theme="dark"] .field textarea {
+    background: var(--surface-card);
+    color: var(--text);
+  }
+  html[data-theme="dark"] .badge-green { background: rgba(82,183,136,.18); color: #95D5B2; }
+  html[data-theme="dark"] .badge-amber { background: rgba(244,162,97,.2); color: #F4A261; }
+  html[data-theme="dark"] .badge-red   { background: rgba(230,57,70,.2);  color: #FF8A94; }
+  html[data-theme="dark"] .badge-blue  { background: rgba(82,183,136,.18); color: #95D5B2; }
+  html[data-theme="dark"] .error-msg { background: rgba(230,57,70,.12); border-color: rgba(230,57,70,.4); color: #FF8A94; }
+  html[data-theme="dark"] .curso-feature { background: var(--surface2); }
+  html[data-theme="dark"] .player-pdf-inline { background: #0a0a0a; }
+  html[data-theme="dark"] ::-webkit-scrollbar { width: 10px; height: 10px; }
+  html[data-theme="dark"] ::-webkit-scrollbar-track { background: var(--surface); }
+  html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 20px; }
+
+  /* ── BOTÃO DE ALTERNAR TEMA ── */
+  .btn-tema-toggle {
+    width: 100%; padding: 9px; background: transparent; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; color: #95D5B2; font-size: 13px; cursor: pointer; font-family: inherit;
+    transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px;
+  }
+  .btn-tema-toggle:hover { background: rgba(255,255,255,0.07); color: var(--white); }
 
   /* ── LOGIN ── */
   #login-screen {
@@ -47,7 +99,7 @@
     background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2340916C' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
   .login-card {
-    background: var(--white);
+    background: var(--surface-card);
     border-radius: 20px;
     padding: 48px 40px;
     width: 100%;
@@ -145,14 +197,22 @@
 
   /* ── CARDS & STATS ── */
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-  .stat-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border-left: 4px solid var(--green); }
+  .conquistas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .conquista-card { background: var(--surface-card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1.5px solid transparent; text-align: center; transition: transform .15s ease; }
+  .conquista-card.desbloqueada { border-color: var(--gold); background: linear-gradient(180deg, rgba(233,196,106,.14), var(--surface-card) 60%); }
+  .conquista-card.bloqueada { opacity: .55; filter: grayscale(1); }
+  .conquista-card .conquista-icone { font-size: 40px; line-height: 1; margin-bottom: 10px; }
+  .conquista-card .conquista-titulo { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .conquista-card .conquista-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; min-height: 32px; }
+  .conquista-selo { display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #8A6D1D; background: rgba(233,196,106,.35); padding: 3px 10px; border-radius: 20px; }
+  .stat-card { background: var(--surface-card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border-left: 4px solid var(--green); }
   .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
   .stat-value { font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 800; color: var(--navy); margin-top: 4px; }
   .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
   /* ── TABLE ── */
-  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
-  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--surface2); display: flex; align-items: center; justify-content: space-between; background: var(--white); }
+  .card { background: var(--surface-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--surface2); display: flex; align-items: center; justify-content: space-between; background: var(--surface-card); }
   .card-title { font-size: 14px; font-weight: 700; color: var(--navy); }
   .card-body { padding: 20px; }
   table { width: 100%; border-collapse: collapse; }
@@ -183,7 +243,7 @@
   /* ── MODAL ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; display: none; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal { background: var(--white); border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .modal { background: var(--surface-card); border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
   .modal h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 20px; color: var(--navy); }
   .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
@@ -205,7 +265,7 @@
   .player-layout { display: flex; align-items: flex-start; gap: 20px; }
   .player-layout__main { flex: 1; min-width: 0; }
   .player-sidebar {
-    width: 300px; flex-shrink: 0; background: var(--white); border-radius: 12px;
+    width: 300px; flex-shrink: 0; background: var(--surface-card); border-radius: 12px;
     box-shadow: var(--shadow); padding: 18px; position: sticky; top: 20px;
     max-height: calc(100vh - 40px); overflow-y: auto;
   }
@@ -216,7 +276,7 @@
     .player-layout { flex-direction: column; }
     .player-sidebar { width: 100%; position: static; max-height: none; }
   }
-  .player-card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; position: relative; }
+  .player-card { background: var(--surface-card); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; position: relative; }
   /* Vídeo e PDF lado a lado, os dois visíveis ao mesmo tempo (o PDF só
      aparece quando o módulo tem material de apoio cadastrado). Em telas
      estreitas, empilha o PDF abaixo do vídeo em vez de espremer os dois. */
@@ -255,7 +315,7 @@
   .step-dot.current { background: var(--green-bright); }
 
   /* ── PROVA ── */
-  .question-card { background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border-top: 3px solid var(--green); }
+  .question-card { background: var(--surface-card); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border-top: 3px solid var(--green); }
   .question-num { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .06em; }
   .question-text { font-size: 15px; font-weight: 600; margin: 8px 0 14px; color: var(--navy); }
   .option-label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--surface2); border-radius: 6px; cursor: pointer; margin-bottom: 8px; font-size: 14px; transition: all .15s; }
@@ -2685,6 +2745,7 @@ var qrcode = function() {
     </div>
     <nav class="sidebar-nav" id="sidebar-nav"></nav>
     <div class="sidebar-footer">
+      <button class="btn-tema-toggle" id="btn-tema-toggle" onclick="alternarTema()">🌙 Modo escuro</button>
       <button class="btn-logout" onclick="logout()">↩ Sair</button>
     </div>
   </aside>
@@ -2912,6 +2973,40 @@ var qrcode = function() {
     <div id="page-func-certificado" class="page">
       <div class="page-header"><h2>Meu Certificado</h2></div>
       <div id="cert-container"></div>
+    </div>
+
+    <!-- Histórico de Treinamentos -->
+    <div id="page-func-historico" class="page">
+      <div class="page-header">
+        <h2>Histórico de Treinamentos</h2>
+        <p>Todos os treinamentos que você já fez ou está fazendo</p>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Treinamento</th>
+              <th>Carga Horária</th>
+              <th>Status</th>
+              <th>Iniciado em</th>
+              <th>Concluído em</th>
+              <th>Nota</th>
+              <th>Certificado</th>
+            </tr>
+          </thead>
+          <tbody id="lista-historico-treinamentos"><tr class="loading-row"><td colspan="7">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Conquistas -->
+    <div id="page-func-conquistas" class="page">
+      <div class="page-header">
+        <h2>Conquistas</h2>
+        <p>Suas medalhas por dedicação aos treinamentos</p>
+      </div>
+      <div class="stats-grid" id="conquistas-resumo"></div>
+      <div class="conquistas-grid" id="conquistas-grid"></div>
     </div>
 
     <!-- Editar Conta -->
@@ -3317,6 +3412,8 @@ const navConfigs = {
   funcionario: [
     { section: 'EAD' },
     { id: 'func-treinamentos', label: 'Meus Cursos', icon: iconGrid(), onEnter: carregarMeusTrienamentos },
+    { id: 'func-historico', label: 'Histórico', icon: iconHistory(), onEnter: carregarHistoricoTreinamentos },
+    { id: 'func-conquistas', label: 'Conquistas', icon: iconTrophy(), onEnter: carregarConquistas },
     { id: 'func-certificado', label: 'Certificados', icon: iconCert(), onEnter: carregarCertificado },
     { section: 'Conta' },
     { id: 'func-conta', label: 'Editar Conta', icon: iconUser(), onEnter: carregarContaFuncionario },
@@ -4840,6 +4937,126 @@ async function carregarCertificado() {
 }
 
 // ══════════════════════════════════════════════
+// CONQUISTAS (FUNCIONÁRIO)
+// ══════════════════════════════════════════════
+// Sistema de conquistas 100% calculado no front-end a partir dos dados que
+// /api/player/matricula já devolve (status + segundos_assistidos_total de
+// cada matrícula) — sem precisar de tabela nova nem de mais uma Serverless
+// Function (o projeto já está no limite de 12 do plano Hobby da Vercel,
+// ver README). "Cursos concluídos" conta status === 'concluido'; "Horas
+// estudadas" soma o tempo assistido (válido, anti-fraude) de TODAS as
+// matrículas, concluídas ou não.
+const CONQUISTAS = [
+  { id: 'primeiro_curso',  titulo: 'Primeiro Passo',            desc: 'Conclua seu primeiro treinamento',  icone: '🎯', tipo: 'cursos', meta: 1 },
+  { id: 'cinco_cursos',    titulo: 'Em Ritmo',                  desc: 'Conclua 5 treinamentos',             icone: '🔥', tipo: 'cursos', meta: 5 },
+  { id: 'dez_cursos',      titulo: 'Dedicação Total',           desc: 'Conclua 10 treinamentos',            icone: '🏆', tipo: 'cursos', meta: 10 },
+  { id: 'dez_horas',       titulo: 'Aprendiz',                  desc: 'Estude 10 horas no total',           icone: '📖', tipo: 'horas',  meta: 10 },
+  { id: 'cinquenta_horas', titulo: 'Maratonista',                desc: 'Estude 50 horas no total',           icone: '⏱️', tipo: 'horas',  meta: 50 },
+  { id: 'cem_horas',       titulo: 'Centurião do Conhecimento',  desc: 'Estude 100 horas no total',          icone: '💯', tipo: 'horas',  meta: 100 },
+];
+
+async function carregarConquistas() {
+  const resumo = document.getElementById('conquistas-resumo');
+  const grid = document.getElementById('conquistas-grid');
+  resumo.innerHTML = '<div class="stat-card">Carregando…</div>';
+  grid.innerHTML = '';
+  try {
+    const data = await api('GET', '/api/player/matricula');
+    const lista = Array.isArray(data) ? data : (data.matriculas || []);
+
+    const cursosConcluidos = lista.filter(m => m.status === 'concluido').length;
+    const segundosTotais = lista.reduce((soma, m) => soma + (Number(m.segundos_assistidos_total) || 0), 0);
+    const horasEstudadas = segundosTotais / 3600;
+    const desbloqueadas = CONQUISTAS.filter(c => (c.tipo === 'cursos' ? cursosConcluidos : horasEstudadas) >= c.meta).length;
+
+    resumo.innerHTML = `
+      <div class="stat-card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">CURSOS CONCLUÍDOS</div><div style="font-size:28px;font-weight:700">${cursosConcluidos}</div></div>
+      <div class="stat-card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">HORAS ESTUDADAS</div><div style="font-size:28px;font-weight:700">${horasEstudadas.toFixed(1)}h</div></div>
+      <div class="stat-card"><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">MEDALHAS CONQUISTADAS</div><div style="font-size:28px;font-weight:700">${desbloqueadas} / ${CONQUISTAS.length}</div></div>
+    `;
+
+    grid.innerHTML = CONQUISTAS.map(c => {
+      const atual = c.tipo === 'cursos' ? cursosConcluidos : horasEstudadas;
+      const pct = Math.min(100, Math.round((atual / c.meta) * 100));
+      const desbloqueada = atual >= c.meta;
+      const atualFmt = c.tipo === 'horas' ? atual.toFixed(1) : atual;
+      return `<div class="conquista-card ${desbloqueada ? 'desbloqueada' : 'bloqueada'}">
+        <div class="conquista-icone">${c.icone}</div>
+        <div class="conquista-titulo">${c.titulo}</div>
+        <div class="conquista-desc">${c.desc}</div>
+        ${desbloqueada
+          ? `<span class="conquista-selo">✓ Conquistada</span>`
+          : `<div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:var(--text-muted)">${atualFmt} / ${c.meta}${c.tipo === 'horas' ? 'h' : ''}</span><span style="font-size:11px;font-weight:600">${pct}%</span></div><div class="vagas-bar"><div class="vagas-fill" style="width:${pct}%"></div></div></div>`}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    resumo.innerHTML = '';
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>${e.message}</p></div>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// HISTÓRICO DE TREINAMENTOS (FUNCIONÁRIO)
+// ══════════════════════════════════════════════
+// Reaproveita /api/player/matricula (já traz status, iniciado_em,
+// concluido_em, nota_prova_final) e /api/player/certificado (pra linkar
+// direto no certificado, quando existir um pra aquele treinamento) numa
+// única tabela com o histórico completo — inclusive treinamentos ainda
+// em andamento ou reprovados, que a tela de Certificados não mostra.
+async function carregarHistoricoTreinamentos() {
+  const tbody = document.getElementById('lista-historico-treinamentos');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="7">Carregando…</td></tr>';
+  try {
+    const [matriculasResp, certsResp] = await Promise.all([
+      api('GET', '/api/player/matricula'),
+      api('GET', '/api/player/certificado').catch(() => [])
+    ]);
+    const lista = Array.isArray(matriculasResp) ? matriculasResp : (matriculasResp.matriculas || []);
+    const certs = Array.isArray(certsResp) ? certsResp : (certsResp.certificados || []);
+
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Você ainda não tem treinamentos no histórico.</td></tr>`;
+      return;
+    }
+
+    // Mais recente primeiro: concluído_em, senão iniciado_em.
+    const ordenada = [...lista].sort((a, b) => new Date(b.concluido_em || b.iniciado_em || 0) - new Date(a.concluido_em || a.iniciado_em || 0));
+
+    tbody.innerHTML = ordenada.map(m => {
+      const cert = certs.find(c => c.treinamento_id === m.treinamento_id);
+      return `<tr>
+        <td style="font-weight:600">${m.treinamento_titulo || 'Treinamento'}</td>
+        <td>${m.carga_horaria_min ? m.carga_horaria_min + ' min' : '—'}</td>
+        <td><span class="badge ${statusMatriculaBadgeClass(m.status)}">${statusMatriculaLabel(m.status)}</span></td>
+        <td>${m.iniciado_em ? new Date(m.iniciado_em).toLocaleDateString('pt-BR') : '—'}</td>
+        <td>${m.concluido_em ? new Date(m.concluido_em).toLocaleDateString('pt-BR') : '—'}</td>
+        <td>${m.nota_prova_final != null ? m.nota_prova_final : '—'}</td>
+        <td>${cert ? `<button class="btn btn-outline btn-sm" onclick="abrirCertificadoPorCodigo('${cert.codigo_validacao}')">Ver</button>` : '—'}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">${e.message}</td></tr>`;
+  }
+}
+
+// Navega até a página de Certificados e abre direto o certificado
+// correspondente a este código de validação. Como carregarCertificado()
+// é assíncrona, espera (com um pequeno polling) window._certsList ficar
+// pronta antes de abrir — evita ter que reescrever verCertificado().
+function abrirCertificadoPorCodigo(codigo) {
+  navTo('func-certificado');
+  let tentativas = 0;
+  const tentar = () => {
+    const idx = (window._certsList || []).findIndex(c => c.codigo_validacao === codigo);
+    if (idx > -1) { verCertificado(idx); return; }
+    tentativas++;
+    if (tentativas < 30) setTimeout(tentar, 150);
+    else toast('Não foi possível abrir o certificado.', 'error');
+  };
+  setTimeout(tentar, 150);
+}
+
+// ══════════════════════════════════════════════
 // EDITAR CONTA (FUNCIONÁRIO)
 // ══════════════════════════════════════════════
 function carregarContaFuncionario() {
@@ -5194,6 +5411,24 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
+// ══════════════════════════════════════════════
+// MODO ESCURO
+// ══════════════════════════════════════════════
+// O tema já é aplicado antes do <body> renderizar (script no <head>, evita
+// flash). Aqui só sincronizamos o texto do botão com o tema atual e
+// tratamos o clique de alternar + persistência em localStorage.
+function aplicarTema(tema) {
+  document.documentElement.setAttribute('data-theme', tema);
+  try { localStorage.setItem('previna_tema', tema); } catch (e) { /* modo privado etc. */ }
+  const btn = document.getElementById('btn-tema-toggle');
+  if (btn) btn.textContent = tema === 'dark' ? '☀️ Modo claro' : '🌙 Modo escuro';
+}
+function alternarTema() {
+  const atual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  aplicarTema(atual === 'dark' ? 'light' : 'dark');
+}
+aplicarTema(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+
 // Prova: precisa carregar ao entrar na página
 const origNavTo = navTo;
 window.navTo = function(id) {
@@ -5216,6 +5451,8 @@ function iconShield() { return `<svg width="16" height="16" fill="none" stroke="
 function iconUsers() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`; }
 function iconCert() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 function iconUser() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`; }
+function iconHistory() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>`; }
+function iconTrophy() { return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/></svg>`; }
 function iconBookLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>`; }
 function iconCertLarge() { return `<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>`; }
 </script>

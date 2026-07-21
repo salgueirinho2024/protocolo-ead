@@ -16,6 +16,7 @@ async function metadadosCertificado(req, res) {
   try {
     const { rows } = await db.query(
       `SELECT cert.id, cert.codigo_validacao, cert.arquivo_pdf_url, cert.emitido_em, cert.valido_ate,
+              m.treinamento_id,
               t.titulo AS treinamento_titulo, t.carga_horaria_min, t.conteudo_programatico,
               t.emissora_nome, t.emissora_cnpj,
               t.assinatura_base64, t.assinatura_nome, t.assinatura_cargo,
