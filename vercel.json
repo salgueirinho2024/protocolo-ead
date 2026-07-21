@@ -8,6 +8,7 @@
     }
   },
   "rewrites": [
+    { "source": "/validar/:codigo", "destination": "/validar.html" },
     { "source": "/api/auth/login-funcionario", "destination": "/api/auth/login?tipo=funcionario" },
     { "source": "/api/admin/empresas/:id", "destination": "/api/admin?recurso=empresas&id=:id" },
     { "source": "/api/admin/empresas", "destination": "/api/admin?recurso=empresas" },

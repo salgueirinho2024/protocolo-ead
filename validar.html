@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validar Certificado</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#0B6E2A;
+    --green-light:#3EC96A;
+    --navy:#111827;
+    --muted:#6b7280;
+    --red:#b91c1c;
+    --amber:#b45309;
+    --bg:#f4f6f5;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:'Inter',Arial,Helvetica,sans-serif;
+    background:var(--bg);
+    color:var(--navy);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .wrap{width:100%;max-width:760px}
+  .top-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;color:var(--muted);font-size:13px}
+  .top-bar b{color:var(--navy)}
+  .state-box{
+    background:#fff;border-radius:12px;padding:40px 24px;text-align:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+  .state-box .emoji{font-size:40px;margin-bottom:12px}
+  .state-box h2{margin:0 0 6px;font-size:18px}
+  .state-box p{margin:0;color:var(--muted);font-size:14px}
+  .banner{
+    display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:10px;
+    font-weight:700;font-size:15px;margin-bottom:18px;
+  }
+  .banner.ok{background:rgba(11,110,42,.08);color:var(--green);border:1px solid rgba(11,110,42,.25)}
+  .banner.warn{background:rgba(180,83,9,.08);color:var(--amber);border:1px solid rgba(180,83,9,.25)}
+  .cert-card{
+    position:relative;overflow:hidden;border-radius:14px;
+    box-shadow:0 4px 20px rgba(0,0,0,.12);background:#fff;
+  }
+  .cert-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .cert-content{
+    position:relative;z-index:1;padding:44px 40px 0;text-align:center;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .cert-title{
+    font-family:Arial,Helvetica,sans-serif;font-size:32px;font-weight:800;
+    letter-spacing:10px;padding-left:10px;color:#111827;margin-bottom:12px;
+  }
+  .cert-eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#4b5563;margin-bottom:10px}
+  .cert-name{
+    font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:800;color:#111827;
+    letter-spacing:.01em;text-transform:uppercase;margin-bottom:2px;word-break:break-word;
+  }
+  .cert-cpf{font-size:10.5px;color:#9ca3af;letter-spacing:.04em;margin-bottom:14px}
+  .cert-rule{width:70%;max-width:420px;height:2px;background:linear-gradient(90deg,#0B6E2A,#3EC96A);margin-bottom:18px;border-radius:2px}
+  .cert-body{font-size:14px;line-height:1.65;color:#1f2937;text-align:left;max-width:520px}
+  .cert-code-row{margin-top:16px;font-size:11px;color:#9ca3af;letter-spacing:.05em}
+  .cert-code-row b{color:var(--green);font-family:monospace}
+  .cert-signatures{
+    display:flex;align-items:center;gap:20px;padding:22px 34px;margin-top:32px;
+    background:linear-gradient(90deg,#0B6E2A,#1DAA4E 55%,#3EC96A);
+  }
+  .cert-signatures .col{flex:1;text-align:center;color:#fff}
+  .cert-signatures .col .line{width:150px;max-width:88%;border-top:1px solid rgba(255,255,255,.55);margin:0 auto 5px}
+  .cert-signatures .col .rotulo{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#eafff0;font-weight:700;margin-bottom:2px}
+  .cert-signatures .col .nome{font-size:11px;font-weight:600}
+  .cert-signatures .col .cargo,.cert-signatures .col .doc{font-size:8.5px;color:#d7f3e0}
+  .cert-programa{padding:24px 34px 34px;background:#fff;position:relative;z-index:1}
+  .cert-programa h3{font-size:14px;letter-spacing:.04em;color:#111827;margin:0 0 12px}
+  .cert-programa ul{margin:0;padding-left:18px;font-size:12.5px;color:#374151;line-height:1.7}
+  footer{margin-top:20px;text-align:center;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-bar">🔍 <span>Validação pública de certificado &middot; código <b id="codigo-label">—</b></span></div>
+  <div id="app">
+    <div class="state-box">
+      <div class="emoji">⏳</div>
+      <h2>Verificando…</h2>
+      <p>Aguarde enquanto consultamos o certificado.</p>
+    </div>
+  </div>
+  <footer>Se você não solicitou esta verificação, pode fechar esta página com segurança.</footer>
+</div>
+
+<script>
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatarCPF(c) {
+  if (!c) return '—';
+  const digits = String(c).replace(/\D/g, '');
+  if (digits.length !== 11) return c;
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+function minutosParaHoras(min) {
+  if (!min && min !== 0) return '—';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h + 'h' + (m > 0 ? ' ' + m + 'min' : '');
+}
+function formatarDataBR(d) {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString('pt-BR');
+}
+
+function pegarCodigoDaURL() {
+  // Suporta tanto /validar/CODIGO (rota pública real) quanto
+  // /validar.html?codigo=CODIGO (acesso direto ao arquivo estático).
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('codigo')) return params.get('codigo');
+  const partes = window.location.pathname.split('/').filter(Boolean);
+  const ultima = partes[partes.length - 1] || '';
+  return ultima.replace(/\.html$/i, '');
+}
+
+function colunaAssinatura(rotulo, nome, cargo, documento) {
+  if (!nome) return '<div style="flex:1"></div>';
+  return `<div class="col">
+    <div class="line"></div>
+    <div class="rotulo">${escHtml(rotulo)}</div>
+    <div class="nome">${escHtml(nome)}</div>
+    ${cargo ? `<div class="cargo">${escHtml(cargo)}</div>` : ''}
+    ${documento ? `<div class="doc">${escHtml(documento)}</div>` : ''}
+  </div>`;
+}
+
+function renderEstado(emoji, titulo, texto) {
+  document.getElementById('app').innerHTML = `
+    <div class="state-box">
+      <div class="emoji">${emoji}</div>
+      <h2>${escHtml(titulo)}</h2>
+      <p>${escHtml(texto)}</p>
+    </div>`;
+}
+
+function renderCertificado(data) {
+  const emissora = data.emissora || {};
+  const fundo = emissora.fundo_frente_base64;
+  const itens = (data.conteudo_programatico || '')
+    .split('\n').map(l => l.trim()).filter(Boolean);
+
+  const banner = data.valido
+    ? `<div class="banner ok">✅ Certificado válido</div>`
+    : `<div class="banner warn">⚠️ Certificado expirado</div>`;
+
+  const periodo = (data.data_inicio && data.data_fim)
+    ? `realizado entre <strong>${data.data_inicio}</strong>${data.data_fim !== data.data_inicio ? ` e <strong>${data.data_fim}</strong>` : ''}, `
+    : '';
+
+  const conteudo = `
+    <div class="cert-title">CERTIFICADO</div>
+    <div class="cert-eyebrow">Certificamos que</div>
+    <div class="cert-name">${escHtml(data.funcionario_nome || '—')}</div>
+    <div class="cert-cpf">CPF ${formatarCPF(data.cpf)}</div>
+    <div class="cert-rule"></div>
+    <div class="cert-body">
+      Participou do treinamento <strong>${escHtml((data.treinamento_titulo || '').toUpperCase())}</strong>,
+      ${periodo}com carga horária total de <strong>${minutosParaHoras(data.carga_horaria_min)}</strong>,
+      concluído em <strong>${formatarDataBR(data.emitido_em) || '—'}</strong>.
+      ${data.valido_ate ? `Certificado válido até <strong>${formatarDataBR(data.valido_ate)}</strong>.` : ''}
+    </div>
+    <div class="cert-code-row">Código de validação <b>${escHtml(data.codigo_validacao || '')}</b></div>
+  `;
+
+  const brandNome = emissora.empresa_razao_social || 'Plataforma de Treinamentos';
+  const brandCnpj = emissora.empresa_cnpj ? `CNPJ ${emissora.empresa_cnpj}` : '';
+
+  const colResponsavel = colunaAssinatura(
+    'Responsável Técnico', emissora.responsavel_tecnico_nome, 'Responsável Técnico', emissora.responsavel_tecnico_documento
+  );
+  const colInstrutor = colunaAssinatura(
+    'Instrutor', emissora.assinatura_nome || emissora.instrutor_nome, emissora.assinatura_cargo || 'Instrutor/Palestrante', emissora.instrutor_documento
+  );
+
+  const programa = itens.length ? `
+    <div class="cert-programa">
+      <h3>Conteúdo programático</h3>
+      <ul>${itens.map(i => `<li>${escHtml(i)}</li>`).join('')}</ul>
+    </div>` : '';
+
+  document.getElementById('app').innerHTML = `
+    ${banner}
+    <div class="cert-card">
+      ${fundo ? `<img class="cert-bg" src="${fundo}" alt="">` : ''}
+      <div class="cert-content" style="${fundo ? 'padding-bottom:40px' : 'padding-bottom:0'}">
+        ${!fundo ? `<div style="font-family:'Fraunces',serif;font-size:14px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#14532D;margin-bottom:8px">${escHtml(brandNome)}${brandCnpj ? ' · ' + escHtml(brandCnpj) : ''}</div>` : ''}
+        ${conteudo}
+      </div>
+      <div class="cert-signatures">${colResponsavel}${colInstrutor}</div>
+      ${programa}
+    </div>`;
+}
+
+(async function main() {
+  const codigo = (pegarCodigoDaURL() || '').toUpperCase();
+  document.getElementById('codigo-label').textContent = codigo || '—';
+
+  if (!codigo) {
+    renderEstado('❌', 'Código não informado', 'Confira o link ou o código impresso no certificado.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/validar/' + encodeURIComponent(codigo));
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 404 || (!data.valido && !data.expirado)) {
+      renderEstado('❌', 'Certificado não encontrado', 'Não existe nenhum certificado emitido com esse código.');
+      return;
+    }
+    renderCertificado(data);
+  } catch (e) {
+    renderEstado('❌', 'Erro ao consultar', 'Não foi possível verificar o certificado agora. Tente novamente em instantes.');
+  }
+})();
+</script>
+</body>
+</html>
