@@ -25,6 +25,7 @@
     { "source": "/api/empresa/certificados", "destination": "/api/empresa/funcionarios?sub=certificados" },
     { "source": "/api/empresa/estatisticas", "destination": "/api/empresa/funcionarios?sub=estatisticas" },
     { "source": "/api/empresa/perfil", "destination": "/api/empresa/funcionarios?sub=perfil" },
+    { "source": "/api/empresa/matricular-lote", "destination": "/api/empresa/funcionarios?sub=matricular-lote" },
     { "source": "/api/empresa/contratos/:id/matriculas/:mId", "destination": "/api/empresa/funcionarios?sub=matriculas&contratoId=:id&mId=:mId" },
     { "source": "/api/empresa/contratos/:id/matriculas", "destination": "/api/empresa/funcionarios?sub=matriculas&contratoId=:id" },
     { "source": "/api/player/sessao/iniciar", "destination": "/api/player/sessao?acao=iniciar" },

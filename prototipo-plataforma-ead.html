@@ -3445,6 +3445,18 @@ var qrcode = function() {
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-matricular-lote">
+  <div class="modal">
+    <h3>Matricular <span id="lote-func-nome"></span> em treinamentos</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:-8px 0 12px">Todos os treinamentos ativos com vaga disponível já vêm marcados. Desmarque o que não quiser incluir.</p>
+    <div id="lote-lista-treinamentos" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-matricular-lote')">Cancelar</button>
+      <button class="btn btn-navy" id="btn-confirmar-lote" onclick="confirmarMatriculaLote()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -4665,6 +4677,7 @@ function renderFuncionarios(funcionarios) {
       <td>${vinculoCol}</td>
       <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
         ${acoesVinculo}
+        <button class="btn btn-outline btn-sm" onclick='abrirModalMatriculaLote(${JSON.stringify(f.id)}, ${JSON.stringify(f.nome)})'>Matricular em todos</button>
         <button class="btn btn-outline btn-sm" onclick='editarFuncionario(${JSON.stringify(f)})'>Editar</button>
         <button class="btn btn-red btn-sm" onclick="removerFuncionario('${f.id}')">Remover</button>
       </td>
@@ -4750,6 +4763,62 @@ async function desvincularFuncionario(contratoId, matriculaId) {
     toast('Funcionário desvinculado do contrato', 'success');
     carregarFuncionarios();
   } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Matricular em lote: abre modal com todos os treinamentos ativos com
+// vaga disponível nos quais o funcionário ainda não está vinculado, já
+// pré-marcados, pra empresa confirmar tudo de uma vez em vez de vincular
+// contrato por contrato. ──
+let loteFuncionarioIdAtual = null;
+
+async function abrirModalMatriculaLote(funcId, funcNome) {
+  loteFuncionarioIdAtual = funcId;
+  document.getElementById('lote-func-nome').textContent = funcNome || '';
+  const container = document.getElementById('lote-lista-treinamentos');
+  container.innerHTML = '<div style="padding:12px;color:var(--text-muted)">Carregando…</div>';
+  document.getElementById('modal-matricular-lote').classList.add('open');
+
+  try {
+    const lista = await api('GET', '/api/empresa/matricular-lote?funcionarioId=' + encodeURIComponent(funcId));
+    if (!lista.length) {
+      container.innerHTML = '<div style="padding:12px;color:var(--text-muted)">Não há treinamentos com vaga disponível para vincular — ou o funcionário já está matriculado em todos.</div>';
+      return;
+    }
+    container.innerHTML = lista.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--surface2);border-radius:8px;cursor:pointer">
+        <input type="checkbox" value="${c.id}" checked style="width:16px;height:16px;flex-shrink:0">
+        <span style="flex:1">${c.treinamento_titulo}</span>
+        <span style="font-size:12px;color:var(--text-muted)">${c.vagas_usadas}/${c.vagas_contratadas} vagas</span>
+      </label>`).join('');
+  } catch (e) {
+    container.innerHTML = `<div style="padding:12px;color:var(--red)">${e.message}</div>`;
+  }
+}
+
+async function confirmarMatriculaLote() {
+  const container = document.getElementById('lote-lista-treinamentos');
+  const contratoIds = Array.from(container.querySelectorAll('input[type=checkbox]:checked')).map(el => el.value);
+  if (!contratoIds.length) { toast('Marque pelo menos um treinamento.', 'error'); return; }
+
+  const btn = document.getElementById('btn-confirmar-lote');
+  btn.disabled = true;
+  try {
+    const resp = await api('POST', '/api/empresa/matricular-lote', {
+      funcionario_id: loteFuncionarioIdAtual,
+      contrato_ids: contratoIds,
+    });
+    const partes = [];
+    if (resp.vinculados?.length) partes.push(`${resp.vinculados.length} matriculado(s)`);
+    if (resp.ja_vinculados?.length) partes.push(`${resp.ja_vinculados.length} já estava(m) vinculado(s)`);
+    if (resp.sem_vaga?.length) partes.push(`${resp.sem_vaga.length} sem vaga`);
+    toast(partes.join(' • ') || 'Nenhuma alteração feita.', resp.vinculados?.length ? 'success' : 'error');
+    fecharModal('modal-matricular-lote');
+    carregarFuncionarios();
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ══════════════════════════════════════════════

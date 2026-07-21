@@ -14,7 +14,14 @@
 //                                                          (é AQUI que a trava de vagas entra)
 //   DELETE /api/empresa/contratos/:id/matriculas/:mId  — desvincula (só se ainda não iniciou)
 //
-//   GET    /api/empresa/calendario?mes=YYYY-MM          — treinamentos concluídos no mês
+//   GET    /api/empresa/matricular-lote?funcionarioId=ID — lista contratos ativos com vaga
+//                                                          disponível nos quais esse funcionário
+//                                                          AINDA NÃO está vinculado (pra montar
+//                                                          o modal "matricular em todos")
+//   POST   /api/empresa/matricular-lote                  — vincula o funcionário a vários
+//                                                          contratos de uma vez. Body:
+//                                                          { funcionario_id, contrato_ids: [...] }
+//
 //                                                          (default: mês atual), para o
 //                                                          calendário do portal da empresa
 //
@@ -480,6 +487,128 @@ async function handleMatriculas(req, res, user, contratoId, mId) {
   }
 }
 
+// ─────────────────────────────────────────────────────────
+// Matrícula em lote — vincula um funcionário a VÁRIOS
+// contratos/treinamentos de uma vez, em vez de um por um.
+// Usado pelo modal "Matricular em todos os treinamentos".
+// ─────────────────────────────────────────────────────────
+
+async function handleMatricularLote(req, res, user) {
+  if (!metodoPermitido(req, res, 'GET', 'POST')) return;
+
+  if (req.method === 'GET') {
+    const funcionarioId = Array.isArray(req.query.funcionarioId) ? req.query.funcionarioId[0] : req.query.funcionarioId;
+    if (!funcionarioId) return res.status(400).json({ erro: 'funcionarioId é obrigatório.' });
+
+    try {
+      const { rows: fRows } = await db.query(
+        `SELECT id FROM funcionarios WHERE id = $1 AND empresa_id = $2`,
+        [funcionarioId, user.empresaId]
+      );
+      if (!fRows[0]) return res.status(404).json({ erro: 'Funcionário não encontrado.' });
+
+      // Contratos ativos da empresa, com vaga sobrando, nos quais este
+      // funcionário AINDA NÃO está vinculado.
+      const { rows } = await db.query(
+        `SELECT c.id, t.titulo AS treinamento_titulo, c.vagas_contratadas,
+                COUNT(m.id)::int AS vagas_usadas
+           FROM contratos c
+           JOIN treinamentos t ON t.id = c.treinamento_id
+           LEFT JOIN matriculas m ON m.contrato_id = c.id
+          WHERE c.empresa_id = $1 AND c.status = 'ativo'
+          GROUP BY c.id, t.titulo, c.vagas_contratadas
+         HAVING COUNT(m.id) < c.vagas_contratadas
+            AND NOT EXISTS (
+                  SELECT 1 FROM matriculas mm
+                   WHERE mm.contrato_id = c.id AND mm.funcionario_id = $2
+                )
+          ORDER BY t.titulo ASC`,
+        [user.empresaId, funcionarioId]
+      );
+      return res.json(rows);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao listar treinamentos disponíveis para matrícula em lote.' });
+    }
+  }
+
+  // POST — vincula o funcionário a cada contrato da lista. Não falha tudo
+  // se um item específico não puder ser vinculado (ex.: vaga esgotou entre
+  // a hora que o modal abriu e o clique em confirmar) — cada contrato é
+  // resolvido independentemente e o resumo final mostra o que aconteceu
+  // com cada um.
+  const { funcionario_id, contrato_ids } = req.body || {};
+  if (!funcionario_id) return res.status(400).json({ erro: 'funcionario_id é obrigatório.' });
+  if (!Array.isArray(contrato_ids) || contrato_ids.length === 0) {
+    return res.status(400).json({ erro: 'contrato_ids é obrigatório e deve ser uma lista não vazia.' });
+  }
+
+  const { rows: fRows } = await db.query(
+    `SELECT id FROM funcionarios WHERE id = $1 AND empresa_id = $2`,
+    [funcionario_id, user.empresaId]
+  );
+  if (!fRows[0]) return res.status(404).json({ erro: 'Funcionário não encontrado.' });
+
+  const vinculados = [];
+  const ja_vinculados = [];
+  const sem_vaga = [];
+  const nao_encontrados = [];
+
+  for (const contratoId of contrato_ids) {
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { rows: cRows } = await client.query(
+        `SELECT c.id, c.treinamento_id, c.vagas_contratadas, t.titulo,
+                (SELECT COUNT(*) FROM matriculas m WHERE m.contrato_id = c.id) AS usadas
+           FROM contratos c
+           JOIN treinamentos t ON t.id = c.treinamento_id
+          WHERE c.id = $1 AND c.empresa_id = $2 AND c.status = 'ativo'
+          FOR UPDATE OF c`,
+        [contratoId, user.empresaId]
+      );
+      if (!cRows[0]) {
+        await client.query('ROLLBACK');
+        nao_encontrados.push(contratoId);
+        continue;
+      }
+
+      const { rows: jaRows } = await client.query(
+        `SELECT id FROM matriculas WHERE contrato_id = $1 AND funcionario_id = $2`,
+        [contratoId, funcionario_id]
+      );
+      if (jaRows[0]) {
+        await client.query('ROLLBACK');
+        ja_vinculados.push(cRows[0].titulo);
+        continue;
+      }
+
+      if (parseInt(cRows[0].usadas) >= parseInt(cRows[0].vagas_contratadas)) {
+        await client.query('ROLLBACK');
+        sem_vaga.push(cRows[0].titulo);
+        continue;
+      }
+
+      await client.query(
+        `INSERT INTO matriculas (funcionario_id, contrato_id, treinamento_id)
+         VALUES ($1, $2, $3)`,
+        [funcionario_id, contratoId, cRows[0].treinamento_id]
+      );
+      await client.query('COMMIT');
+      vinculados.push(cRows[0].titulo);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error(err);
+      nao_encontrados.push(contratoId);
+    } finally {
+      client.release();
+    }
+  }
+
+  return res.json({ vinculados, ja_vinculados, sem_vaga, nao_encontrados });
+}
+
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
@@ -511,6 +640,10 @@ module.exports = async (req, res) => {
   if (sub === 'matriculas') {
     if (!contratoId) return res.status(400).json({ erro: 'contratoId é obrigatório.' });
     return handleMatriculas(req, res, user, contratoId, mId);
+  }
+
+  if (sub === 'matricular-lote') {
+    return handleMatricularLote(req, res, user);
   }
 
   return handleFuncionarios(req, res, user, fId);
