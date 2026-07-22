@@ -21,6 +21,7 @@ async function metadadosCertificado(req, res) {
               t.emissora_nome, t.emissora_cnpj,
               t.assinatura_base64, t.assinatura_nome, t.assinatura_cargo,
               t.responsavel_tecnico_nome, t.responsavel_tecnico_documento, t.instrutor_documento,
+              t.responsavel_tecnico_assinatura_base64,
               t.certificado_fundo_frente_base64, t.certificado_fundo_verso_base64,
               m.iniciado_em,
               fc.nome AS funcionario_nome, fc.cpf
@@ -60,6 +61,7 @@ async function metadadosCertificado(req, res) {
         instrutor_documento: c.instrutor_documento || (emissoraGlobal && emissoraGlobal.instrutor_documento) || null,
         responsavel_tecnico_nome: c.responsavel_tecnico_nome || (emissoraGlobal && emissoraGlobal.responsavel_tecnico_nome) || null,
         responsavel_tecnico_documento: c.responsavel_tecnico_documento || (emissoraGlobal && emissoraGlobal.responsavel_tecnico_documento) || null,
+        responsavel_tecnico_assinatura_base64: c.responsavel_tecnico_assinatura_base64 || null,
         empresa_endereco: (emissoraGlobal && emissoraGlobal.empresa_endereco) || null,
         empresa_telefone: (emissoraGlobal && emissoraGlobal.empresa_telefone) || null,
         empresa_email:    (emissoraGlobal && emissoraGlobal.empresa_email) || null,

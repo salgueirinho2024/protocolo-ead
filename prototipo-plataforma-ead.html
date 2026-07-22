@@ -5250,7 +5250,7 @@ function bloqueioTrocaModulo(idxOuIdDestino, destinoEhIndiceNaTelaAtual) {
 // Troca de módulo a partir da lista lateral, dentro do player.
 function tentarTrocarModulo(idx) {
   const aviso = bloqueioTrocaModulo(idx, true);
-  if (aviso) { toast(aviso, 'error'); return; }
+  if (aviso) { return; }
   selecionarModulo(idx);
 }
 
@@ -5258,7 +5258,7 @@ function tentarTrocarModulo(idx) {
 // (abre o player direto num módulo específico).
 function tentarAbrirModuloCurso(idx) {
   const aviso = bloqueioTrocaModulo(idx, true);
-  if (aviso) { toast(aviso, 'error'); return; }
+  if (aviso) { return; }
   abrirPlayer(matriculaAtual, idx);
 }
 
@@ -5618,7 +5618,8 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     'Responsável Técnico',
     (emissora && emissora.responsavel_tecnico_nome) || '',
     'Responsável Técnico',
-    emissora && emissora.responsavel_tecnico_documento
+    emissora && emissora.responsavel_tecnico_documento,
+    emissora && emissora.responsavel_tecnico_assinatura_base64
   );
 
   const appUrl = window.location.origin;
