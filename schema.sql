@@ -387,7 +387,9 @@ ALTER TABLE treinamentos
   ADD COLUMN IF NOT EXISTS responsavel_tecnico_assinatura_base64   TEXT, -- assinatura do Responsável Técnico
   ADD COLUMN IF NOT EXISTS instrutor_documento                     VARCHAR(50),
   ADD COLUMN IF NOT EXISTS certificado_fundo_frente_base64  TEXT, -- fundo do certificado, página 1
-  ADD COLUMN IF NOT EXISTS certificado_fundo_verso_base64   TEXT; -- fundo do certificado, página 2
+  ADD COLUMN IF NOT EXISTS certificado_fundo_verso_base64   TEXT, -- fundo do certificado, página 2
+  ADD COLUMN IF NOT EXISTS assinatura_escala INTEGER DEFAULT 100, -- tamanho (%) da assinatura do Instrutor
+  ADD COLUMN IF NOT EXISTS responsavel_tecnico_assinatura_escala INTEGER DEFAULT 100; -- tamanho (%) da assinatura do Resp. Técnico
 
 -- =========================================================
 -- 14. IMAGEM DE CAPA DO TREINAMENTO (exibida para o funcionário)

@@ -20,6 +20,7 @@
 const db = require('../../lib/db');
 const { exigirAuth } = require('../../lib/auth');
 const { aplicarCors, metodoPermitido, validarEnv } = require('../../lib/http');
+const { montarPreviewCertificado } = require('../../lib/certificado');
 
 async function handleTreinamentos(req, res) {
   if (!metodoPermitido(req, res, 'GET', 'POST')) return;
@@ -49,8 +50,9 @@ async function handleTreinamentos(req, res) {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
     conteudo_programatico, ativo,
     emissora_nome, emissora_cnpj,
-    assinatura_base64, assinatura_nome, assinatura_cargo,
+    assinatura_base64, assinatura_nome, assinatura_cargo, assinatura_escala,
     responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
+    responsavel_tecnico_assinatura_escala,
     instrutor_documento,
     certificado_fundo_frente_base64, certificado_fundo_verso_base64,
     imagem_capa_base64,
@@ -67,8 +69,8 @@ async function handleTreinamentos(req, res) {
           responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
           instrutor_documento,
           certificado_fundo_frente_base64, certificado_fundo_verso_base64,
-          imagem_capa_base64)
-       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+          imagem_capa_base64, assinatura_escala, responsavel_tecnico_assinatura_escala)
+       VALUES ($1,$2,$3,$4,$5,$6,COALESCE($7, TRUE),$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
        conteudo_programatico || null,
@@ -78,7 +80,8 @@ async function handleTreinamentos(req, res) {
        responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, responsavel_tecnico_assinatura_base64 || null,
        instrutor_documento || null,
        certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null,
-       imagem_capa_base64 || null]
+       imagem_capa_base64 || null,
+       assinatura_escala || 100, responsavel_tecnico_assinatura_escala || 100]
     );
     return res.status(201).json(rows[0]);
   } catch (err) {
@@ -116,8 +119,9 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
     titulo, descricao, carga_horaria_min, nota_minima_prova, validade_certificado_meses,
     conteudo_programatico, ativo,
     emissora_nome, emissora_cnpj,
-    assinatura_base64, assinatura_nome, assinatura_cargo,
+    assinatura_base64, assinatura_nome, assinatura_cargo, assinatura_escala,
     responsavel_tecnico_nome, responsavel_tecnico_documento, responsavel_tecnico_assinatura_base64,
+    responsavel_tecnico_assinatura_escala,
     instrutor_documento,
     certificado_fundo_frente_base64, certificado_fundo_verso_base64,
     imagem_capa_base64,
@@ -146,7 +150,9 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
               instrutor_documento = $17,
               certificado_fundo_frente_base64 = COALESCE($18, certificado_fundo_frente_base64),
               certificado_fundo_verso_base64 = COALESCE($19, certificado_fundo_verso_base64),
-              imagem_capa_base64 = COALESCE($20, imagem_capa_base64)
+              imagem_capa_base64 = COALESCE($20, imagem_capa_base64),
+              assinatura_escala = COALESCE($21, 100),
+              responsavel_tecnico_assinatura_escala = COALESCE($22, 100)
         WHERE id = $8
         RETURNING *`,
       [titulo, descricao || null, carga_horaria_min, nota_minima_prova ?? 70, validade_certificado_meses ?? null,
@@ -157,7 +163,8 @@ async function handleTreinamentoPorId(req, res, treinamentoId) {
        responsavel_tecnico_nome || null, responsavel_tecnico_documento || null, responsavel_tecnico_assinatura_base64 || null,
        instrutor_documento || null,
        certificado_fundo_frente_base64 || null, certificado_fundo_verso_base64 || null,
-       imagem_capa_base64 || null]
+       imagem_capa_base64 || null,
+       assinatura_escala || 100, responsavel_tecnico_assinatura_escala || 100]
     );
     if (!rows[0]) {
       return res.status(404).json({ erro: 'Treinamento não encontrado.' });
@@ -334,6 +341,17 @@ async function handlePerguntas(req, res, treinamentoId, perguntaId) {
   }
 }
 
+async function handleCertificadoPreview(req, res) {
+  if (!metodoPermitido(req, res, 'POST')) return;
+  try {
+    const dados_certificado = await montarPreviewCertificado(req.body || {});
+    return res.json({ dados_certificado });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ erro: 'Erro ao montar pré-visualização do certificado.' });
+  }
+}
+
 module.exports = async (req, res) => {
   if (aplicarCors(req, res)) return;
   if (!validarEnv(res)) return;
@@ -342,6 +360,13 @@ module.exports = async (req, res) => {
   if (!user) return;
 
   const { id, sub, moduloId } = req.query;
+
+  // Pré-visualização do certificado a partir dos dados ainda não salvos do
+  // formulário (novo treinamento ou edição em andamento) — não depende de
+  // um treinamento_id existente.
+  if (!id && sub === 'certificado-preview') {
+    return handleCertificadoPreview(req, res);
+  }
 
   if (!id) {
     return handleTreinamentos(req, res);

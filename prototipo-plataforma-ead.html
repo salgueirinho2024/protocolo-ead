@@ -3436,6 +3436,10 @@ var qrcode = function() {
       <input type="file" id="trein-rt-assinatura-file" accept="image/png,image/jpeg" onchange="lerAssinaturaFile(event,'rt')">
       <div id="trein-rt-assinatura-preview" style="margin-top:8px"></div>
     </div>
+    <div class="field">
+      <label>Tamanho da assinatura (<span id="trein-rt-escala-valor">100</span>%)</label>
+      <input type="range" id="trein-rt-escala" min="50" max="250" step="5" value="100" oninput="onEscalaAssinaturaChange('rt')">
+    </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
     <div style="font-weight:600;font-size:14px;margin-bottom:8px">Dados do certificado — Instrutor</div>
@@ -3443,10 +3447,20 @@ var qrcode = function() {
       <div class="field"><label>Nome</label><input type="text" id="trein-instrutor-nome" placeholder="Ex: Ana Beatriz Costa"></div>
       <div class="field"><label>Número de registro</label><input type="text" id="trein-instrutor-documento" placeholder="Ex: Registro 654321"></div>
     </div>
+    <div class="field"><label>Cargo/título exibido no certificado</label><input type="text" id="trein-instrutor-cargo" placeholder="Ex: Instrutor/Palestrante"></div>
     <div class="field">
       <label>Assinatura digital (PNG / JPG, fundo transparente recomendado)</label>
       <input type="file" id="trein-instrutor-assinatura-file" accept="image/png,image/jpeg" onchange="lerAssinaturaFile(event,'instrutor')">
       <div id="trein-instrutor-assinatura-preview" style="margin-top:8px"></div>
+    </div>
+    <div class="field">
+      <label>Tamanho da assinatura (<span id="trein-instrutor-escala-valor">100</span>%)</label>
+      <input type="range" id="trein-instrutor-escala" min="50" max="250" step="5" value="100" oninput="onEscalaAssinaturaChange('instrutor')">
+    </div>
+
+    <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+    <div class="field">
+      <button type="button" class="btn btn-outline" onclick="previsualizarCertificado()" style="width:100%">🎓 Pré-visualizar certificado</button>
     </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
@@ -4150,7 +4164,7 @@ async function carregarTreinamentos() {
 function abrirModalTreinamento() {
   editingTreinId = null;
   document.getElementById('modal-trein-titulo').textContent = 'Novo Treinamento';
-  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-rt-nome','trein-rt-documento','trein-instrutor-nome','trein-instrutor-documento'].forEach(id => document.getElementById(id).value = '');
+  ['trein-titulo','trein-descricao','trein-conteudo-programatico','trein-rt-nome','trein-rt-documento','trein-instrutor-nome','trein-instrutor-documento','trein-instrutor-cargo'].forEach(id => document.getElementById(id).value = '');
   window._rtAssinaturaB64 = null;
   window._instrutorAssinaturaB64 = null;
   window._treinCapaB64 = null;
@@ -4164,6 +4178,10 @@ function abrirModalTreinamento() {
   document.getElementById('trein-nota').value = 70;
   document.getElementById('trein-validade').value = 365;
   document.getElementById('trein-status').value = 'ativo';
+  document.getElementById('trein-rt-escala').value = 100;
+  document.getElementById('trein-rt-escala-valor').textContent = 100;
+  document.getElementById('trein-instrutor-escala').value = 100;
+  document.getElementById('trein-instrutor-escala-valor').textContent = 100;
   document.getElementById('modal-treinamento').classList.add('open');
 }
 
@@ -4191,12 +4209,17 @@ async function editarTreinamento(id) {
     document.getElementById('trein-rt-assinatura-preview').innerHTML = t.responsavel_tecnico_assinatura_base64
       ? `<img src="${t.responsavel_tecnico_assinatura_base64}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
     document.getElementById('trein-rt-assinatura-file').value = '';
+    document.getElementById('trein-rt-escala').value = t.responsavel_tecnico_assinatura_escala || 100;
+    document.getElementById('trein-rt-escala-valor').textContent = document.getElementById('trein-rt-escala').value;
     document.getElementById('trein-instrutor-nome').value = t.assinatura_nome || '';
     document.getElementById('trein-instrutor-documento').value = t.instrutor_documento || '';
+    document.getElementById('trein-instrutor-cargo').value = t.assinatura_cargo || '';
     window._instrutorAssinaturaB64 = t.assinatura_base64 || null;
     document.getElementById('trein-instrutor-assinatura-preview').innerHTML = t.assinatura_base64
       ? `<img src="${t.assinatura_base64}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">` : '';
     document.getElementById('trein-instrutor-assinatura-file').value = '';
+    document.getElementById('trein-instrutor-escala').value = t.assinatura_escala || 100;
+    document.getElementById('trein-instrutor-escala-valor').textContent = document.getElementById('trein-instrutor-escala').value;
     document.getElementById('modal-treinamento').classList.add('open');
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -4214,9 +4237,12 @@ async function salvarTreinamento() {
     responsavel_tecnico_nome: document.getElementById('trein-rt-nome').value || null,
     responsavel_tecnico_documento: document.getElementById('trein-rt-documento').value || null,
     responsavel_tecnico_assinatura_base64: window._rtAssinaturaB64 || null,
+    responsavel_tecnico_assinatura_escala: +document.getElementById('trein-rt-escala').value || 100,
     assinatura_nome: document.getElementById('trein-instrutor-nome').value || null,
     instrutor_documento: document.getElementById('trein-instrutor-documento').value || null,
+    assinatura_cargo: document.getElementById('trein-instrutor-cargo').value || null,
     assinatura_base64: window._instrutorAssinaturaB64 || null,
+    assinatura_escala: +document.getElementById('trein-instrutor-escala').value || 100,
   };
   try {
     if (editingTreinId) {
@@ -5593,10 +5619,12 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
   }
 
   // ── Colunas de assinatura no rodapé (Resp. Técnico / Instrutor) ─
-  function colunaAssinatura(rotulo, nomeSignatario, cargo, documento, imgBase64) {
+  function colunaAssinatura(rotulo, nomeSignatario, cargo, documento, imgBase64, escala) {
     if (!nomeSignatario) return '<div style="flex:1"></div>';
+    const alturaBase = 26;
+    const alturaPx = Math.round(alturaBase * ((escala || 100) / 100));
     const img = imgBase64
-      ? `<img src="${imgBase64}" alt="Assinatura" style="max-height:26px;display:block;margin:0 auto 2px;filter:brightness(0) invert(1);opacity:.9">` : '';
+      ? `<img src="${imgBase64}" alt="Assinatura" style="max-height:${alturaPx}px;display:block;margin:0 auto 2px;filter:brightness(0) invert(1);opacity:.9">` : '';
     return `<div style="flex:1;text-align:center;padding:0 10px;min-width:0">
       ${img}
       <div style="width:150px;max-width:88%;border-top:1px solid rgba(255,255,255,.55);margin:0 auto 5px"></div>
@@ -5612,14 +5640,16 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     (emissora && (emissora.assinatura_nome || emissora.instrutor_nome)) || '',
     emissora && (emissora.assinatura_cargo || 'Instrutor/Palestrante'),
     emissora && emissora.instrutor_documento,
-    emissora && emissora.assinatura_base64
+    emissora && emissora.assinatura_base64,
+    emissora && emissora.assinatura_escala
   );
   const colResponsavelTecnico = colunaAssinatura(
     'Responsável Técnico',
     (emissora && emissora.responsavel_tecnico_nome) || '',
     'Responsável Técnico',
     emissora && emissora.responsavel_tecnico_documento,
-    emissora && emissora.responsavel_tecnico_assinatura_base64
+    emissora && emissora.responsavel_tecnico_assinatura_base64,
+    emissora && emissora.responsavel_tecnico_assinatura_escala
   );
 
   const appUrl = window.location.origin;
@@ -6194,6 +6224,7 @@ function lerAssinaturaFile(ev, tipo) {
     else window._instrutorAssinaturaB64 = reader.result;
     document.getElementById(`trein-${tipo}-assinatura-preview`).innerHTML =
       `<img src="${reader.result}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">`;
+    if (_previewCertAberto) previsualizarCertificado();
   };
   reader.readAsDataURL(f);
 }
@@ -6211,6 +6242,48 @@ function lerImagemCapaFile(ev) {
       `<img src="${reader.result}" alt="Capa do curso" style="max-height:100px;border-radius:8px;border:1px solid var(--border)">`;
   };
   reader.readAsDataURL(f);
+}
+
+// ── Pré-visualização do certificado direto na tela de cadastro/edição ──
+// Mostra como o certificado vai ficar (fundo oficial, textos, assinaturas
+// e tamanhos) com um funcionário fictício, ANTES de salvar o treinamento.
+// tipo: 'rt' (Responsável Técnico) ou 'instrutor'
+let _previewCertAberto = false;
+
+function onEscalaAssinaturaChange(tipo) {
+  const valor = document.getElementById(`trein-${tipo}-escala`).value;
+  document.getElementById(`trein-${tipo}-escala-valor`).textContent = valor;
+  // Se a pré-visualização já estiver aberta, atualiza na hora — assim dá
+  // pra ver o efeito do slider em tempo real, sem precisar clicar de novo.
+  if (_previewCertAberto) previsualizarCertificado();
+}
+
+async function previsualizarCertificado() {
+  const body = {
+    titulo: document.getElementById('trein-titulo').value,
+    carga_horaria_min: +document.getElementById('trein-carga').value || 60,
+    conteudo_programatico: document.getElementById('trein-conteudo-programatico').value,
+    responsavel_tecnico_nome: document.getElementById('trein-rt-nome').value || null,
+    responsavel_tecnico_documento: document.getElementById('trein-rt-documento').value || null,
+    responsavel_tecnico_assinatura_base64: window._rtAssinaturaB64 || null,
+    responsavel_tecnico_assinatura_escala: +document.getElementById('trein-rt-escala').value || 100,
+    assinatura_nome: document.getElementById('trein-instrutor-nome').value || null,
+    instrutor_documento: document.getElementById('trein-instrutor-documento').value || null,
+    assinatura_cargo: document.getElementById('trein-instrutor-cargo').value || null,
+    assinatura_base64: window._instrutorAssinaturaB64 || null,
+    assinatura_escala: +document.getElementById('trein-instrutor-escala').value || 100,
+  };
+  try {
+    const data = await api('POST', '/api/admin/treinamentos?sub=certificado-preview', body);
+    _dadosCertAtual = data.dados_certificado;
+    document.getElementById('cert-preview-html').innerHTML = htmlCertificado(_dadosCertAtual);
+    document.getElementById('cert-preview-wrapper').classList.add('open');
+    _previewCertAberto = true;
+    const urlVal = _dadosCertAtual.url_validacao || (window.location.origin + '/validar/' + _dadosCertAtual.codigo_validacao);
+    _renderizarQrCertificado(urlVal);
+    requestAnimationFrame(ajustarConteudoProgramatico);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(ajustarConteudoProgramatico);
+  } catch (e) { toast(e.message, 'error'); }
 }
 
 function abrirValidarLogin() {
@@ -6356,7 +6429,7 @@ function iconCertLarge() { return `<svg width="48" height="48" fill="none" strok
   </div>
   <div id="cert-preview-actions">
     <button class="btn btn-green" onclick="baixarCertificadoPDF()">⬇ Baixar PDF</button>
-    <button class="btn btn-outline" onclick="document.getElementById('cert-preview-wrapper').classList.remove('open')" style="color:#fff;border-color:#fff">Fechar</button>
+    <button class="btn btn-outline" onclick="_previewCertAberto=false;document.getElementById('cert-preview-wrapper').classList.remove('open')" style="color:#fff;border-color:#fff">Fechar</button>
   </div>
 </div>
 
