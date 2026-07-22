@@ -3438,7 +3438,7 @@ var qrcode = function() {
     </div>
     <div class="field">
       <label>Tamanho da assinatura (<span id="trein-rt-escala-valor">100</span>%)</label>
-      <input type="range" id="trein-rt-escala" min="50" max="400" step="5" value="100" oninput="onEscalaAssinaturaChange('rt')">
+      <input type="range" id="trein-rt-escala" min="50" max="700" step="5" value="100" oninput="onEscalaAssinaturaChange('rt')">
     </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
@@ -3455,7 +3455,7 @@ var qrcode = function() {
     </div>
     <div class="field">
       <label>Tamanho da assinatura (<span id="trein-instrutor-escala-valor">100</span>%)</label>
-      <input type="range" id="trein-instrutor-escala" min="50" max="400" step="5" value="100" oninput="onEscalaAssinaturaChange('instrutor')">
+      <input type="range" id="trein-instrutor-escala" min="50" max="700" step="5" value="100" oninput="onEscalaAssinaturaChange('instrutor')">
     </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
@@ -5619,21 +5619,21 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
   }
 
   // ── Colunas de assinatura no rodapé (Resp. Técnico / Instrutor) ─
-  // A imagem da assinatura é posicionada de forma independente (cresce
-  // "pra cima", flutuando por cima da linha), em vez de empurrar o nome/
-  // cargo/documento pra baixo. Isso porque essa faixa do rodapé tem altura
-  // fixa (92px) e a página inteira usa overflow:hidden — se a assinatura
-  // aumentasse dentro do fluxo normal, o texto abaixo dela era empurrado
-  // para fora dessa faixa e cortado no fim da página.
+  // A imagem fica no fluxo normal, logo acima da linha. Antes ela era
+  // posicionada com "position:absolute;bottom:100%" sobre um container de
+  // altura automática — mas offsets em % sobre altura "auto" não têm valor
+  // bem definido em CSS, e por isso a imagem renderizava fora do lugar no
+  // PDF (longe da linha) mesmo parecendo certa no preview. Agora, como a
+  // faixa inteira é ancorada pela base (align-items:flex-end), a coluna
+  // pode crescer pra cima com segurança: a assinatura cresce, empurra a
+  // linha e o nome pra cima junto, sem cortar nada embaixo.
   function colunaAssinatura(rotulo, nomeSignatario, cargo, documento, imgBase64, escala) {
     if (!nomeSignatario) return '<div style="flex:1"></div>';
     const alturaBase = 26;
     const alturaPx = Math.round(alturaBase * ((escala || 100) / 100));
     const img = imgBase64
-      ? `<div style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:1px;white-space:nowrap">
-           <img src="${imgBase64}" alt="Assinatura" style="height:${alturaPx}px;width:auto;display:block;filter:brightness(0) invert(1);opacity:.9">
-         </div>` : '';
-    return `<div style="flex:1;text-align:center;padding:0 10px;min-width:0;position:relative">
+      ? `<img src="${imgBase64}" alt="Assinatura" style="height:${alturaPx}px;width:auto;display:block;margin:0 auto 2px;filter:brightness(0) invert(1);opacity:.9">` : '';
+    return `<div style="flex:1;text-align:center;padding:0 10px;min-width:0">
       ${img}
       <div style="width:150px;max-width:88%;border-top:1px solid rgba(255,255,255,.55);margin:0 auto 5px"></div>
       <div style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#eafff0;font-weight:700;margin-bottom:2px">${escHtml(rotulo)}</div>
