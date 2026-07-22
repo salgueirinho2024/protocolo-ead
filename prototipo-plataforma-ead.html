@@ -6226,17 +6226,72 @@ document.addEventListener('keydown', e => {
 
 // ── Helpers extras: assinatura, validação no login, QR no certificado ──
 // tipo: 'rt' (Responsável Técnico) ou 'instrutor'
+//
+// Por que a assinatura "flutuava" longe da linha mesmo com o box tocando
+// a linha: a maioria dos PNGs de assinatura (sem fundo ou escaneados) tem
+// uma sobra grande de espaço vazio (transparente ou quase-branco) ao redor
+// do traço de tinta, geralmente bem mais embaixo do que em cima. Ao esticar
+// a imagem inteira pela altura, essa sobra também cresce — então o traço
+// visível fica cada vez mais longe da linha quanto maior a escala, mesmo a
+// caixa da imagem estando encostada nela. A solução é recortar (trim) a
+// imagem para a caixa exata do traço antes de guardar, assim ela fica
+// sempre coladinha na linha, do menor ao maior tamanho.
+function trimarAssinatura(dataUrl, callback) {
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const w = img.width, h = img.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let left = w, right = -1, top = h, bottom = -1;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const alpha = data[i + 3];
+          if (alpha < 12) continue; // transparente: ignora
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          if (r > 245 && g > 245 && b > 245) continue; // quase-branco: ignora (fundo de scan)
+          if (x < left) left = x;
+          if (x > right) right = x;
+          if (y < top) top = y;
+          if (y > bottom) bottom = y;
+        }
+      }
+      if (right < left || bottom < top) { callback(dataUrl); return; } // não achou traço, mantém original
+      const pad = 3;
+      left = Math.max(0, left - pad);
+      top = Math.max(0, top - pad);
+      right = Math.min(w - 1, right + pad);
+      bottom = Math.min(h - 1, bottom + pad);
+      const cw = right - left + 1, ch = bottom - top + 1;
+      const out = document.createElement('canvas');
+      out.width = cw; out.height = ch;
+      out.getContext('2d').drawImage(canvas, left, top, cw, ch, 0, 0, cw, ch);
+      callback(out.toDataURL('image/png'));
+    } catch (e) {
+      callback(dataUrl); // getImageData pode falhar em alguns casos raros — usa a original
+    }
+  };
+  img.onerror = () => callback(dataUrl);
+  img.src = dataUrl;
+}
+
 function lerAssinaturaFile(ev, tipo) {
   const f = ev.target.files && ev.target.files[0];
   if (!f) return;
   if (f.size > 800 * 1024) { toast('Imagem muito grande (máx 800KB).', 'error'); ev.target.value=''; return; }
   const reader = new FileReader();
   reader.onload = () => {
-    if (tipo === 'rt') window._rtAssinaturaB64 = reader.result;
-    else window._instrutorAssinaturaB64 = reader.result;
-    document.getElementById(`trein-${tipo}-assinatura-preview`).innerHTML =
-      `<img src="${reader.result}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">`;
-    if (_previewCertAberto) previsualizarCertificado();
+    trimarAssinatura(reader.result, (b64Recortado) => {
+      if (tipo === 'rt') window._rtAssinaturaB64 = b64Recortado;
+      else window._instrutorAssinaturaB64 = b64Recortado;
+      document.getElementById(`trein-${tipo}-assinatura-preview`).innerHTML =
+        `<img src="${b64Recortado}" alt="Assinatura" style="max-height:60px;background:#fff;padding:4px;border:1px solid var(--border);border-radius:6px">`;
+      if (_previewCertAberto) previsualizarCertificado();
+    });
   };
   reader.readAsDataURL(f);
 }
