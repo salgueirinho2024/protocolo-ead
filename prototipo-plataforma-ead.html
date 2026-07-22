@@ -3438,7 +3438,7 @@ var qrcode = function() {
     </div>
     <div class="field">
       <label>Tamanho da assinatura (<span id="trein-rt-escala-valor">100</span>%)</label>
-      <input type="range" id="trein-rt-escala" min="50" max="250" step="5" value="100" oninput="onEscalaAssinaturaChange('rt')">
+      <input type="range" id="trein-rt-escala" min="50" max="400" step="5" value="100" oninput="onEscalaAssinaturaChange('rt')">
     </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
@@ -3455,7 +3455,7 @@ var qrcode = function() {
     </div>
     <div class="field">
       <label>Tamanho da assinatura (<span id="trein-instrutor-escala-valor">100</span>%)</label>
-      <input type="range" id="trein-instrutor-escala" min="50" max="250" step="5" value="100" oninput="onEscalaAssinaturaChange('instrutor')">
+      <input type="range" id="trein-instrutor-escala" min="50" max="400" step="5" value="100" oninput="onEscalaAssinaturaChange('instrutor')">
     </div>
 
     <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
@@ -5631,7 +5631,7 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
     const alturaPx = Math.round(alturaBase * ((escala || 100) / 100));
     const img = imgBase64
       ? `<div style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:1px;white-space:nowrap">
-           <img src="${imgBase64}" alt="Assinatura" style="max-height:${alturaPx}px;max-width:220px;display:block;filter:brightness(0) invert(1);opacity:.9">
+           <img src="${imgBase64}" alt="Assinatura" style="height:${alturaPx}px;width:auto;display:block;filter:brightness(0) invert(1);opacity:.9">
          </div>` : '';
     return `<div style="flex:1;text-align:center;padding:0 10px;min-width:0;position:relative">
       ${img}
@@ -5705,8 +5705,12 @@ function htmlCertificado({ nome, cpf, titulo, carga_horaria_min, data_inicio, da
   <div style="position:absolute;inset:0;z-index:1;padding:108px 148px 0;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center">
     ${conteudoCertificado}
   </div>
-  <!-- faixa de assinaturas: sem cor própria — a imagem de fundo já traz a faixa -->
-  <div style="position:absolute;left:0;right:0;bottom:0;height:92px;z-index:1;display:flex;align-items:center;padding:0 34px;box-sizing:border-box">
+  <!-- faixa de assinaturas: sem cor própria — a imagem de fundo já traz a faixa.
+       Ancorada pela base (align-items:flex-end), pois é rente ao rodapé que a
+       faixa verde da arte enviada realmente fica; centralizar numa altura fixa
+       de 92px podia jogar o texto/linha para fora da faixa verde quando a arte
+       tem a faixa num tamanho um pouco diferente. -->
+  <div style="position:absolute;left:0;right:0;bottom:0;height:92px;z-index:1;display:flex;align-items:flex-end;padding:0 34px 12px;box-sizing:border-box">
     ${colResponsavelTecnico}
     ${colInstrutor}
   </div>
