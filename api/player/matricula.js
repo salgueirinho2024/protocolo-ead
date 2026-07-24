@@ -87,6 +87,7 @@ module.exports = async (req, res) => {
                   json_build_object(
                     'id', mod.id, 'titulo', mod.titulo, 'descricao', mod.descricao, 'ordem', mod.ordem,
                     'duracao_segundos', mod.duracao_segundos,
+                    'video_provider', mod.video_provider,
                     'video_provider_id', mod.video_provider_id,
                     'pdf_url', mod.pdf_url,
                     'segundos_assistidos', COALESCE(mp.segundos_assistidos, 0),
