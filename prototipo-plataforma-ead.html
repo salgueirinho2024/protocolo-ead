@@ -4312,6 +4312,7 @@ function editarModulo(m) {
   document.getElementById('mod-ordem').value = m.ordem || 1;
   document.getElementById('mod-duracao').value = m.duracao_segundos || 1800;
   document.getElementById('mod-video').value = m.video_provider_id || '';
+  document.getElementById('mod-provider').value = m.video_provider || 'youtube';
   document.getElementById('mod-pdf-url').value = m.pdf_url || '';
   document.getElementById('modal-modulo').classList.add('open');
 }
@@ -4321,6 +4322,7 @@ async function salvarModulo() {
     titulo: document.getElementById('mod-titulo').value,
     descricao: document.getElementById('mod-descricao').value || null,
     ordem: +document.getElementById('mod-ordem').value,
+    video_provider: document.getElementById('mod-provider').value,
     video_provider_id: document.getElementById('mod-video').value,
     duracao_segundos: +document.getElementById('mod-duracao').value,
     pdf_url: document.getElementById('mod-pdf-url').value || null,

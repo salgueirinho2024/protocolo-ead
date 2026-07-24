@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS treinamento_modulos (
     titulo              VARCHAR(200) NOT NULL,
     descricao           TEXT,
     ordem               SMALLINT NOT NULL,
+    video_provider      VARCHAR(50) NOT NULL DEFAULT 'youtube', -- 'youtube' | 'vimeo' | 'mux' | 'cloudflare'
     video_provider_id   VARCHAR(255) NOT NULL, -- id do vídeo no Mux/Cloudflare Stream/Bunny
     duracao_segundos    INTEGER NOT NULL CHECK (duracao_segundos > 0),
     pdf_url             TEXT, -- link externo (Google Drive/Dropbox) do material de apoio em PDF
