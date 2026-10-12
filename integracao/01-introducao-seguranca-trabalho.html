@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Introdução, Objetivos, Responsabilidades e Segurança no Trabalho — Integração de Novos Colaboradores</title>
+<style>
+:root{--bg:#F0F7F4;--card:#fff;--text:#1B2D24;--muted:#52796F;--primary:#1B4332;--accent:#40916C;--accent-soft:#D8F3DC;--line:#CFE3D8;--warn-bg:#FFF4E5;--warn:#B45309;--danger-bg:#FDECEE;--danger:#B42318;}
+@media (prefers-color-scheme:dark){:root{--bg:#0E1712;--card:#1B2A21;--text:#E7F1EA;--muted:#8FAC9C;--primary:#95D5B2;--accent:#52B788;--accent-soft:#1F3A2B;--line:#2D4A39;--warn-bg:#3A2A12;--warn:#F4A261;--danger-bg:#3D1A1E;--danger:#F28B93;}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 56px}
+header.topo{background:var(--primary);color:#fff;border-radius:12px;padding:22px 22px 20px;margin-bottom:18px}
+@media (prefers-color-scheme:dark){header.topo{background:#14291F}}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin:0 0 6px}
+header.topo h1{margin:0 0 8px;font-size:clamp(22px,4.5vw,30px);line-height:1.2}
+header.topo p{margin:0;opacity:.92}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{background:rgba(255,255,255,.14);border-radius:999px;padding:3px 12px;font-size:13px}
+.video-standalone{margin-bottom:18px}
+.ratio{position:relative;padding-top:56.25%;border-radius:12px;overflow:hidden;background:#000}
+.ratio iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+nav.indice,.objetivos{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:18px}
+nav.indice h2,.objetivos h2{margin:0 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+nav.indice ol{margin:0;padding-left:20px}
+nav.indice a{color:var(--accent);text-decoration:none}
+nav.indice a:hover{text-decoration:underline}
+.objetivos ul{margin:0;padding-left:20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+section h2{margin:0 0 12px;font-size:20px;color:var(--primary);display:flex;gap:10px;align-items:center;line-height:1.3}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px}
+h3{margin:18px 0 6px;font-size:17px}
+h4{margin:0 0 4px;font-size:15px;color:var(--primary)}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin-bottom:4px}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:8px;padding:12px 16px;margin:14px 0}
+.callout.atencao{border-color:var(--warn);background:var(--warn-bg)}
+.callout.perigo{border-color:var(--danger);background:var(--danger-bg)}
+.callout p{margin:4px 0 0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:12px 0}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card p{margin:0;font-size:15px}
+.scroll{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);color:var(--primary)}
+.resumo{background:var(--primary);color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:16px}
+@media (prefers-color-scheme:dark){.resumo{background:#14291F}}
+.resumo h2{margin:0 0 8px;font-size:17px}
+.resumo ul{margin:0}
+footer.base{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+footer.base ul{margin:6px 0 0;padding-left:18px}
+@media print{body{background:#fff}.video-standalone{display:none}section,.objetivos,nav.indice{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topo">
+    <p class="eyebrow">Integração de Novos Colaboradores · Módulo 1</p>
+    <h1>Introdução, Objetivos, Responsabilidades e Segurança no Trabalho</h1>
+    <p>Por que você está fazendo este curso, o que a lei espera da empresa e o que ela espera de <strong>você</strong>.</p>
+    <div class="meta"><span class="chip">NR-1</span><span class="chip">CLT arts. 157 e 158</span><span class="chip">Treinamento inicial</span></div>
+  </header>
+  <div class="video-standalone" id="video-standalone" hidden><div class="ratio"><iframe src="https://www.youtube.com/embed/rgDvziBI0WA?rel=0" title="Introdução, Objetivos, Responsabilidades e Segurança no Trabalho" allowfullscreen loading="lazy"></iframe></div></div>
+  <div class="objetivos"><h2>Ao final deste módulo você será capaz de</h2><ul><li>Explicar por que o treinamento de integração é obrigatório e quando ele deve acontecer.</li><li>Definir segurança e saúde no trabalho e seu objetivo principal.</li><li>Listar as responsabilidades do empregador e as do trabalhador.</li><li>Saber o que fazer diante de uma situação de risco grave e iminente.</li></ul></div>
+  <nav class="indice"><h2>Neste módulo</h2><ol><li><a href="#s1">Introdução: por que esta integração existe</a></li><li><a href="#s2">Objetivos do treinamento</a></li><li><a href="#s3">O que é segurança e saúde no trabalho</a></li><li><a href="#s4">Responsabilidades da empresa (empregador)</a></li><li><a href="#s5">Responsabilidades do trabalhador</a></li><li><a href="#s6">Risco grave e iminente: você pode (e deve) interromper</a></li><li><a href="#s7">Segurança é de todos</a></li></ol></nav>
+  
+    <section id="s1">
+      <h2><span class="num">1</span>Introdução: por que esta integração existe</h2>
+      <p>Todo trabalhador que entra numa empresa precisa conhecer, <strong>antes de começar a trabalhar</strong>, os riscos que existem no ambiente e na sua função, como se proteger deles e o que fazer numa emergência. Esse é o sentido do treinamento de integração (também chamado de treinamento inicial ou admissional).</p>
+<p>A base legal está na <strong>NR-1 (Disposições Gerais e Gerenciamento de Riscos Ocupacionais)</strong>. O item 1.7 determina que o empregador promova a capacitação e o treinamento dos trabalhadores, e que o treinamento inicial ocorra antes de o trabalhador iniciar suas funções, ou no prazo que a NR específica da atividade definir.</p>
+<div class="cards"><div class="card"><h4>Inicial</h4><p>Antes de começar a trabalhar. É o caso deste curso.</p></div><div class="card"><h4>Periódico</h4><p>Repetido nos intervalos que cada norma define, para atualizar e reforçar.</p></div><div class="card"><h4>Eventual</h4><p>Quando há mudança de função, de processo ou de risco, ou depois de um acidente.</p></div></div>
+<aside class="callout info"><strong>É tempo de trabalho</strong><p>O tempo gasto em treinamentos previstos nas Normas Regulamentadoras conta como trabalho efetivo e não pode ser descontado do seu salário. O custo do treinamento é do empregador.</p></aside>
+    </section>
+
+    <section id="s2">
+      <h2><span class="num">2</span>Objetivos do treinamento</h2>
+      <ul><li><strong>Informar</strong> os riscos ocupacionais existentes nos locais de trabalho e na sua atividade.</li><li><strong>Ensinar</strong> os meios de prevenir e controlar esses riscos e as medidas que a empresa já adota.</li><li><strong>Orientar</strong> sobre os procedimentos em situações de emergência e sobre como comunicar problemas.</li><li><strong>Formalizar</strong> que você recebeu essas informações: ao final, é emitido um certificado com nome, conteúdo programático, carga horária, data, local e responsável técnico.</li></ul>
+<p>No fim das contas, o objetivo é um só: que você volte para casa <strong>inteiro e saudável</strong>, todos os dias.</p>
+    </section>
+
+    <section id="s3">
+      <h2><span class="num">3</span>O que é segurança e saúde no trabalho</h2>
+      <p>Segurança e saúde no trabalho é o conjunto de medidas e comportamentos adotados para <strong>prevenir acidentes do trabalho e doenças ocupacionais</strong>, protegendo a integridade física e mental de quem trabalha.</p>
+<p>A Constituição Federal (art. 7º, inciso XXII) garante ao trabalhador a redução dos riscos inerentes ao trabalho, por meio de normas de saúde, higiene e segurança. As Normas Regulamentadoras (NR) detalham como isso deve ser feito na prática.</p>
+<h3>Qual medida vem primeiro?</h3>
+<p>A NR-1 estabelece uma ordem de prioridade para as medidas de prevenção. O EPI, que você vai estudar em módulo próprio, é importante, mas é o <strong>último</strong> recurso, não o primeiro:</p>
+<ol><li><strong>Eliminar</strong> o fator de risco.</li><li><strong>Minimizar e controlar</strong> o risco com medidas de proteção coletiva (por exemplo, proteção de máquinas, ventilação, guarda-corpo).</li><li><strong>Medidas administrativas</strong> e de organização do trabalho (procedimentos, sinalização, treinamentos, revezamentos).</li><li><strong>Proteção individual</strong> (EPI), quando as anteriores não bastam ou enquanto estão sendo implantadas.</li></ol>
+    </section>
+
+    <section id="s4">
+      <h2><span class="num">4</span>Responsabilidades da empresa (empregador)</h2>
+      <p>Segurança é obrigação da empresa antes de ser obrigação do trabalhador. Pela NR-1 (item 1.4.1) e pela CLT (art. 157), cabe ao empregador, entre outras coisas:</p>
+<ul><li>Cumprir e fazer cumprir as normas de segurança e saúde no trabalho.</li><li>Gerenciar os riscos ocupacionais do ambiente (identificar, avaliar e controlar).</li><li><strong>Informar</strong> os trabalhadores sobre os riscos ocupacionais e as medidas de prevenção.</li><li>Elaborar <strong>ordens de serviço</strong> de segurança e saúde, dando ciência aos trabalhadores.</li><li>Fornecer, gratuitamente, os <strong>EPI</strong> adequados ao risco, em perfeito estado de conservação.</li><li>Promover os treinamentos e os exames médicos exigidos.</li><li>Definir procedimentos para casos de acidente e emergência.</li><li>Permitir que representantes dos trabalhadores acompanhem a fiscalização.</li></ul>
+    </section>
+
+    <section id="s5">
+      <h2><span class="num">5</span>Responsabilidades do trabalhador</h2>
+      <p>Pela NR-1 (item 1.4.2) e pela CLT (art. 158), cabe a <strong>você</strong>:</p>
+<ul><li>Cumprir as normas de segurança e as ordens de serviço da empresa.</li><li>Usar corretamente o EPI fornecido e conservá-lo.</li><li>Submeter-se aos exames médicos previstos.</li><li>Colaborar com a empresa na aplicação das normas de segurança e saúde.</li><li>Comunicar ao superior qualquer situação que considere de risco para a sua segurança e a dos colegas.</li></ul>
+<aside class="callout atencao"><strong>Recusar não é opção</strong><p>A CLT (art. 158, parágrafo único) considera ato faltoso a recusa injustificada a seguir as instruções de segurança da empresa e a usar o EPI fornecido. Isso pode gerar sanções disciplinares, inclusive demissão por justa causa, conforme a gravidade e a reincidência.</p></aside>
+    </section>
+
+    <section id="s6">
+      <h2><span class="num">6</span>Risco grave e iminente: você pode (e deve) interromper</h2>
+      <p>Se você identificar uma situação que represente risco grave e iminente para a vida ou a saúde, ou seja, algo que pode causar um acidente sério a qualquer momento, a NR-1 (item 1.4.3) garante que você <strong>interrompa a atividade</strong> e <strong>informe imediatamente o seu superior hierárquico</strong>. A atividade só pode ser retomada depois que o risco for eliminado ou controlado.</p>
+<aside class="callout perigo"><strong>Na dúvida, pare e avise</strong><p>Interromper uma tarefa por um risco real não é falta de produtividade nem insubordinação: é um direito seu e um dever com a sua equipe.</p></aside>
+    </section>
+
+    <section id="s7">
+      <h2><span class="num">7</span>Segurança é de todos</h2>
+      <p>A empresa organiza, treina e fornece os meios; o trabalhador aplica no dia a dia; a liderança dá o exemplo. Onde existirem, a <strong>CIPA</strong> (Comissão Interna de Prevenção de Acidentes) e o <strong>SESMT</strong> (Serviços Especializados em Engenharia de Segurança e em Medicina do Trabalho) são canais para tirar dúvidas e levar sugestões e relatos de risco.</p>
+<ul><li>Conheça as rotas de fuga, os extintores e os pontos de encontro do seu setor logo no primeiro dia.</li><li>Pergunte antes de executar uma tarefa que você não conhece.</li><li>Relate quase-acidentes: eles mostram onde o próximo acidente pode acontecer.</li><li>Cuide dos colegas: avise quando vir uma prática insegura.</li></ul>
+    </section>
+  <div class="resumo"><h2>Para guardar</h2><ul><li>O treinamento inicial é obrigatório e deve ocorrer <strong>antes</strong> de você começar a trabalhar.</li><li>Ele é feito dentro da jornada, conta como tempo de trabalho e é pago pelo empregador.</li><li>A empresa deve gerenciar os riscos, informar, treinar e fornecer o EPI; você deve cumprir as regras e usar o EPI corretamente.</li><li>Em risco grave e iminente, interrompa a atividade e avise o superior imediatamente.</li><li>EPI é a última linha de defesa, não a primeira.</li></ul></div>
+  <footer class="base">
+    <strong>Base normativa deste módulo</strong>
+    <ul><li>NR-1: itens 1.4 (responsabilidades), 1.5 (gerenciamento de riscos) e 1.7 (capacitação e treinamento).</li><li>CLT: arts. 157 e 158.</li><li>Constituição Federal: art. 7º, inciso XXII.</li></ul>
+    <p style="margin-top:10px">Material de apoio elaborado para o curso de integração. Em caso de dúvida, o texto oficial das normas prevalece e a empresa pode complementá-lo com procedimentos próprios.</p>
+  </footer>
+</div>
+<script>
+  // Fora do player (aberto direto por link), mostra o vídeo do módulo no topo.
+  // Dentro do player ele já aparece ao lado, então não duplica.
+  try{ if(window.self===window.top){ var v=document.getElementById('video-standalone'); if(v) v.hidden=false; } }catch(e){}
+</script>
+</body>
+</html>
